@@ -137,11 +137,13 @@ function normalizedUrl(value: string, fallback: string) {
   return (value || fallback).trim().replace(/\/$/, "");
 }
 
+const nodeEnv = process.env.NODE_ENV || "development";
+
 const runtimeConfig = {
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv,
   port: Number(process.env.CONTENT_API_PORT || process.env.PORT || 8787),
   databaseUrl: process.env.DATABASE_URL || "",
-  ownerAccountIds: csvEnv(process.env.OWNER_ACCOUNT_IDS || "2546399970"),
+  ownerAccountIds: csvEnv(process.env.OWNER_ACCOUNT_IDS || (nodeEnv === "production" ? "" : "2546399970")),
   corsOrigins: csvEnv(process.env.CONTENT_API_CORS_ORIGINS || process.env.APP_URL || ""),
   jsonLimit: process.env.CONTENT_API_JSON_LIMIT || "1mb",
   trustProxy: Number(process.env.CONTENT_API_TRUST_PROXY || 1),
@@ -2182,7 +2184,7 @@ function assertProductionConfig() {
   const missing: string[] = [];
   if (!runtimeConfig.databaseUrl) missing.push("DATABASE_URL");
   if (!runtimeConfig.corsOrigins.length) missing.push("CONTENT_API_CORS_ORIGINS or APP_URL");
-  if (!runtimeConfig.ownerAccountIds.length || runtimeConfig.ownerAccountIds.includes("2546399970")) missing.push("OWNER_ACCOUNT_IDS");
+  if (!runtimeConfig.ownerAccountIds.length) missing.push("OWNER_ACCOUNT_IDS");
 
   if (missing.length) {
     throw new Error(`Production configuration is incomplete: ${missing.join(", ")}`);
