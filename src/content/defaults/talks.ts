@@ -79,6 +79,7 @@ export const defaultTalksContent: TalksContent = {
     title: "杂谈回",
     subtitle: "把每周讨论、站点更新和内容线索整理成可以检索、回看和继续补充的长期记录。"
   },
+  liveTalkId: "talk-2026-06-02",
   live: createTalk({
     id: "talk-live-2026-06-09",
     episodeNo: 6,

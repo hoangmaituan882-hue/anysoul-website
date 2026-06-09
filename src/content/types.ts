@@ -120,6 +120,7 @@ export type TalksContent = {
     subtitle: string;
     eyebrow: string;
   };
+  liveTalkId?: string;
   live: TalkItem;
   upcoming: TalkScheduleItem[];
   weekly: TalkScheduleItem[];

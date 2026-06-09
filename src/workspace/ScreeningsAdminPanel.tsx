@@ -418,6 +418,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const [entryMeta, setEntryMeta] = useState<Record<string, ContentEntryMeta>>({});
   const [selectedCandidate, setSelectedCandidate] = useState<MediaScrapeCandidate | null>(null);
   const [candidateDraft, setCandidateDraft] = useState<ScreeningSourceItem | null>(null);
+  const [editingLibraryId, setEditingLibraryId] = useState<string | null>(null);
   const [archiveDate, setArchiveDate] = useState(dateKeyFromDate(new Date()));
   const [nextStartsAtDraft, setNextStartsAtDraft] = useState(() => nextSundayDateTime(defaultScreeningsSchedule));
 
@@ -467,6 +468,12 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     });
     return new Map(sorted.map((item, index) => [item.id, index + 1]));
   }, [library.items]);
+
+  const editingLibraryIndex = useMemo(
+    () => library.items.findIndex((item) => item.id === editingLibraryId),
+    [editingLibraryId, library.items]
+  );
+  const editingLibraryItem = editingLibraryIndex >= 0 ? library.items[editingLibraryIndex] : null;
 
   const load = async () => {
     if (readOnly) {
@@ -930,6 +937,27 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     setLibrary((current) => ({ ...current, items: current.items.filter((_, itemIndex) => itemIndex !== index) }));
   };
 
+  const deleteLibraryItemAndPublish = async (index: number) => {
+    if (readOnly) return;
+    const nextLibrary = normalizeLibraryForPublish({ ...library, items: library.items.filter((_, itemIndex) => itemIndex !== index) });
+    const syncedNext = syncNextMoviesFromLibrary(next, nextLibrary);
+    setEditingLibraryId(null);
+    setLibrary(nextLibrary);
+    setNext(syncedNext);
+    setIsSaving(true);
+    try {
+      await commitScreeningBatch([
+        { key: SCREENINGS_LIBRARY_KEY, payload: nextLibrary, publish: true, message: "Delete screening source and publish" },
+        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening after source delete" }
+      ], "Delete screening source and publish");
+      setStatus("片源已删除并发布");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "片源删除发布失败");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const addLibraryItemToNext = async (item: ScreeningSourceItem) => {
     if (readOnly) {
       setStatus("只读模式无法加入下周播放");
@@ -1349,7 +1377,38 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
             <div className="text-xs font-bold text-muted-foreground">筛选结果：{filteredLibraryItems.length} / {library.items.length}</div>
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+            {filteredLibraryItems.map((item) => {
+              const index = library.items.findIndex((candidate) => candidate.id === item.id);
+              const isWatched = item.status === "watched";
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setEditingLibraryId(item.id)}
+                  className="group overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                >
+                  <div className="relative aspect-[2/3] bg-muted">
+                    {item.posterUrl ? <img src={item.posterUrl} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center px-3 text-center text-xs font-black text-muted-foreground">暂无海报</div>}
+                    <span className="absolute left-2 top-2 flex size-8 items-center justify-center rounded-xl bg-background/90 text-xs font-black text-foreground shadow-sm">{stableLibraryNumbers.get(item.id) || index + 1}</span>
+                    <span className={cn("absolute right-2 top-2 rounded-full px-2 py-1 text-[10px] font-black shadow-sm", isWatched ? "bg-emerald-500 text-white" : item.status === "planned" ? "bg-sky-500 text-white" : "bg-background/90 text-foreground")}>
+                      {isWatched ? "已归档" : item.status === "planned" ? "已排期" : "待放映"}
+                    </span>
+                  </div>
+                  <div className="space-y-2 p-3">
+                    <div className="line-clamp-2 text-sm font-black text-foreground">{item.title}</div>
+                    <div className="flex flex-wrap gap-1">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{item.type}</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{item.category}</span>
+                    </div>
+                    <div className="line-clamp-1 text-[11px] font-bold text-muted-foreground">{item.tags.slice(0, 3).join(" / ") || "未设置标签"}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="hidden">
             {filteredLibraryItems.map((item) => {
               const index = library.items.findIndex((candidate) => candidate.id === item.id);
               return (
@@ -1591,6 +1650,101 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         </div>
       </div>
       </>
+      )}
+
+      {editingLibraryItem && editingLibraryIndex >= 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-5 py-4 backdrop-blur">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-primary">Screening Source</div>
+                <h3 className="mt-1 text-xl font-black text-foreground">{editingLibraryItem.title || "编辑片源"}</h3>
+              </div>
+              <button onClick={() => setEditingLibraryId(null)} className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="grid gap-5 p-5 lg:grid-cols-[240px_1fr]">
+              <div className="space-y-3">
+                <div className="overflow-hidden rounded-2xl border border-border bg-muted">
+                  {editingLibraryItem.posterUrl ? <img src={editingLibraryItem.posterUrl} alt={editingLibraryItem.title} className="aspect-[2/3] w-full object-cover" /> : <div className="flex aspect-[2/3] items-center justify-center px-4 text-center text-sm font-black text-muted-foreground">暂无海报</div>}
+                </div>
+                <ImageUploadField label="海报" value={editingLibraryItem.posterUrl || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { posterUrl: value })} admin readOnly={readOnly} scope="screening-poster" compact />
+                <div className="rounded-2xl border border-border bg-card p-3 text-xs font-bold text-muted-foreground">
+                  <div>入库序号：<span className="text-foreground">{stableLibraryNumbers.get(editingLibraryItem.id) || editingLibraryIndex + 1}</span></div>
+                  <div className="mt-1">状态：<span className="text-foreground">{editingLibraryItem.status === "watched" ? "已归档" : editingLibraryItem.status === "planned" ? "已排期" : "待放映"}</span></div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_120px_120px_140px]">
+                  <Field label="片名" value={editingLibraryItem.title} onChange={(value) => updateLibraryItem(editingLibraryIndex, { title: value })} />
+                  <Field label="原名" value={editingLibraryItem.originalTitle || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { originalTitle: value })} />
+                  <Field label="上映时间" value={editingLibraryItem.year || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { year: value })} />
+                  <Field label="评分" type="number" value={editingLibraryItem.rating || 0} onChange={(value) => updateLibraryItem(editingLibraryIndex, { rating: Number(value) })} />
+                  {editingLibraryItem.status === "watched" ? (
+                    <DateTimePicker label="播放时间" mode="date" value={editingLibraryItem.lastWatchedAt || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { lastWatchedAt: value })} />
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-bold text-muted-foreground">放映状态</span>
+                      <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{editingLibraryItem.status === "planned" ? "已排期" : "待放映"}</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">类型</span>
+                    <select value={editingLibraryItem.type} onChange={(event) => updateLibraryItem(editingLibraryIndex, { type: event.target.value as ScreeningSourceItem["type"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {(["movie", "anime", "ova", "series", "short", "other"] as ScreeningSourceItem["type"][]).map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">分类</span>
+                    <select value={editingLibraryItem.category} onChange={(event) => updateLibraryItem(editingLibraryIndex, { category: event.target.value as ScreeningSourceItem["category"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {movieTypes.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">状态</span>
+                    <select value={editingLibraryItem.status} onChange={(event) => updateLibraryItem(editingLibraryIndex, { status: event.target.value as ScreeningSourceItem["status"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {(["available", "planned", "watched", "hidden", "rejected"] as ScreeningSourceItem["status"][]).map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">优先级</span>
+                    <select value={editingLibraryItem.priority} onChange={(event) => updateLibraryItem(editingLibraryIndex, { priority: event.target.value as ScreeningSourceItem["priority"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {(["low", "normal", "high"] as ScreeningSourceItem["priority"][]).map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-[140px_1fr]">
+                  <Field label="时长" value={editingLibraryItem.duration || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { duration: value })} />
+                  <Field label="Bilibili 录播/播放链接" value={editingLibraryItem.sourceUrl || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { sourceUrl: value })} placeholder="https://www.bilibili.com/video/..." />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <TextAreaField label="简介" value={editingLibraryItem.description} onChange={(value) => updateLibraryItem(editingLibraryIndex, { description: value })} />
+                  <TextAreaField label="标签，逗号分隔" value={editingLibraryItem.tags.join(", ")} onChange={(value) => updateLibraryItem(editingLibraryIndex, { tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })} />
+                  <TextAreaField label="播放备注" value={editingLibraryItem.sourceNote || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { sourceNote: value })} placeholder="例如：B 站录播 P2 / 正片从 05:30 开始" />
+                  <TextAreaField label="站主评价" value={editingLibraryItem.fanshiReview || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { fanshiReview: value })} />
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t border-border bg-background/95 px-5 py-4 backdrop-blur">
+              <button onClick={() => setEditingLibraryId(null)} className="rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold hover:bg-muted">取消</button>
+              <button onClick={() => { void deleteLibraryItemAndPublish(editingLibraryIndex); }} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-500/15 disabled:opacity-50">
+                <Trash2 className="size-4" /> 删除并发布
+              </button>
+              <button onClick={() => { setEditingLibraryId(null); void publishLibraryNow(); }} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                <Save className="size-4" /> 保存并发布
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {candidateDraft && selectedCandidate && (

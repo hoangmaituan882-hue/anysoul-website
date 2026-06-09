@@ -72,6 +72,7 @@ function normalizeTalksContent(value: TalksContent): TalksContent {
     ...defaultTalksContent,
     ...(value || {}),
     hero: { ...defaultTalksContent.hero, ...(value?.hero || {}) },
+    liveTalkId: value?.liveTalkId || defaultTalksContent.liveTalkId,
     live: { ...defaultTalksContent.live, ...(value?.live || {}) },
     upcoming: Array.isArray(value?.upcoming) ? value.upcoming : defaultTalksContent.upcoming,
     weekly: Array.isArray(value?.weekly) ? value.weekly : defaultTalksContent.weekly,
@@ -317,7 +318,11 @@ export function Talks() {
     return [...latestYearTalks].sort((a, b) => b.viewers - a.viewers).slice(0, 3);
   }, [latestYearTalks]);
 
-  const liveTalkData = talkToCard(talksContent.live);
+  const liveTalkSource = talksContent.archive.find((talk) => talk.id === talksContent.liveTalkId)
+    || talksContent.live
+    || talksContent.archive[0]
+    || defaultTalksContent.live;
+  const liveTalkData = talkToCard(liveTalkSource);
   const schedules = talksContent.upcoming.length
     ? talksContent.upcoming.map(scheduleToCard)
     : latestYearTalks.slice(1);

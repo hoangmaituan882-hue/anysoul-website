@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Eye, EyeOff, Image, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2, Upload } from "lucide-react";
+import { CalendarDays, Eye, EyeOff, Image, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { ImageUploadField } from "../components/ImageUploadField";
 import { CONTENT_API_BASE, uploadImageAsset } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
@@ -116,6 +116,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [weeklyImportAuthor, setWeeklyImportAuthor] = useState("运营");
   const [weeklyImportDate, setWeeklyImportDate] = useState(() => formatDateKey(new Date()));
   const [weeklyImportWeek, setWeeklyImportWeek] = useState(() => String(calculateWeeklyImportWeek(new Date())));
+  const [isSoulEditorOpen, setIsSoulEditorOpen] = useState(false);
   const weeklyMeta = useMemo(() => getWeeklyImportMeta(parseDateKey(weeklyImportDate), Number(weeklyImportWeek)), [weeklyImportDate, weeklyImportWeek]);
 
   const selectedSoul = plaza.souls.find((soul) => soul.id === selectedId) || plaza.souls[0];
@@ -215,6 +216,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       }]
     }));
     setSelectedId(id);
+    setIsSoulEditorOpen(true);
   };
 
   const removeSoul = (id: string) => {
@@ -228,6 +230,27 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       setSelectedId(nextSouls[0]?.id || "");
       return { ...current, souls: nextSouls };
     });
+  };
+
+  const deleteSoulAndPublish = async (id: string) => {
+    if (readOnly) {
+      setStatus("只读模式无法删除图库作品");
+      return;
+    }
+    const nextSouls = plaza.souls.filter((soul) => soul.id !== id);
+    const nextPlaza = { ...plaza, souls: nextSouls };
+    setPlaza(nextPlaza);
+    setSelectedId(nextSouls[0]?.id || "");
+    setIsSoulEditorOpen(false);
+    setIsSaving(true);
+    try {
+      await savePlazaContent(nextPlaza, true, "Delete plaza item and publish");
+      setStatus("作品已删除并发布");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "作品删除发布失败");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const publishWeeklyUrls = async (urls: string[]) => {
@@ -408,7 +431,43 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[360px_1fr]">
+      <div className="rounded-3xl border border-border bg-background p-5 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black text-foreground">作品相册</h3>
+            <p className="text-sm text-muted-foreground">点击作品卡片进入二级编辑弹窗，图片上传和详细字段都在弹窗内维护。</p>
+          </div>
+          <button disabled={readOnly} onClick={addSoul} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-border bg-card px-3 py-2 text-sm font-bold text-primary hover:bg-muted disabled:opacity-50">
+            <Plus className="size-4" /> 添加作品
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+          {plaza.souls.map((soul) => (
+            <button
+              key={soul.id}
+              type="button"
+              onClick={() => { setSelectedId(soul.id); setIsSoulEditorOpen(true); }}
+              className={cn("group overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md", selectedId === soul.id ? "border-primary/40 ring-2 ring-primary/10" : "border-border")}
+            >
+              <div className="relative aspect-[4/5] bg-muted">
+                {soul.avatarSrc ? <img src={soul.avatarSrc} alt={soul.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center text-4xl font-black text-primary">{soul.avatarInitials || soul.name.slice(0, 1)}</div>}
+                <span className={cn("absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-black shadow-sm", soul.visibility === "visible" ? "bg-emerald-500 text-white" : "bg-background/90 text-foreground")}>{soul.visibility === "visible" ? "可见" : soul.visibility}</span>
+                {soul.featured && <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-black text-primary-foreground shadow-sm">精选</span>}
+              </div>
+              <div className="space-y-2 p-3">
+                <div className="line-clamp-1 text-sm font-black text-foreground">{soul.name}</div>
+                <div className="line-clamp-1 text-[11px] font-bold text-muted-foreground">by {soul.author}</div>
+                <div className="flex flex-wrap gap-1">
+                  {(soul.importWeek ? [`第${soul.importWeek}周`] : soul.tags.slice(0, 2)).map((tag) => <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{tag}</span>)}
+                </div>
+                <div className="text-[11px] font-bold text-muted-foreground">{soul.importDate || soul.createdAt || "未设置日期"}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="hidden">
         <div className="rounded-3xl border border-border bg-background p-3 shadow-sm">
           <div className="mb-3 flex items-center justify-between px-2">
             <h3 className="text-sm font-black">作品列表</h3>
@@ -494,6 +553,83 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
           </div>
         )}
       </div>
+
+      {selectedSoul && isSoulEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-5 py-4 backdrop-blur">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-primary">Gallery Item</div>
+                <h3 className="mt-1 text-xl font-black text-foreground">{selectedSoul.name || "编辑作品"}</h3>
+              </div>
+              <button onClick={() => setIsSoulEditorOpen(false)} className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-[280px_1fr]">
+              <div className="space-y-3">
+                <div className="overflow-hidden rounded-3xl border border-border bg-card">
+                  <div className={cn("relative min-h-[320px] bg-gradient-radial", selectedSoul.bannerColor)}>
+                    {selectedSoul.avatarSrc ? <img src={selectedSoul.avatarSrc} alt={selectedSoul.name} className="w-full object-cover" /> : <div className="flex aspect-square items-center justify-center text-5xl font-black text-primary">{selectedSoul.avatarInitials || selectedSoul.name.slice(0, 1)}</div>}
+                    {selectedSoul.featured && <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground"><Sparkles className="size-3" /> 精选</span>}
+                  </div>
+                </div>
+                <ImageUploadField label="图片" value={selectedSoul.avatarSrc || ""} onChange={(value) => updateSoul(selectedSoul.id, { avatarSrc: value })} admin readOnly={readOnly} scope="plaza-item" compact />
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Field label="作品名" value={selectedSoul.name} onChange={(value) => updateSoul(selectedSoul.id, { name: value })} />
+                  <Field label="作者" value={selectedSoul.author} onChange={(value) => updateSoul(selectedSoul.id, { author: value })} />
+                  <Field label="渐变背景 class" value={selectedSoul.bannerColor} onChange={(value) => updateSoul(selectedSoul.id, { bannerColor: value })} />
+                  <DateTimePicker label="创建日期" mode="date" value={selectedSoul.createdAt} onChange={(value) => updateSoul(selectedSoul.id, { createdAt: value })} />
+                  <Field label="点赞数" type="number" value={selectedSoul.likes} onChange={(value) => updateSoul(selectedSoul.id, { likes: Number(value) })} />
+                  <Field label="浏览量" type="number" value={selectedSoul.views} onChange={(value) => updateSoul(selectedSoul.id, { views: Number(value) })} />
+                  <Field label="标签，逗号分隔" value={selectedSoul.tags.join(", ")} onChange={(value) => updateSoul(selectedSoul.id, { tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })} />
+                  <Field label="第几周杂谈" type="number" value={selectedSoul.importWeek || ""} onChange={(value) => updateSoul(selectedSoul.id, { importWeek: Number(value) || undefined })} />
+                  <DateTimePicker label="导入日期" mode="date" value={selectedSoul.importDate || selectedSoul.createdAt || weeklyImportDate} onChange={(value) => updateSoul(selectedSoul.id, { importDate: value, createdAt: value })} />
+                  <Field label="系列名称" value={selectedSoul.seriesName || ""} onChange={(value) => updateSoul(selectedSoul.id, { seriesName: value })} />
+                </div>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[12px] font-bold text-muted-foreground">简介</span>
+                  <textarea value={selectedSoul.desc} onChange={(event) => updateSoul(selectedSoul.id, { desc: event.target.value })} rows={4} className="resize-none rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" />
+                </label>
+
+                <div className="flex flex-wrap gap-2">
+                  {visibilityOptions.map((option) => <button key={option.value} onClick={() => updateSoul(selectedSoul.id, { visibility: option.value })} className={cn("rounded-full border px-4 py-2 text-sm font-bold transition-colors", selectedSoul.visibility === option.value ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-muted")}>{option.label}</button>)}
+                  <button onClick={() => updateSoul(selectedSoul.id, { featured: !selectedSoul.featured })} className={cn("rounded-full border px-4 py-2 text-sm font-bold transition-colors", selectedSoul.featured ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted")}>设为精选</button>
+                </div>
+
+                {(selectedSoul.importBatchId || selectedSoul.seriesName || selectedSoul.importWeek) && (
+                  <div className="rounded-2xl border border-border bg-card p-4 text-xs font-bold text-muted-foreground">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="size-4 text-primary" /> 每周导入信息</div>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <div>导入批次：<span className="text-foreground">{selectedSoul.importBatchId || "-"}</span></div>
+                      <div>导入日期：<span className="text-foreground">{selectedSoul.importDate || selectedSoul.createdAt || "-"}</span></div>
+                      <div>系列：<span className="text-foreground">{selectedSoul.seriesName || "-"}</span></div>
+                      <div>周数：<span className="text-foreground">{selectedSoul.importWeek ? `第${selectedSoul.importWeek}周` : "-"}</span></div>
+                      <div>批次序号：<span className="text-foreground">{selectedSoul.itemIndex ? String(selectedSoul.itemIndex).padStart(2, "0") : "-"}</span></div>
+                      <div>年份：<span className="text-foreground">{selectedSoul.importYear || "-"}</span></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t border-border bg-background/95 px-5 py-4 backdrop-blur">
+              <button onClick={() => setIsSoulEditorOpen(false)} className="rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold hover:bg-muted">取消</button>
+              <button disabled={readOnly || isSaving} onClick={() => { void deleteSoulAndPublish(selectedSoul.id); }} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-500/15 disabled:opacity-50">
+                <Trash2 className="size-4" /> 删除并发布
+              </button>
+              <button disabled={isSaving || readOnly} onClick={() => { setIsSoulEditorOpen(false); void save(true); }} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
+                <Rocket className="size-4" /> 保存并发布
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3 text-xs font-medium text-muted-foreground">{status}</div>
     </div>

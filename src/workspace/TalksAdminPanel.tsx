@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Calendar, FileText, Link, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2, Video } from "lucide-react";
+import { Bot, Calendar, FileText, Link, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2, Video, X } from "lucide-react";
+import { ImageUploadField } from "../components/ImageUploadField";
 import { CONTENT_API_BASE } from "../content/client";
 import { defaultTalksContent } from "../content/defaults/talks";
 import type { AdminContentEntry, TalkHighlightItem, TalkItem, TalkScheduleItem, TalkSidebarItem, TalkTranscriptItem, TalksContent } from "../content/types";
@@ -60,6 +61,7 @@ function normalizeTalks(value: unknown): TalksContent {
     ...defaultTalksContent,
     ...(talks || {}),
     hero: { ...defaultTalksContent.hero, ...(talks?.hero || {}) },
+    liveTalkId: talks?.liveTalkId || defaultTalksContent.liveTalkId,
     live: { ...defaultTalksContent.live, ...(talks?.live || {}) },
     upcoming: Array.isArray(talks?.upcoming) ? talks.upcoming : defaultTalksContent.upcoming,
     weekly: Array.isArray(talks?.weekly) ? talks.weekly : defaultTalksContent.weekly,
@@ -82,19 +84,27 @@ function createBlankTalk(index: number): TalkItem {
     date: today,
     time: "20:00",
     duration: "60 min",
+    coverUrl: "",
     status: "archived",
     category: "talk",
+    host: "Linze",
+    guests: [],
+    tags: ["杂谈回"],
+    summary: "",
+    summaryBullets: [],
+    highlights: [],
     viewers: 0,
     danmaku: 0,
     likes: 0,
     sourceUrl: "",
     videoUrl: "",
+    videoProvider: "bilibili",
+    animeMentions: 0,
+    isFeatured: false,
+    isLiked: false,
     transcript: [],
     comments: [],
-    mentions: [],
-    highlights: [],
-    summaryBullets: [],
-    tags: ["杂谈回"]
+    mentions: []
   };
 }
 
@@ -175,10 +185,15 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [aiSource, setAiSource] = useState("");
   const [aiStatus, setAiStatus] = useState("AI 会把结果填入当前选中的录像草稿。");
   const [isAiBusy, setIsAiBusy] = useState(false);
+  const [isTalkEditorOpen, setIsTalkEditorOpen] = useState(false);
 
   const selectedTalk = useMemo(
     () => draft.archive.find((item) => item.id === selectedId) || draft.archive[0],
     [draft.archive, selectedId]
+  );
+  const liveTalk = useMemo(
+    () => draft.archive.find((item) => item.id === draft.liveTalkId) || draft.archive[0] || draft.live,
+    [draft.archive, draft.live, draft.liveTalkId]
   );
 
   const load = async () => {
@@ -244,19 +259,26 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
 
   const addArchiveTalk = () => {
     const nextTalk = createBlankTalk(draft.archive.length);
-    const nextDraft = { ...draft, archive: [nextTalk, ...draft.archive] };
-    setDraft(nextDraft);
+    setDraft((current) => ({ ...current, archive: [nextTalk, ...current.archive] }));
     setSelectedId(nextTalk.id);
-    void publish(nextDraft, "Add talks archive video");
+    setIsTalkEditorOpen(true);
   };
 
   const deleteSelectedTalk = () => {
     if (!selectedTalk) return;
     const nextArchive = draft.archive.filter((item) => item.id !== selectedTalk.id);
-    const nextDraft = { ...draft, archive: nextArchive };
+    const nextDraft = { ...draft, archive: nextArchive, liveTalkId: draft.liveTalkId === selectedTalk.id ? nextArchive[0]?.id : draft.liveTalkId };
     setDraft(nextDraft);
     setSelectedId(nextArchive[0]?.id || "");
+    setIsTalkEditorOpen(false);
     void publish(nextDraft, "Delete talks archive video");
+  };
+
+  const saveSelectedTalk = () => {
+    const normalized = normalizeTalks(draft);
+    setDraft(normalized);
+    setIsTalkEditorOpen(false);
+    void publish(normalized, "Save talks archive video");
   };
 
   const generateAiSummary = async () => {
@@ -291,6 +313,12 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     }
   };
 
+  const chooseLiveTalk = (id: string) => {
+    const nextDraft = { ...draft, liveTalkId: id };
+    setDraft(nextDraft);
+    void publish(nextDraft, "Set live talk source");
+  };
+
   return (
     <fieldset disabled={readOnly} className={cn("mx-auto max-w-6xl space-y-5", readOnly && "opacity-75")}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -298,7 +326,7 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
           <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <Video className="size-6 text-primary" /> 杂谈回控制
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">管理直播卡、录像归档库、本周安排、侧栏动态和 AI 摘要，保存后直接发布到前台。</p>
+          <p className="mt-1 text-sm text-muted-foreground">管理直播展示、录像归档库、本周安排、侧栏动态和 AI 摘要，保存后直接发布到前台。</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={load} type="button" className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-bold hover:bg-muted">
@@ -311,22 +339,10 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-border bg-background p-4">
-          <div className="text-xs font-bold text-muted-foreground">录像归档</div>
-          <div className="mt-1 text-3xl font-black">{draft.archive.length}</div>
-        </div>
-        <div className="rounded-xl border border-border bg-background p-4">
-          <div className="text-xs font-bold text-muted-foreground">近期计划</div>
-          <div className="mt-1 text-3xl font-black">{draft.upcoming.length}</div>
-        </div>
-        <div className="rounded-xl border border-border bg-background p-4">
-          <div className="text-xs font-bold text-muted-foreground">本周安排</div>
-          <div className="mt-1 text-3xl font-black">{draft.weekly.length}</div>
-        </div>
-        <div className="rounded-xl border border-border bg-background p-4">
-          <div className="text-xs font-bold text-muted-foreground">话题入口</div>
-          <div className="mt-1 text-3xl font-black">{draft.topics.length}</div>
-        </div>
+        <div className="rounded-xl border border-border bg-background p-4"><div className="text-xs font-bold text-muted-foreground">录像归档</div><div className="mt-1 text-3xl font-black">{draft.archive.length}</div></div>
+        <div className="rounded-xl border border-border bg-background p-4"><div className="text-xs font-bold text-muted-foreground">近期计划</div><div className="mt-1 text-3xl font-black">{draft.upcoming.length}</div></div>
+        <div className="rounded-xl border border-border bg-background p-4"><div className="text-xs font-bold text-muted-foreground">本周安排</div><div className="mt-1 text-3xl font-black">{draft.weekly.length}</div></div>
+        <div className="rounded-xl border border-border bg-background p-4"><div className="text-xs font-bold text-muted-foreground">话题入口</div><div className="mt-1 text-3xl font-black">{draft.topics.length}</div></div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
@@ -338,12 +354,34 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
           </div>
 
           <div className="rounded-xl border border-border bg-background p-4 space-y-3">
-            <h3 className="font-bold flex items-center gap-2"><Video className="size-4 text-red-500" /> 直播中卡片</h3>
-            <Field label="标题" value={draft.live.title} onChange={(value) => updateDraft((current) => ({ ...current, live: { ...current.live, title: value } }))} />
-            <Field label="日期" value={draft.live.date} onChange={(value) => updateDraft((current) => ({ ...current, live: { ...current.live, date: value } }))} />
-            <Field label="时间" value={draft.live.time} onChange={(value) => updateDraft((current) => ({ ...current, live: { ...current.live, time: value } }))} />
-            <Field label="封面 URL" value={draft.live.coverUrl} onChange={(value) => updateDraft((current) => ({ ...current, live: { ...current.live, coverUrl: value } }))} />
-            <Area label="简介" value={draft.live.subtitle || draft.live.summary} onChange={(value) => updateDraft((current) => ({ ...current, live: { ...current.live, subtitle: value, summary: value } }))} rows={3} />
+            <h3 className="font-bold flex items-center gap-2"><Video className="size-4 text-red-500" /> 当前直播中/推荐展示</h3>
+            <p className="text-xs font-medium leading-relaxed text-muted-foreground">直播中卡片从录像库读取标题、封面、摘要和数据；不再单独维护一套表单。</p>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-bold text-muted-foreground">选择录像</span>
+              <select
+                value={draft.liveTalkId || ""}
+                onChange={(event) => chooseLiveTalk(event.target.value)}
+                className="h-10 rounded-lg border border-border bg-card px-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+              >
+                {draft.archive.map((talk) => <option key={talk.id} value={talk.id}>{talk.episodeNo ? `第${talk.episodeNo}期 · ` : ""}{talk.title}</option>)}
+              </select>
+            </label>
+            {liveTalk && (
+              <button
+                type="button"
+                onClick={() => { setSelectedId(liveTalk.id); setIsTalkEditorOpen(true); }}
+                className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:bg-muted"
+              >
+                <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
+                  {liveTalk.coverUrl ? <img src={liveTalk.coverUrl} alt={liveTalk.title} className="h-full w-full object-cover" /> : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-black">{liveTalk.title}</div>
+                  <div className="mt-1 text-xs font-bold text-muted-foreground">{liveTalk.date} · {liveTalk.duration}</div>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{liveTalk.subtitle || liveTalk.summary}</p>
+                </div>
+              </button>
+            )}
           </div>
 
           <div className="rounded-xl border border-border bg-background p-4 space-y-3">
@@ -367,29 +405,77 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         <div className="xl:col-span-2 space-y-5">
           <div className="rounded-xl border border-border bg-background p-4 space-y-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <h3 className="font-bold flex items-center gap-2"><FileText className="size-4 text-blue-500" /> 杂谈会录像库</h3>
-              <div className="flex gap-2">
-                <button onClick={addArchiveTalk} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-muted disabled:opacity-50"><Plus className="size-4" /> 添加并发布</button>
-                <button onClick={deleteSelectedTalk} disabled={isSaving || !selectedTalk} className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-600 disabled:opacity-50"><Trash2 className="size-4" /> 删除并发布</button>
+              <div>
+                <h3 className="font-bold flex items-center gap-2"><FileText className="size-4 text-blue-500" /> 杂谈会录像库</h3>
+                <p className="mt-1 text-xs text-muted-foreground">点击封面卡片进入二级编辑弹窗，封面上传只在弹窗内出现。</p>
               </div>
+              <button onClick={addArchiveTalk} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-muted disabled:opacity-50">
+                <Plus className="size-4" /> 新增录像
+              </button>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
               {draft.archive.map((talk) => (
                 <button
                   key={talk.id}
-                  onClick={() => setSelectedId(talk.id)}
-                  className={cn("min-w-[180px] rounded-lg border px-3 py-2 text-left text-xs transition-colors", selectedTalk?.id === talk.id ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card hover:bg-muted")}
+                  onClick={() => { setSelectedId(talk.id); setIsTalkEditorOpen(true); }}
+                  className={cn("group overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md", draft.liveTalkId === talk.id ? "border-primary/50 ring-2 ring-primary/15" : "border-border")}
                 >
-                  <div className="font-bold line-clamp-1">{talk.title}</div>
-                  <div className="mt-1 text-muted-foreground">{talk.date} · {talk.duration}</div>
+                  <div className="relative aspect-[4/3] bg-muted">
+                    {talk.coverUrl ? <img src={talk.coverUrl} alt={talk.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center text-xs font-black text-muted-foreground">暂无封面</div>}
+                    <div className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[10px] font-black text-foreground shadow-sm">{talk.episodeNo ? `第${talk.episodeNo}期` : "录像"}</div>
+                    {draft.liveTalkId === talk.id && <div className="absolute right-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-black text-primary-foreground">展示中</div>}
+                  </div>
+                  <div className="space-y-2 p-3">
+                    <div className="line-clamp-2 text-sm font-black text-foreground">{talk.title}</div>
+                    <div className="text-[11px] font-bold text-muted-foreground">{talk.date} · {talk.category || "talk"}</div>
+                    <div className="flex flex-wrap gap-1">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{talk.viewers || 0} 看</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{talk.danmaku || 0} 弹幕</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{talk.highlights?.length || 0} 高光</span>
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
+          </div>
 
-            {selectedTalk && (
-              <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <SidebarItemsEditor title="近期动态" items={draft.recentUpdates} onChange={(items) => updateDraft((current) => ({ ...current, recentUpdates: items, topics: items }))} />
+          <SidebarItemsEditor title="热门文章" items={draft.topArticles} onChange={(items) => updateDraft((current) => ({ ...current, topArticles: items }))} />
+          <SidebarItemsEditor title="新上传文件" items={draft.newUploads} onChange={(items) => updateDraft((current) => ({ ...current, newUploads: items }))} />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground flex items-center gap-2">
+        <Link className="size-4" /> {status}
+      </div>
+
+      {selectedTalk && isTalkEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-5 py-4 backdrop-blur">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-primary">Talk Video</div>
+                <h3 className="mt-1 text-xl font-black text-foreground">{selectedTalk.title || "编辑杂谈录像"}</h3>
+              </div>
+              <button onClick={() => setIsTalkEditorOpen(false)} className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="grid gap-5 p-5 lg:grid-cols-[260px_1fr]">
+              <div className="space-y-3">
+                <div className="overflow-hidden rounded-2xl border border-border bg-muted">
+                  {selectedTalk.coverUrl ? <img src={selectedTalk.coverUrl} alt={selectedTalk.title} className="aspect-[4/3] w-full object-cover" /> : <div className="flex aspect-[4/3] items-center justify-center px-4 text-center text-sm font-black text-muted-foreground">暂无封面</div>}
+                </div>
+                <ImageUploadField label="封面" value={selectedTalk.coverUrl || ""} onChange={(value) => updateSelectedTalk({ coverUrl: value })} admin readOnly={readOnly} scope="talk-cover" compact />
+                <button type="button" onClick={() => updateDraft((current) => ({ ...current, liveTalkId: selectedTalk.id }))} className={cn("w-full rounded-xl border px-3 py-2 text-sm font-black transition-colors", draft.liveTalkId === selectedTalk.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted")}>
+                  {draft.liveTalkId === selectedTalk.id ? "当前直播展示" : "设为直播展示"}
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <Field label="标题" value={selectedTalk.title} onChange={(value) => updateSelectedTalk({ title: value })} />
                   <Field label="期数" type="number" value={selectedTalk.episodeNo || 0} onChange={(value) => updateSelectedTalk({ episodeNo: Number(value) || undefined })} />
                   <Field label="分类" value={selectedTalk.category || "talk"} onChange={(value) => updateSelectedTalk({ category: value as TalkItem["category"] })} />
@@ -400,7 +486,6 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <Field label="弹幕数" type="number" value={selectedTalk.danmaku} onChange={(value) => updateSelectedTalk({ danmaku: Number(value) || 0 })} />
                   <Field label="点赞数" type="number" value={selectedTalk.likes} onChange={(value) => updateSelectedTalk({ likes: Number(value) || 0 })} />
                 </div>
-                <Field label="封面 URL" value={selectedTalk.coverUrl} onChange={(value) => updateSelectedTalk({ coverUrl: value })} />
                 <Field label="录像外链" value={selectedTalk.videoUrl || selectedTalk.sourceUrl || ""} onChange={(value) => updateSelectedTalk({ videoUrl: value, sourceUrl: value })} />
                 <Field label="标签，逗号分隔" value={textList(selectedTalk.tags)} onChange={(value) => updateSelectedTalk({ tags: parseTextList(value) })} />
                 <Area label="副标题" value={selectedTalk.subtitle} onChange={(value) => updateSelectedTalk({ subtitle: value })} rows={2} />
@@ -425,18 +510,20 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <div className="text-xs font-bold text-muted-foreground">{aiStatus}</div>
                 </div>
               </div>
-            )}
+            </div>
+
+            <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t border-border bg-background/95 px-5 py-4 backdrop-blur">
+              <button onClick={() => setIsTalkEditorOpen(false)} className="rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold hover:bg-muted">取消</button>
+              <button onClick={deleteSelectedTalk} disabled={isSaving || readOnly} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-500/15 disabled:opacity-50">
+                <Trash2 className="size-4" /> 删除并发布
+              </button>
+              <button onClick={saveSelectedTalk} disabled={isSaving || readOnly} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                <Save className="size-4" /> 保存并发布
+              </button>
+            </div>
           </div>
-
-          <SidebarItemsEditor title="近期动态" items={draft.recentUpdates} onChange={(items) => updateDraft((current) => ({ ...current, recentUpdates: items, topics: items }))} />
-          <SidebarItemsEditor title="热门文章" items={draft.topArticles} onChange={(items) => updateDraft((current) => ({ ...current, topArticles: items }))} />
-          <SidebarItemsEditor title="新上传文件" items={draft.newUploads} onChange={(items) => updateDraft((current) => ({ ...current, newUploads: items }))} />
         </div>
-      </div>
-
-      <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground flex items-center gap-2">
-        <Link className="size-4" /> {status}
-      </div>
+      )}
     </fieldset>
   );
 }
