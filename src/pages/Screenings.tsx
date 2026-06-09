@@ -10,16 +10,15 @@ import {
   defaultScreeningLibrary,
 } from "../content/defaults/screeningLibrary";
 import {
-  defaultScreeningsAnime,
-  defaultScreeningsClassics,
   defaultScreeningsNext,
   defaultScreeningsSchedule,
   defaultScreeningSourceSubmissions,
   defaultScreeningsTodo
 } from "../content/defaults/screenings";
 import type {
-  ScreeningAnimeContent,
-  ScreeningClassicsContent,
+  AnimeTier,
+  ClassicMovie,
+  ClassicScreening,
   ScreeningLibraryContent,
   ScreeningMovie,
   ScreeningNextContent,
@@ -135,16 +134,25 @@ function formatDateLabel(value?: string) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function sourcePlaybackDate(item: ScreeningSourceItem) {
-  return item.lastWatchedAt || item.addedAt;
+function sourceSortTime(item: ScreeningSourceItem) {
+  return parseTime(item.lastWatchedAt) || parseTime(item.addedAt) || 0;
 }
 
-function sourceSortTime(item: ScreeningSourceItem) {
-  return parseTime(sourcePlaybackDate(item)) || parseTime(item.addedAt) || 0;
+function sourceStatusDateLabel(item: ScreeningSourceItem) {
+  if (item.status === "watched" && item.lastWatchedAt) return `播放 ${formatDateLabel(item.lastWatchedAt)}`;
+  if (item.status === "planned") return "已排期";
+  if (item.status === "available") return "待放映";
+  if (item.status === "hidden") return "已隐藏";
+  if (item.status === "rejected") return "已拒绝";
+  return "待放映";
 }
 
 function sourceTimingLabel(item: ScreeningSourceItem) {
-  return `上映 ${item.year || "待补"} · 播放 ${formatDateLabel(sourcePlaybackDate(item))}`;
+  return `上映 ${item.year || "待补"} · ${sourceStatusDateLabel(item)}`;
+}
+
+function percentageOf(value: number, total: number) {
+  return total > 0 ? Math.round((value / total) * 100) : 0;
 }
 
 function defaultFanshiReview(item: ScreeningSourceItem) {
@@ -248,6 +256,63 @@ function buildCurrentMonthActivity(weeks: ScreeningWeek[]) {
   };
 }
 
+function firstMovieImage(week: ScreeningWeek, library: ScreeningLibraryContent) {
+  const byId = new Map(library.items.map((item) => [item.id, item]));
+  const byTitle = new Map(library.items.map((item) => [item.title.trim().toLowerCase(), item]));
+  for (const movie of week.movies) {
+    const source = byId.get(movie.libraryId || movie.id) || byTitle.get(movie.title.trim().toLowerCase());
+    const image = source?.posterUrl || movie.posterUrl;
+    if (image) return image;
+  }
+  return "";
+}
+
+function buildDynamicClassicTimeline(weeks: ScreeningWeek[], library: ScreeningLibraryContent): ClassicScreening[] {
+  return weeks
+    .filter((week) => week.status === "ended" && week.movies.length > 0)
+    .slice(-18)
+    .map((week) => ({
+      id: `dynamic-${week.id}`,
+      year: formatDateLabel(week.startsAt || week.date).slice(0, 4),
+      title: week.title || formatMovieList(week.movies),
+      description: week.notes || week.theme || `${formatDateLabel(week.startsAt || week.date)} 放映了 ${formatMovieList(week.movies)}。`,
+      image: firstMovieImage(week, library),
+      tags: Array.from(new Set(week.movies.flatMap((movie) => movie.tags || []))).slice(0, 4)
+    }));
+}
+
+function buildDynamicAnimeHistory(records: ScreeningRecord[]): ClassicMovie[] {
+  return records
+    .filter(({ movie, source }) => movie.type === "anime" || source?.type === "anime" || source?.category === "anime")
+    .sort((a, b) => (parseTime(b.week?.startsAt || b.week?.date || b.source?.lastWatchedAt) || 0) - (parseTime(a.week?.startsAt || a.week?.date || a.source?.lastWatchedAt) || 0))
+    .slice(0, 6)
+    .map(({ movie, week, source }) => ({
+      id: movie.libraryId || movie.id,
+      title: movie.title,
+      reason: movie.description || source?.description || "来自真实放映记录与片源库。",
+      date: formatDateLabel(week?.startsAt || week?.date || source?.lastWatchedAt),
+      viewers: week?.viewerCount || 0,
+      rating: movie.rating || source?.rating,
+      posterUrl: movie.posterUrl || source?.posterUrl
+    }));
+}
+
+function buildDynamicTierList(records: ScreeningRecord[], library: ScreeningLibraryContent): AnimeTier[] {
+  const watchedItems = records
+    .map(({ movie, source }) => ({ ...source, ...movie, posterUrl: source?.posterUrl || movie.posterUrl, category: source?.category || movie.type, status: source?.status || "watched" }))
+    .filter((item) => item.posterUrl);
+  const fallbackItems = library.items.filter((item) => item.posterUrl);
+  const allItems = [...watchedItems, ...fallbackItems].filter((item, index, list) => list.findIndex((candidate) => (candidate.id || candidate.title) === (item.id || item.title)) === index);
+  const postersFor = (filter: (item: typeof allItems[number]) => boolean) => allItems.filter(filter).map((item) => item.posterUrl || "").filter(Boolean).slice(0, 8);
+
+  return [
+    { tier: "神作", color: "bg-[#ff7eb6] dark:bg-[#ff7eb6] text-white", posters: postersFor((item) => (item.rating || 0) >= 9 || item.category === "good") },
+    { tier: "佳作", color: "bg-[#ffb07c] dark:bg-[#ffb07c] text-white", posters: postersFor((item) => (item.rating || 0) >= 7.5 && (item.rating || 0) < 9 && item.category !== "bad") },
+    { tier: "怪片", color: "bg-[#ffdf76] dark:bg-[#ffdf76] text-[#6d4c00]", posters: postersFor((item) => item.category === "topic" || item.category === "other") },
+    { tier: "拉片", color: "bg-[#a5b4fc] dark:bg-[#818cf8] text-white", posters: postersFor((item) => item.category === "bad" || ((item.rating || 10) < 6.5 && item.status === "watched")) }
+  ];
+}
+
 function categoryBadgeClass(category?: string) {
   if (category === "bad") return "border-rose-500/20 bg-rose-500/10 text-rose-600";
   if (category === "anime") return "border-sky-500/20 bg-sky-500/10 text-sky-600";
@@ -301,16 +366,11 @@ export function Screenings() {
   const nextScreening = useContent<ScreeningNextContent>("screenings.next", defaultScreeningsNext);
   const scheduleContent = useContent<ScreeningScheduleContent>("screenings.schedule", defaultScreeningsSchedule);
   const todoContent = useContent<ScreeningTodoContent>("screenings.todo", defaultScreeningsTodo);
-  const classicsContent = useContent<ScreeningClassicsContent>("screenings.classics", defaultScreeningsClassics);
-  const animeContent = useContent<ScreeningAnimeContent>("screenings.anime", defaultScreeningsAnime);
   const libraryContent = useContent<ScreeningLibraryContent>("screenings.library", defaultScreeningLibrary);
   const sourceSubmissionsContent = useContent<ScreeningSourceSubmissionsContent>("screenings.sourceSubmissions", defaultScreeningSourceSubmissions);
   const { user, authFetch } = useAuth();
   const screeningsData = scheduleContent.weeks;
-  const historyScreenings = classicsContent.timeline;
   const todoMovies = todoContent.items;
-  const tierListData = animeContent.tierList;
-  const historyMovies = animeContent.historyMovies;
   const archivedWeeks = useMemo(
     () => scheduleContent.weeks
       .filter((week) => week.status === "ended" && week.movies.length > 0)
@@ -321,6 +381,9 @@ export function Screenings() {
     () => buildScreeningRecords(scheduleContent, libraryContent),
     [scheduleContent, libraryContent]
   );
+  const historyScreenings = useMemo(() => buildDynamicClassicTimeline(archivedWeeks, libraryContent), [archivedWeeks, libraryContent]);
+  const historyMovies = useMemo(() => buildDynamicAnimeHistory(screeningRecords), [screeningRecords]);
+  const tierListData = useMemo(() => buildDynamicTierList(screeningRecords, libraryContent), [screeningRecords, libraryContent]);
   const lastScreening = archivedWeeks[archivedWeeks.length - 1];
   const monthlyActivity = useMemo(() => buildMonthlyActivity(scheduleContent.weeks), [scheduleContent.weeks]);
   const currentMonthActivity = useMemo(() => buildCurrentMonthActivity(scheduleContent.weeks), [scheduleContent.weeks]);
@@ -484,7 +547,6 @@ export function Screenings() {
 
     setIsLibraryOverviewCollapsed((collapsed) => {
       if (!collapsed && scrollTop > 140) return true;
-      if (collapsed && scrollTop < 64) return false;
       return collapsed;
     });
   };
@@ -1286,23 +1348,26 @@ export function Screenings() {
                     <h3 className="mt-1 text-xl font-black text-foreground md:text-2xl">全量电影动画片源库</h3>
                     <p className="mt-1 hidden text-sm text-muted-foreground sm:block">搜索、筛选并查看所有候选片源；已配置 Bilibili 录播的条目可直接外跳播放。</p>
                   </div>
-                  <button onClick={() => setIsLibraryOpen(false)} className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted md:size-10">
-                    <X className="size-5" />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button onClick={() => setIsLibraryOverviewCollapsed((collapsed) => !collapsed)} className="inline-flex h-9 items-center justify-center rounded-full border border-border bg-card px-3 text-xs font-black text-foreground transition-colors hover:bg-muted md:h-10 md:px-4">
+                      {isLibraryOverviewCollapsed ? "展开概览" : "收起概览"}
+                    </button>
+                    <button onClick={() => setIsLibraryOpen(false)} className="inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted md:size-10">
+                      <X className="size-5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="shrink-0 flex items-center justify-between gap-3 border-b border-border bg-card/40 px-3 py-2 md:hidden">
                   <div className="text-xs font-black text-muted-foreground">筛选结果：{filteredLibraryItems.length} / {libraryContent.items.length}</div>
-                  <button onClick={() => setIsLibraryOverviewCollapsed((collapsed) => !collapsed)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-black text-foreground">
-                    {isLibraryOverviewCollapsed ? "展开概览" : "收起概览"}
-                  </button>
+                  <div className="text-xs font-bold text-muted-foreground">{isLibraryOverviewCollapsed ? "概览已收起" : "概览已展开"}</div>
                 </div>
 
                 <motion.div
                   animate={isLibraryOverviewCollapsed ? "collapsed" : "expanded"}
                   variants={{
                     expanded: {
-                      maxHeight: isLibraryCompact ? 270 : 420,
+                      maxHeight: isLibraryCompact ? 290 : 430,
                       opacity: 1,
                       y: 0,
                       scale: 1,
@@ -1312,14 +1377,14 @@ export function Screenings() {
                     collapsed: {
                       maxHeight: 0,
                       opacity: 0,
-                      y: -6,
-                      scale: 0.99,
+                      y: -12,
+                      scale: 0.96,
                       paddingTop: 0,
                       paddingBottom: 0
                     }
                   }}
                   transition={{
-                    duration: isLibraryOverviewCollapsed ? 0.18 : 0.24,
+                    duration: isLibraryOverviewCollapsed ? 0.2 : 0.3,
                     ease: isLibraryOverviewCollapsed ? [0.4, 0, 0.2, 1] : [0.16, 1, 0.3, 1]
                   }}
                   className={cn("shrink-0 overflow-hidden border-b border-border px-3 will-change-[max-height,opacity,transform] md:px-5", isLibraryOverviewCollapsed && "pointer-events-none border-transparent")}
@@ -1364,12 +1429,12 @@ export function Screenings() {
                           { key: "anime", label: "动画", value: libraryInsights.anime, color: "bg-sky-500" },
                           { key: "topic", label: "主题片", value: libraryInsights.topic, color: "bg-purple-500" }
                         ].map((item) => {
-                          const percent = libraryInsights.total > 0 ? Math.max(6, Math.round((item.value / libraryInsights.total) * 100)) : 0;
+                          const percent = percentageOf(item.value, libraryInsights.total);
                           return (
-                            <button key={item.key} onClick={() => applyLibraryFilter({ category: item.key })} className="grid w-full grid-cols-[70px_1fr_28px] items-center gap-2 text-left text-xs font-black text-muted-foreground transition-colors hover:text-foreground">
+                            <button key={item.key} onClick={() => applyLibraryFilter({ category: item.key })} className="grid w-full grid-cols-[70px_1fr_68px] items-center gap-2 text-left text-xs font-black text-muted-foreground transition-colors hover:text-foreground">
                               <span>{item.label}</span>
                               <span className="h-2 overflow-hidden rounded-full bg-muted"><span className={cn("block h-full rounded-full", item.color)} style={{ width: `${percent}%` }} /></span>
-                              <span className="text-right">{item.value}</span>
+                              <span className="text-right">{item.value} · {percent}%</span>
                             </button>
                           );
                         })}
@@ -1387,12 +1452,15 @@ export function Screenings() {
                           { label: "最近入库", value: libraryInsights.recentlyAdded, onClick: () => applyLibraryFilter({ special: "recentlyAdded" }) },
                           { label: "我看过", value: libraryInsights.myWatched, onClick: () => applyLibraryFilter({ special: "myWatched" }) },
                           { label: "随机可排播", value: libraryInsights.available, onClick: randomLibraryItem }
-                        ].map((item) => (
+                        ].map((item) => {
+                          const percent = percentageOf(item.value, libraryInsights.total);
+                          return (
                           <button key={item.label} onClick={item.onClick} className="rounded-2xl border border-border bg-background p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5 sm:p-3">
                             <div className="text-xl font-black text-foreground">{item.value}</div>
-                            <div className="text-[11px] font-bold text-muted-foreground">{item.label}</div>
+                            <div className="text-[11px] font-bold text-muted-foreground">{item.label} {percent}%</div>
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                     </div>
@@ -1529,7 +1597,7 @@ export function Screenings() {
                               {item.tags.slice(0, 4).map((tag) => <span key={tag} className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold", categoryBadgeClass(item.category))}>{tag}</span>)}
                             </div>
                             <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border/70 pt-2 text-[11px] font-bold text-muted-foreground md:mt-3 md:pt-3">
-                              <span>播放 {formatDateLabel(sourcePlaybackDate(item))}</span>
+                              <span>{sourceStatusDateLabel(item)}</span>
                               <span className={item.sourceUrl ? "text-emerald-600" : "text-rose-500"}>{item.sourceUrl ? getSourceLabel(item.sourceUrl) : "缺录播链接"}</span>
                             </div>
                             {item.sourceUrl ? (
@@ -1575,7 +1643,7 @@ export function Screenings() {
                                 <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-black", statusBadgeClass(item.status))}>{statusLabels[item.status] || item.status}</span>
                                 <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-black", priorityBadgeClass(item.priority))}>{priorityLabels[item.priority]}</span>
                               </div>
-                              <div className="text-[11px] font-black text-blue-600">{formatDateLabel(sourcePlaybackDate(item))}</div>
+                              <div className="text-[11px] font-black text-blue-600">{sourceStatusDateLabel(item)}</div>
                               <div className="flex flex-wrap gap-1.5">
                                 {item.tags.slice(0, 3).map((tag) => <span key={tag} className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{tag}</span>)}
                               </div>
@@ -1594,7 +1662,7 @@ export function Screenings() {
                           <div className="relative z-10 flex items-center md:justify-end">
                             <span className="absolute -left-[21px] size-3 rounded-full border-2 border-background bg-primary md:-left-[29px]" />
                             <time className="inline-flex rounded-full border border-border bg-card px-3 py-1.5 text-xs font-black text-foreground shadow-sm">
-                              {formatDateLabel(sourcePlaybackDate(item))}
+                              {sourceStatusDateLabel(item)}
                             </time>
                           </div>
                           <button
@@ -1688,8 +1756,8 @@ export function Screenings() {
                             <div className="text-xs font-bold text-muted-foreground">上映时间</div>
                           </div>
                           <div className="rounded-2xl border border-border bg-card p-4">
-                            <div className="truncate text-sm font-black text-foreground">{formatDateLabel(sourcePlaybackDate(selectedLibraryItem))}</div>
-                            <div className="text-xs font-bold text-muted-foreground">播放时间</div>
+                            <div className="truncate text-sm font-black text-foreground">{sourceStatusDateLabel(selectedLibraryItem)}</div>
+                            <div className="text-xs font-bold text-muted-foreground">放映状态</div>
                           </div>
                         </div>
 
@@ -1802,7 +1870,7 @@ export function Screenings() {
                       <span className="text-3xl lg:text-4xl font-black tracking-tighter sm:[writing-mode:vertical-rl] text-center">{row.tier}</span>
                     </div>
                     <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-wrap gap-4 items-center content-start min-h-[140px] bg-muted/10">
-                      {row.posters.map((url, j) => (
+                      {row.posters.length > 0 ? row.posters.map((url, j) => (
                         <motion.div
                           key={j}
                           whileHover={{ scale: 1.05, y: -4 }}
@@ -1811,7 +1879,9 @@ export function Screenings() {
                           <img src={url} alt="poster" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/0 group-hover/poster:bg-black/10 transition-colors pointer-events-none" />
                         </motion.div>
-                      ))}
+                      )) : (
+                        <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-3 text-sm font-bold text-muted-foreground">暂无真实海报数据</div>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -1888,7 +1958,7 @@ export function Screenings() {
                        )}>
                          {/* Image */}
                          <div className="relative aspect-[4/3] w-full rounded shadow-xl overflow-hidden bg-muted z-0">
-                           <img src={item.image} alt={item.title} className="object-cover w-full h-full opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
+                           {item.image ? <img src={item.image} alt={item.title} className="object-cover w-full h-full opacity-70 group-hover:opacity-100 transition-opacity duration-500" /> : <div className="flex h-full w-full items-center justify-center px-4 text-center text-sm font-black text-muted-foreground">暂无真实海报</div>}
                          </div>
 
                          {/* Year */}

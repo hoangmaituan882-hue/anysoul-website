@@ -286,6 +286,7 @@ function nextSundayDateTime(schedule: ScreeningScheduleContent) {
 
 function normalizeSourceItem(item: ScreeningSourceItem): ScreeningSourceItem {
   const today = dateKeyFromDate(new Date());
+  const status = item.status || "available";
   return {
     ...item,
     title: item.title.trim() || "未命名片源",
@@ -293,10 +294,18 @@ function normalizeSourceItem(item: ScreeningSourceItem): ScreeningSourceItem {
     category: item.category || "other",
     description: item.description || "待补充简介。",
     tags: Array.from(new Set((item.tags || []).map((tag) => tag.trim()).filter(Boolean))),
-    status: item.status || "available",
+    status,
     priority: item.priority || "normal",
     timesWatched: Number.isFinite(item.timesWatched) ? item.timesWatched : 0,
+    lastWatchedAt: status === "watched" ? item.lastWatchedAt : undefined,
     addedAt: item.addedAt || today
+  };
+}
+
+function normalizeLibraryForPublish(library: ScreeningLibraryContent): ScreeningLibraryContent {
+  return {
+    ...library,
+    items: library.items.map(normalizeSourceItem)
   };
 }
 
@@ -449,6 +458,16 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     return library.items.filter((item) => !item.posterUrl || !item.description || item.description.length < 18 || item.tags.length === 0 || !item.year || item.rating === undefined || !item.sourceNote);
   }, [library.items]);
 
+  const stableLibraryNumbers = useMemo(() => {
+    const sorted = [...library.items].sort((a, b) => {
+      const aTime = new Date(a.addedAt).getTime();
+      const bTime = new Date(b.addedAt).getTime();
+      const timeDiff = (Number.isFinite(aTime) ? aTime : 0) - (Number.isFinite(bTime) ? bTime : 0);
+      return timeDiff || a.id.localeCompare(b.id) || a.title.localeCompare(b.title);
+    });
+    return new Map(sorted.map((item, index) => [item.id, index + 1]));
+  }, [library.items]);
+
   const load = async () => {
     if (readOnly) {
       const data = await fetchPublishedContent([SCREENINGS_NEXT_KEY, SCREENINGS_LIBRARY_KEY, SCREENINGS_SOURCE_SUBMISSIONS_KEY, SCREENINGS_SCHEDULE_KEY]);
@@ -550,10 +569,12 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     setIsSaving(true);
 
     try {
-      const syncedNext = syncNextMoviesFromLibrary(next, library);
+      const publishableLibrary = normalizeLibraryForPublish(library);
+      const syncedNext = syncNextMoviesFromLibrary(next, publishableLibrary);
+      setLibrary(publishableLibrary);
       setNext(syncedNext);
       await commitScreeningBatch([
-        { key: SCREENINGS_LIBRARY_KEY, payload: library, publish: true, message: "Publish screening source library" },
+        { key: SCREENINGS_LIBRARY_KEY, payload: publishableLibrary, publish: true, message: "Publish screening source library" },
         { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening from source library" }
       ], "Publish screening source library and synced next screening");
 
@@ -1335,7 +1356,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
               <div key={item.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-xl bg-foreground text-sm font-black text-background">{index + 1}</span>
+                    <span className="flex size-8 items-center justify-center rounded-xl bg-foreground text-sm font-black text-background">{stableLibraryNumbers.get(item.id) || index + 1}</span>
                     <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">{item.status}</span>
                     <span className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-bold text-muted-foreground">{item.priority}</span>
                   </div>
@@ -1357,7 +1378,14 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   <Field label="原名" value={item.originalTitle || ""} onChange={(value) => updateLibraryItem(index, { originalTitle: value })} />
                   <Field label="上映时间" value={item.year || ""} onChange={(value) => updateLibraryItem(index, { year: value })} />
                   <Field label="评分" type="number" value={item.rating || 0} onChange={(value) => updateLibraryItem(index, { rating: Number(value) })} />
-                  <DateTimePicker label="播放时间" mode="date" value={item.lastWatchedAt || item.addedAt || ""} onChange={(value) => updateLibraryItem(index, { lastWatchedAt: value })} />
+                  {item.status === "watched" ? (
+                    <DateTimePicker label="播放时间" mode="date" value={item.lastWatchedAt || ""} onChange={(value) => updateLibraryItem(index, { lastWatchedAt: value })} />
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-bold text-muted-foreground">放映状态</span>
+                      <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{item.status === "planned" ? "已排期" : "待放映"}</div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
