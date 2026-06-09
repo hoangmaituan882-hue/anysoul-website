@@ -50,11 +50,22 @@ function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function getWeeklyImportMeta(date = new Date()) {
+function parseDateKey(value: string) {
+  const [year, month, day] = value.split("-").map((part) => Number(part));
+  if (!year || !month || !day) return new Date();
+  return new Date(year, month - 1, day);
+}
+
+function calculateWeeklyImportWeek(date: Date) {
   const startDate = new Date(WEEKLY_IMPORT_YEAR, 0, 1);
   const currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diffDays = Math.floor((currentDate.getTime() - startDate.getTime()) / 86400000);
-  const week = Math.max(1, Math.floor(diffDays / 7) + 1);
+  return Math.max(1, Math.floor(diffDays / 7) + 1);
+}
+
+function getWeeklyImportMeta(date = new Date(), weekOverride?: number) {
+  const currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const week = Math.max(1, Math.floor(weekOverride || calculateWeeklyImportWeek(currentDate)));
   const paddedWeek = String(week).padStart(2, "0");
   const dateKey = formatDateKey(currentDate);
 
@@ -62,7 +73,7 @@ function getWeeklyImportMeta(date = new Date()) {
     year: WEEKLY_IMPORT_YEAR,
     week,
     dateKey,
-    batchId: `weekly-${WEEKLY_IMPORT_YEAR}-w${paddedWeek}`,
+    batchId: `weekly-${dateKey}-w${paddedWeek}`,
     seriesName: WEEKLY_IMPORT_SERIES_NAME,
     seriesTag: `第${week}周杂谈`,
     weekTag: `${WEEKLY_IMPORT_YEAR}年第${week}周`,
@@ -103,8 +114,9 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [isUploadingWeekly, setIsUploadingWeekly] = useState(false);
   const [weeklyImportText, setWeeklyImportText] = useState("");
   const [weeklyImportAuthor, setWeeklyImportAuthor] = useState("运营");
-  const [weeklyImportVisibility, setWeeklyImportVisibility] = useState<PlazaVisibility>("pending");
-  const weeklyMeta = useMemo(() => getWeeklyImportMeta(), []);
+  const [weeklyImportDate, setWeeklyImportDate] = useState(() => formatDateKey(new Date()));
+  const [weeklyImportWeek, setWeeklyImportWeek] = useState(() => String(calculateWeeklyImportWeek(new Date())));
+  const weeklyMeta = useMemo(() => getWeeklyImportMeta(parseDateKey(weeklyImportDate), Number(weeklyImportWeek)), [weeklyImportDate, weeklyImportWeek]);
 
   const selectedSoul = plaza.souls.find((soul) => soul.id === selectedId) || plaza.souls[0];
 
@@ -132,6 +144,24 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     load().catch((error) => setStatus(error instanceof Error ? error.message : "内容服务未启动，请运行 npm run server:dev"));
   }, []);
 
+  const savePlazaContent = async (payload: PlazaContent, publish = false, message = "Publish plaza controls") => {
+    const draftRes = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${PLAZA_KEY}/draft`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload })
+    });
+    if (!draftRes.ok) throw new Error(await readContentError(draftRes, "保存草稿失败"));
+
+    if (publish) {
+      const publishRes = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${PLAZA_KEY}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      if (!publishRes.ok) throw new Error(await readContentError(publishRes, "发布失败"));
+    }
+  };
+
   const save = async (publish = false) => {
     if (readOnly) {
       setStatus("只读模式无法保存或发布图库");
@@ -141,22 +171,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     setIsSaving(true);
 
     try {
-      const draftRes = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${PLAZA_KEY}/draft`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payload: plaza })
-      });
-      if (!draftRes.ok) throw new Error(await readContentError(draftRes, "保存草稿失败"));
-
-      if (publish) {
-        const publishRes = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${PLAZA_KEY}/publish`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: "Publish plaza controls" })
-        });
-        if (!publishRes.ok) throw new Error(await readContentError(publishRes, "发布失败"));
-      }
-
+      await savePlazaContent(plaza, publish);
       setStatus(publish ? "已发布，图库前台会自动同步更新" : "草稿已保存，发布后同步到前台");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : publish ? "发布失败，请检查内容服务" : "保存失败，请检查内容服务");
@@ -215,13 +230,11 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     });
   };
 
-  const importWeeklySouls = () => {
+  const publishWeeklyUrls = async (urls: string[]) => {
     if (readOnly) {
       setStatus("只读模式无法批量导入图库作品");
       return;
     }
-
-    const urls = uniqueLines(weeklyImportText);
 
     if (urls.length === 0) {
       setStatus("请先点击上传多图，从相册或文件管理选择图片");
@@ -237,6 +250,8 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       return;
     }
 
+    setIsSaving(true);
+
     const existingBatchMaxIndex = plaza.souls
       .filter((soul) => soul.importBatchId === weeklyMeta.batchId)
       .reduce((max, soul) => Math.max(max, soul.itemIndex || 0), 0);
@@ -248,7 +263,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
 
       return {
         id: `${weeklyMeta.batchId}-${paddedIndex}-${createdAt + index}`,
-        name: `第${weeklyMeta.week}周杂谈-${paddedIndex}`,
+        name: `${weeklyMeta.dateKey}-${paddedIndex}`,
         author: weeklyImportAuthor.trim() || "运营",
         tags: ["每周杂谈", weeklyMeta.seriesTag, weeklyMeta.weekTag, weeklyMeta.importDateTag],
         likes: 0,
@@ -258,7 +273,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         avatarSrc: url,
         bannerColor: weeklyImportGradients[index % weeklyImportGradients.length],
         featured: false,
-        visibility: weeklyImportVisibility,
+        visibility: "visible",
         desc: "",
         importBatchId: weeklyMeta.batchId,
         importYear: weeklyMeta.year,
@@ -270,15 +285,27 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       };
     });
 
-    setPlaza((current) => ({
-      ...current,
-      souls: [...newSouls, ...current.souls],
-      tags: Array.from(new Set([...current.tags, "每周杂谈", weeklyMeta.seriesTag, weeklyMeta.weekTag, weeklyMeta.importDateTag]))
-    }));
+    const nextPlaza: PlazaContent = {
+      ...plaza,
+      souls: [...newSouls, ...plaza.souls],
+      tags: Array.from(new Set([...plaza.tags, "每周杂谈", weeklyMeta.seriesTag, weeklyMeta.weekTag, weeklyMeta.importDateTag]))
+    };
 
-    setSelectedId(newSouls[0].id);
-    setWeeklyImportText("");
-    setStatus(`已导入 ${newSouls.length} 张${weeklyMeta.seriesTag}图库卡片${skippedCount > 0 ? `，跳过 ${skippedCount} 张重复图片` : ""}。请保存草稿或发布到前台。`);
+    try {
+      await savePlazaContent(nextPlaza, true, `Publish ${weeklyMeta.seriesTag} plaza import`);
+      setPlaza(nextPlaza);
+      setSelectedId(newSouls[0].id);
+      setWeeklyImportText("");
+      setStatus(`已导入并发布 ${newSouls.length} 张${weeklyMeta.seriesTag}图库卡片${skippedCount > 0 ? `，跳过 ${skippedCount} 张重复图片` : ""}。`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "导入后发布失败，请检查内容服务");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const importWeeklySouls = () => {
+    void publishWeeklyUrls(uniqueLines(weeklyImportText));
   };
 
   const uploadWeeklyImages = async (files?: FileList | null) => {
@@ -290,7 +317,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
 
     const selectedFiles = Array.from(files);
     setIsUploadingWeekly(true);
-    setStatus(`正在上传 ${selectedFiles.length} 张图片...`);
+    setStatus(`正在上传 ${selectedFiles.length} 张图片，完成后会自动发布到图库...`);
 
     try {
       const uploadedUrls: string[] = [];
@@ -299,13 +326,17 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         uploadedUrls.push(result.asset.url);
       }
 
-      setWeeklyImportText((current) => [current, ...uploadedUrls].filter(Boolean).join("\n"));
-      setStatus(`已上传 ${uploadedUrls.length} 张图片，可直接导入本周图库。`);
+      await publishWeeklyUrls(uploadedUrls);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "批量上传失败");
     } finally {
       setIsUploadingWeekly(false);
     }
+  };
+
+  const updateWeeklyImportDate = (value: string) => {
+    setWeeklyImportDate(value);
+    setWeeklyImportWeek(String(calculateWeeklyImportWeek(parseDateKey(value))));
   };
 
   return (
@@ -334,9 +365,9 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       <div className="rounded-3xl border border-border bg-background p-5 shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-2xl">
-            <h3 className="flex items-center gap-2 text-lg font-black text-foreground"><Upload className="size-5 text-primary" /> 本周批量导入</h3>
+            <h3 className="flex items-center gap-2 text-lg font-black text-foreground"><Upload className="size-5 text-primary" /> 杂谈批量导入</h3>
             <p className="mt-1 text-sm font-medium leading-relaxed text-muted-foreground">
-              当前规则：从 2026-01-01 起算第 1 周，每 7 天递增。今天属于 {weeklyMeta.weekTag}，导入后会自动生成 {weeklyMeta.seriesTag}-01 这种标题，并添加每周杂谈标签。
+              选择导入日期和第几周杂谈标签后，上传图片会直接生成 {weeklyMeta.dateKey}-01 这种名称，设为前台显示并自动发布到图库。
             </p>
           </div>
           <div className="grid min-w-[260px] grid-cols-2 gap-2 text-xs font-bold text-muted-foreground">
@@ -349,24 +380,30 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
 
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
           <Field label="默认作者" value={weeklyImportAuthor} onChange={setWeeklyImportAuthor} />
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[12px] font-bold text-muted-foreground">导入后状态</span>
-            <select value={weeklyImportVisibility} onChange={(event) => setWeeklyImportVisibility(event.target.value as PlazaVisibility)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-              {visibilityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+          <DateTimePicker label="导入日期" mode="date" value={weeklyImportDate} onChange={updateWeeklyImportDate} />
+          <Field label="第几周杂谈" type="number" value={weeklyImportWeek} onChange={(value) => setWeeklyImportWeek(value)} />
+          <label className={cn("relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border border-border bg-card px-4 text-sm font-black text-foreground shadow-sm transition-colors hover:bg-muted", (readOnly || isUploadingWeekly || isSaving) && "pointer-events-none opacity-50")}>
+            <Upload className="size-4" /> {isUploadingWeekly ? "上传发布中..." : "上传并发布"}
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple disabled={readOnly || isUploadingWeekly || isSaving} className="absolute inset-0 cursor-pointer opacity-0" onChange={(event) => { void uploadWeeklyImages(event.currentTarget.files); event.currentTarget.value = ""; }} />
           </label>
-          <label className={cn("relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border border-border bg-card px-4 text-sm font-black text-foreground shadow-sm transition-colors hover:bg-muted", (readOnly || isUploadingWeekly) && "pointer-events-none opacity-50")}>
-            <Upload className="size-4" /> {isUploadingWeekly ? "上传中..." : "上传多图"}
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={readOnly || isUploadingWeekly} className="absolute inset-0 cursor-pointer opacity-0" onChange={(event) => { void uploadWeeklyImages(event.currentTarget.files); event.currentTarget.value = ""; }} />
-          </label>
-          <button disabled={readOnly || uniqueLines(weeklyImportText).length === 0} onClick={importWeeklySouls} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
-            <Upload className="size-4" /> 导入本周图库
-          </button>
           <div className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold text-muted-foreground">
             <CalendarDays className="size-4 text-primary" /> {weeklyMeta.seriesName} / 第 {weeklyMeta.week} 周
           </div>
-          <div className="flex h-10 items-center rounded-xl border border-border bg-muted/20 px-3 text-xs font-bold text-muted-foreground md:col-span-3">
-            待导入 {uniqueLines(weeklyImportText).length} 张图片，上传完成后点击导入本周图库生成卡片。
+          <label className="flex flex-col gap-1.5 md:col-span-2">
+            <span className="text-[12px] font-bold text-muted-foreground">手动图片地址（一行一个，可选）</span>
+            <textarea
+              value={weeklyImportText}
+              onChange={(event) => setWeeklyImportText(event.target.value)}
+              rows={3}
+              className="min-h-20 resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+              placeholder="https://api.linzesss.icu/uploads/..."
+            />
+          </label>
+          <button disabled={readOnly || isSaving || isUploadingWeekly || uniqueLines(weeklyImportText).length === 0} onClick={importWeeklySouls} className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-xl bg-primary px-4 text-sm font-black text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
+            <Rocket className="size-4" /> 导入并发布
+          </button>
+          <div className="flex h-10 items-center rounded-xl border border-border bg-muted/20 px-3 text-xs font-bold text-muted-foreground md:col-span-4">
+            待手动导入 {uniqueLines(weeklyImportText).length} 张图片；多图上传会跳过这一步，上传成功后直接发布到前台图库。
           </div>
         </div>
       </div>

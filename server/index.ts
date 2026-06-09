@@ -165,7 +165,7 @@ const runtimeConfig = {
   openAiApiKey: process.env.OPENAI_API_KEY || "",
   openAiBaseUrl: normalizedUrl(process.env.OPENAI_BASE_URL || "", "https://api.openai.com/v1"),
   openAiModel: process.env.OPENAI_MODEL || "gpt-4o-mini",
-  mediaUploadMaxBytes: Number(process.env.MEDIA_UPLOAD_MAX_BYTES || 5 * 1024 * 1024),
+  mediaUploadMaxBytes: Number(process.env.MEDIA_UPLOAD_MAX_BYTES || 15 * 1024 * 1024),
   objectStorageDriver: (process.env.OBJECT_STORAGE_DRIVER || process.env.OBJECT_STORAGE_PROVIDER || "local").toLowerCase(),
   objectStorageEndpoint: normalizedUrl(process.env.OBJECT_STORAGE_ENDPOINT || process.env.S3_ENDPOINT || "", ""),
   objectStorageBucket: process.env.OBJECT_STORAGE_BUCKET || process.env.S3_BUCKET || "",
@@ -1670,7 +1670,7 @@ const imageUpload = multer({
   limits: { fileSize: runtimeConfig.mediaUploadMaxBytes },
   fileFilter: (_req, file, callback) => {
     if (!allowedImageMimeTypes.has(file.mimetype)) {
-      callback(new Error("Only JPEG, PNG, WebP and GIF images can be uploaded"));
+      callback(new Error("Only JPEG, PNG, WebP, GIF and AVIF images can be uploaded"));
       return;
     }
 
@@ -1678,12 +1678,13 @@ const imageUpload = multer({
   }
 });
 
-const allowedImageMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const allowedImageMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
 const imageExtensions: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
-  "image/gif": "gif"
+  "image/gif": "gif",
+  "image/avif": "avif"
 };
 
 function uploadImageFile(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -1706,6 +1707,10 @@ function hasValidImageSignature(buffer: Buffer, mimeType: string) {
   if (mimeType === "image/jpeg") return buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
   if (mimeType === "image/png") return buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
   if (mimeType === "image/webp") return buffer.length > 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  if (mimeType === "image/avif") {
+    const brands = buffer.subarray(4, Math.min(buffer.length, 32)).toString("ascii");
+    return brands.includes("ftypavif") || brands.includes("ftypavis");
+  }
   if (mimeType === "image/gif") {
     const header = buffer.subarray(0, 6).toString("ascii");
     return header === "GIF87a" || header === "GIF89a";
