@@ -169,6 +169,7 @@ export type ScreeningSourceItem = {
   status: ScreeningSourceStatus;
   priority: "low" | "normal" | "high";
   timesWatched: number;
+  plannedAt?: string;
   lastWatchedAt?: string;
   addedAt: string;
 };

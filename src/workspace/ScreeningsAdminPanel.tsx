@@ -284,6 +284,23 @@ function nextSundayDateTime(schedule: ScreeningScheduleContent) {
   return scheduleDateTime(dateKeyFromDate(nextSunday), schedule);
 }
 
+function sourceStatusPatch(status: ScreeningSourceItem["status"], item: ScreeningSourceItem): Partial<ScreeningSourceItem> {
+  const today = dateKeyFromDate(new Date());
+  if (status === "planned") {
+    return { status, plannedAt: item.plannedAt || item.lastWatchedAt || today, lastWatchedAt: undefined };
+  }
+  if (status === "watched") {
+    return { status, lastWatchedAt: item.lastWatchedAt || item.plannedAt || today, plannedAt: undefined, timesWatched: Math.max(1, item.timesWatched || 0) };
+  }
+  return { status, plannedAt: undefined, lastWatchedAt: undefined };
+}
+
+function sourceDatePatch(value: string, item?: ScreeningSourceItem): Partial<ScreeningSourceItem> {
+  const today = dateKeyFromDate(new Date());
+  if (value && value < today) return { status: "watched", lastWatchedAt: value, plannedAt: undefined, timesWatched: Math.max(1, item?.timesWatched || 0) };
+  return { status: "planned", plannedAt: value, lastWatchedAt: undefined };
+}
+
 function normalizeSourceItem(item: ScreeningSourceItem): ScreeningSourceItem {
   const today = dateKeyFromDate(new Date());
   const status = item.status || "available";
@@ -297,6 +314,7 @@ function normalizeSourceItem(item: ScreeningSourceItem): ScreeningSourceItem {
     status,
     priority: item.priority || "normal",
     timesWatched: Number.isFinite(item.timesWatched) ? item.timesWatched : 0,
+    plannedAt: status === "planned" ? item.plannedAt : undefined,
     lastWatchedAt: status === "watched" ? item.lastWatchedAt : undefined,
     addedAt: item.addedAt || today
   };
@@ -1683,12 +1701,17 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   <Field label="原名" value={editingLibraryItem.originalTitle || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { originalTitle: value })} />
                   <Field label="上映时间" value={editingLibraryItem.year || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { year: value })} />
                   <Field label="评分" type="number" value={editingLibraryItem.rating || 0} onChange={(value) => updateLibraryItem(editingLibraryIndex, { rating: Number(value) })} />
-                  {editingLibraryItem.status === "watched" ? (
-                    <DateTimePicker label="播放时间" mode="date" value={editingLibraryItem.lastWatchedAt || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { lastWatchedAt: value })} />
+                  {editingLibraryItem.status === "watched" || editingLibraryItem.status === "planned" ? (
+                    <DateTimePicker
+                      label={editingLibraryItem.status === "watched" ? "播放时间" : "排期日期"}
+                      mode="date"
+                      value={editingLibraryItem.status === "watched" ? editingLibraryItem.lastWatchedAt || "" : editingLibraryItem.plannedAt || ""}
+                      onChange={(value) => updateLibraryItem(editingLibraryIndex, sourceDatePatch(value, editingLibraryItem))}
+                    />
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[12px] font-bold text-muted-foreground">放映状态</span>
-                      <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{editingLibraryItem.status === "planned" ? "已排期" : "待放映"}</div>
+                      <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{editingLibraryItem.status === "hidden" ? "已隐藏" : editingLibraryItem.status === "rejected" ? "已拒绝" : "待放映"}</div>
                     </div>
                   )}
                 </div>
@@ -1708,7 +1731,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">状态</span>
-                    <select value={editingLibraryItem.status} onChange={(event) => updateLibraryItem(editingLibraryIndex, { status: event.target.value as ScreeningSourceItem["status"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                    <select value={editingLibraryItem.status} onChange={(event) => updateLibraryItem(editingLibraryIndex, sourceStatusPatch(event.target.value as ScreeningSourceItem["status"], editingLibraryItem))} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
                       {(["available", "planned", "watched", "hidden", "rejected"] as ScreeningSourceItem["status"][]).map((value) => <option key={value} value={value}>{value}</option>)}
                     </select>
                   </label>

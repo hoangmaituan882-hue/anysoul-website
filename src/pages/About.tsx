@@ -1,6 +1,6 @@
 import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { GraduationCap, MessageSquareText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+import { GraduationCap, History, MessageSquareText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { appendLocalFeedbackSubmission, CONTENT_API_BASE } from "../content/client";
 import type { FeedbackSubmission } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";
@@ -61,6 +61,17 @@ const aboutData = [
     bg: "bg-violet-500/10",
     summary: "访客和登录用户都可以提交修正、版权、Bug 或功能建议。",
     body: "提交后会进入工作台待办。内容服务暂时不可用时，也会先保存到本地待办队列，方便后续处理。"
+  },
+  {
+    id: "changelog",
+    number: "06",
+    title: "更新 记录",
+    shortTitle: "更新记录",
+    icon: History,
+    color: "text-sky-500",
+    bg: "bg-sky-500/10",
+    summary: "查看网站每次功能调整、部署修复和后台优化的更新履历。",
+    body: "更新记录页会沉淀近期网站迭代，包括首页文案、放映会、杂谈回、图库、用户系统、监控和部署相关改动，方便回看每一轮做了什么。"
   }
 ];
 
@@ -194,6 +205,12 @@ export function About() {
                     isSubmitting={isSubmittingFeedback}
                     onSubmit={submitFeedback}
                   />
+                ) : active.id === "changelog" ? (
+                  <div className="mt-auto pt-10">
+                    <a href="#changelog" className="inline-flex items-center gap-2 rounded-2xl bg-foreground px-5 py-3 text-sm font-black text-background shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                      <History className="size-4" /> 进入更新记录
+                    </a>
+                  </div>
                 ) : (
                   <div className="mt-auto grid gap-3 pt-10 sm:grid-cols-3">
                     {[

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, Reorder } from "motion/react";
 import {
   Plus, LayoutDashboard, MessageCircle, ScanEye, Activity, PanelLeftOpen,
   Inbox, ArrowUpDown, ListTodo, ChevronDown, List, Calendar, Clock,
@@ -253,6 +253,7 @@ export function Workspace() {
   const [activeTab, setActiveTab] = useLocalStorage<'content' | 'posts' | 'screenings' | 'talks' | 'games' | 'plaza' | 'users' | 'monitor'>('workspace-activeTab', 'content');
   const [todoView, setTodoView] = useLocalStorage<'list' | 'calendar' | 'monitor'>('workspace-todoView', 'list');
   const [todoFilter, setTodoFilter] = useLocalStorage<'all' | 'pending' | 'approved' | 'rejected'>('workspace-todoFilter', 'all');
+  const [feedbackTodoOrder, setFeedbackTodoOrder] = useLocalStorage<string[]>('workspace-feedback-todo-order', []);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsPage, setSettingsPage] = useState<"main" | "account">("main");
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
@@ -291,19 +292,6 @@ export function Workspace() {
   const accountName = user?.name || "未登录用户";
   const accountInitial = accountName.trim().slice(0, 1).toUpperCase() || "A";
   const allUserSubmissions = useMemo<PendingUserSubmission[]>(() => [
-    ...sourceSubmissions.items.map((submission) => ({
-      id: submission.id,
-      kind: "source" as const,
-      title: `用户补充：${submission.sourceTitle}`,
-      category: submission.field,
-      content: submission.content,
-      contact: submission.contact,
-      submitter: submission.submitter,
-      status: submission.status,
-      createdAt: submission.createdAt,
-      reviewedAt: submission.reviewedAt,
-      source: submission
-    })),
     ...feedbackSubmissions.items.map((feedback) => ({
       id: feedback.id,
       kind: "feedback" as const,
@@ -317,8 +305,18 @@ export function Workspace() {
       reviewedAt: feedback.reviewedAt,
       feedback
     }))
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [sourceSubmissions.items, feedbackSubmissions.items]);
-  const pendingSubmissions = allUserSubmissions.filter((submission) => todoFilter === "all" || submission.status === todoFilter);
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [feedbackSubmissions.items]);
+  const pendingSubmissions = useMemo(() => {
+    const orderIndex = new Map<string, number>(feedbackTodoOrder.map((id, index) => [id, index]));
+    return allUserSubmissions
+      .filter((submission) => todoFilter === "all" || submission.status === todoFilter)
+      .sort((a, b) => {
+        const aIndex = orderIndex.get(a.id);
+        const bIndex = orderIndex.get(b.id);
+        if (aIndex !== undefined || bIndex !== undefined) return (aIndex ?? 999999) - (bIndex ?? 999999);
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [allUserSubmissions, feedbackTodoOrder, todoFilter]);
   const calendarDays = useMemo(() => buildCalendarDays(calendarMonth), [calendarMonth]);
   const calendarTodoItems = useMemo<CalendarTodoItem[]>(() => {
     const internalItems: CalendarTodoItem[] = [];
@@ -397,6 +395,7 @@ export function Workspace() {
 
   useEffect(() => {
     if (activeTab === "users" && !canManageUsers) setActiveTab("content");
+    if (activeTab === "games") setActiveTab("content");
   }, [activeTab, canManageUsers, setActiveTab]);
 
   async function loadAiSettings() {
@@ -871,8 +870,6 @@ export function Workspace() {
                 <button onClick={() => setTodoView('list')} className={cn("p-1 rounded border shadow-sm transition-colors", todoView === 'list' ? "border-border bg-background text-foreground" : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground")}><List className="size-3.5" /></button>
                 <button onClick={() => setTodoView('calendar')} className={cn("p-1 rounded border shadow-sm transition-colors", todoView === 'calendar' ? "border-border bg-background text-foreground" : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground")}><Calendar className="size-3.5" /></button>
                 <button onClick={() => setTodoView('monitor')} className={cn("p-1 rounded border shadow-sm transition-colors", todoView === 'monitor' ? "border-border bg-background text-foreground" : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground")}><Activity className="size-3.5" /></button>
-                <div className="w-px h-4 bg-border mx-1" />
-                <button className="p-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded transition-colors"><Plus className="size-4" /></button>
               </div>
             </div>
 
@@ -884,45 +881,73 @@ export function Workspace() {
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">用户提交</span>
                     <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground tabular-nums">{pendingSubmissions.length}</span>
                   </div>
-                  <div className="space-y-2">
+                  <Reorder.Group
+                    axis="y"
+                    values={pendingSubmissions}
+                    onReorder={(items) => {
+                      const movedIds = items.map((item) => item.id);
+                      setFeedbackTodoOrder((current) => [...movedIds, ...current.filter((id) => !movedIds.includes(id))]);
+                    }}
+                    className="space-y-2"
+                  >
                     {pendingSubmissions.map((submission) => (
-                    <div key={submission.id} onClick={() => setSelectedSubmission(submission)} className={cn("flex items-start gap-2.5 group cursor-pointer hover:bg-muted/40 p-2 -mx-2 rounded-lg transition-colors", selectedSubmission?.id === submission.id && "bg-primary/10")}>
-                      <button className="mt-0.5 text-muted-foreground hover:text-amber-500 transition-colors">
-                        <Circle className="size-4" />
-                      </button>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[13.5px] font-medium leading-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors">{submission.title}</span>
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">M/M</span>
-                          <span className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded border border-amber-500/20">
-                            <Bell className="size-3" /> {submission.kind === "source" ? "用户补充" : "意见反馈"}
-                          </span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-card text-muted-foreground border border-border">{submission.category}</span>
-                          <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-black", submission.status === "approved" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" : submission.status === "rejected" ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300" : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300")}>{submissionStatusLabels[submission.status]}</span>
-                          <span className="text-[10px] text-muted-foreground">{new Date(submission.createdAt).toLocaleDateString()}</span>
+                      <Reorder.Item
+                        key={submission.id}
+                        value={submission}
+                        onClick={() => setSelectedSubmission(submission)}
+                        className={cn("flex items-start gap-2.5 group cursor-grab hover:bg-muted/40 p-2 -mx-2 rounded-lg transition-colors active:cursor-grabbing", selectedSubmission?.id === submission.id && "bg-primary/10", submission.status === "approved" && "opacity-75")}
+                      >
+                        <button
+                          type="button"
+                          disabled={isReviewingSubmission || submission.status !== "pending"}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (submission.status === "pending") void reviewSourceSubmission(submission, "approved");
+                          }}
+                          className="mt-0.5 text-muted-foreground transition-colors hover:text-emerald-500 disabled:cursor-default disabled:hover:text-muted-foreground"
+                          aria-label="同意反馈待办"
+                        >
+                          <motion.span
+                            className={cn("flex size-4 items-center justify-center rounded-full border transition-colors", submission.status === "approved" ? "border-emerald-500 bg-emerald-500 text-white" : "border-current bg-transparent")}
+                            animate={{ scale: submission.status === "approved" ? [1, 1.18, 1] : 1 }}
+                            transition={{ duration: 0.24 }}
+                          >
+                            {submission.status === "approved" ? <CheckCircle2 className="size-3" /> : <Circle className="size-3.5" />}
+                          </motion.span>
+                        </button>
+                        <div className="flex min-w-0 flex-col">
+                          <span className={cn("line-clamp-1 text-[13.5px] font-medium leading-tight text-foreground transition-all group-hover:text-primary", submission.status === "approved" && "text-muted-foreground line-through decoration-2 decoration-emerald-500/70")}>{submission.title}</span>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">M/M</span>
+                            <span className="flex items-center gap-1 rounded border border-amber-500/20 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                              <Bell className="size-3" /> 意见反馈
+                            </span>
+                            <span className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">{submission.category}</span>
+                            <span className={cn("rounded border px-1.5 py-0.5 text-[10px] font-black", submission.status === "approved" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" : submission.status === "rejected" ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300" : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300")}>{submissionStatusLabels[submission.status]}</span>
+                            <span className="text-[10px] text-muted-foreground">{new Date(submission.createdAt).toLocaleDateString()}</span>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      </Reorder.Item>
                     ))}
+                  </Reorder.Group>
                     {!pendingSubmissions.length ? (
                       <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-6 text-center">
                         <div className="text-sm font-black text-foreground">暂无{todoFilterLabels[todoFilter]}用户提交</div>
                         <div className="mt-1 text-xs font-bold text-muted-foreground">公开补充、关于页意见和测试提交会显示在这里。</div>
                       </div>
                     ) : null}
-                  </div>
                 </div>
 
                 {selectedSubmission && (
                   <div className="rounded-2xl border border-border bg-background p-3 shadow-sm">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <div>
-                        <div className="text-xs font-black text-primary">二级详情 / {selectedSubmission.kind === "source" ? "用户补充" : "意见反馈"}</div>
+                        <div className="text-xs font-black text-primary">二级详情 / 意见反馈</div>
                         <div className="mt-1 text-sm font-black text-foreground">{selectedSubmission.title}</div>
                       </div>
                       <button onClick={() => setSelectedSubmission(null)} className="rounded-full border border-border px-2 py-1 text-xs font-black text-muted-foreground hover:bg-muted">关闭</button>
                     </div>
-                    <div className="rounded-xl bg-card px-3 py-2 text-xs font-bold text-muted-foreground">来源：{selectedSubmission.kind === "source" ? "公开用户补充" : "关于页意见通道"} · 分类：{selectedSubmission.category} · 状态：{selectedSubmission.status}</div>
+                    <div className="rounded-xl bg-card px-3 py-2 text-xs font-bold text-muted-foreground">来源：关于页意见通道 · 分类：{selectedSubmission.category} · 状态：{selectedSubmission.status}</div>
                     <p className="mt-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium leading-relaxed text-foreground/80">{selectedSubmission.content}</p>
                     {selectedSubmission.submitter ? <div className="mt-2 text-xs font-bold text-muted-foreground">提交者：{selectedSubmission.submitter}</div> : null}
                     {selectedSubmission.contact ? <div className="mt-2 text-xs font-bold text-muted-foreground">联系方式：{selectedSubmission.contact}</div> : null}
@@ -1146,11 +1171,6 @@ export function Workspace() {
                     onClick={() => setActiveTab('screenings')}
                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'screenings' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
                    <Film className="size-4" /> 放映会控制
-                 </button>
-                 <button
-                   onClick={() => setActiveTab('games')}
-                   className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'games' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                   <Gamepad2 className="size-4" /> 游戏回控制
                  </button>
                  <button
                    onClick={() => setActiveTab('talks')}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, Check, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -74,7 +74,9 @@ function formatDisplay(value: string, mode: DateTimePickerMode, placeholder?: st
 
 export function DateTimePicker({ label, value, onChange, mode = "datetime", placeholder, timezoneOffset = "+08:00", disabled = false }: DateTimePickerProps) {
   const initialDate = parsePickerDate(value);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ left: 16, top: 16 });
   const [monthDate, setMonthDate] = useState(() => new Date(initialDate.getFullYear(), initialDate.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(() => initialDate);
   const [selectedTime, setSelectedTime] = useState(() => value.match(/T(\d{2}:\d{2})/)?.[1] || (mode === "time" && value.match(/^\d{2}:\d{2}$/) ? value : formatTimeValue(initialDate)));
@@ -82,6 +84,27 @@ export function DateTimePicker({ label, value, onChange, mode = "datetime", plac
   const monthDays = useMemo(() => buildMonthDays(monthDate), [monthDate]);
   const selectedDateValue = formatDateValue(selectedDate);
   const todayValue = formatDateValue(new Date());
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const width = Math.min(352, window.innerWidth - 32);
+      const left = Math.min(Math.max(16, rect.left), Math.max(16, window.innerWidth - width - 16));
+      const top = rect.bottom + 8;
+      setPopoverPosition({ left, top });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
 
   const commit = (date: Date, time = selectedTime, close = mode !== "datetime") => {
     if (disabled) return;
@@ -101,6 +124,7 @@ export function DateTimePicker({ label, value, onChange, mode = "datetime", plac
     <label className="relative flex flex-col gap-1.5">
       <span className="text-[12px] font-bold text-muted-foreground">{label}</span>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
@@ -111,7 +135,10 @@ export function DateTimePicker({ label, value, onChange, mode = "datetime", plac
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-2xl shadow-black/15 dark:shadow-black/50">
+        <div
+          className="fixed z-[1000] w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-2xl shadow-black/15 dark:shadow-black/50"
+          style={{ left: popoverPosition.left, top: popoverPosition.top }}
+        >
           {mode !== "time" && (
             <>
               <div className="mb-3 flex items-center justify-between gap-2">
