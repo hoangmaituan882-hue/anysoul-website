@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Calendar, FileText, Link, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2, Video, X } from "lucide-react";
+import { Bot, Calendar, FileText, Link, Plus, RefreshCw, Rocket, Save, Search, Sparkles, Trash2, Video, X } from "lucide-react";
 import { ImageUploadField } from "../components/ImageUploadField";
 import { CONTENT_API_BASE } from "../content/client";
 import { defaultTalksContent } from "../content/defaults/talks";
@@ -186,6 +186,8 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [aiStatus, setAiStatus] = useState("AI 会把结果填入当前选中的录像草稿。");
   const [isAiBusy, setIsAiBusy] = useState(false);
   const [isTalkEditorOpen, setIsTalkEditorOpen] = useState(false);
+  const [showAllTalksArchive, setShowAllTalksArchive] = useState(false);
+  const [liveTalkSearch, setLiveTalkSearch] = useState("");
 
   const selectedTalk = useMemo(
     () => draft.archive.find((item) => item.id === selectedId) || draft.archive[0],
@@ -195,6 +197,26 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     () => draft.archive.find((item) => item.id === draft.liveTalkId) || draft.archive[0] || draft.live,
     [draft.archive, draft.live, draft.liveTalkId]
   );
+  const liveTalkOptions = useMemo(() => {
+    const keyword = liveTalkSearch.trim().toLowerCase();
+    const matches = keyword
+      ? draft.archive.filter((talk) => [
+        talk.title,
+        talk.subtitle,
+        talk.date,
+        talk.category || "",
+        talk.episodeNo ? String(talk.episodeNo) : "",
+        ...(talk.tags || [])
+      ].join(" ").toLowerCase().includes(keyword))
+      : draft.archive;
+
+    return matches.slice(0, keyword ? 10 : 6);
+  }, [draft.archive, liveTalkSearch]);
+  const visibleArchiveTalks = useMemo(
+    () => showAllTalksArchive ? draft.archive : draft.archive.slice(0, 8),
+    [draft.archive, showAllTalksArchive]
+  );
+  const hasHiddenArchiveTalks = draft.archive.length > 8;
 
   const load = async () => {
     const response = await authFetch(`${CONTENT_API_BASE}/api/admin/content`);
@@ -358,14 +380,39 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
             <p className="text-xs font-medium leading-relaxed text-muted-foreground">直播中卡片从录像库读取标题、封面、摘要和数据；不再单独维护一套表单。</p>
             <label className="flex flex-col gap-1.5">
               <span className="text-[12px] font-bold text-muted-foreground">选择录像</span>
-              <select
-                value={draft.liveTalkId || ""}
-                onChange={(event) => chooseLiveTalk(event.target.value)}
-                className="h-10 rounded-lg border border-border bg-card px-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
-              >
-                {draft.archive.map((talk) => <option key={talk.id} value={talk.id}>{talk.episodeNo ? `第${talk.episodeNo}期 · ` : ""}{talk.title}</option>)}
-              </select>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={liveTalkSearch}
+                  onChange={(event) => setLiveTalkSearch(event.target.value)}
+                  placeholder="输入标题、期数、日期、分类或标签"
+                  className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+                />
+              </div>
             </label>
+            <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-border bg-card p-1.5">
+              {liveTalkOptions.length ? liveTalkOptions.map((talk) => (
+                <button
+                  key={talk.id}
+                  type="button"
+                  onClick={() => {
+                    chooseLiveTalk(talk.id);
+                    setLiveTalkSearch("");
+                  }}
+                  className={cn("flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted", draft.liveTalkId === talk.id && "bg-primary/10 text-primary")}
+                >
+                  <div className="h-10 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                    {talk.coverUrl ? <img src={talk.coverUrl} alt={talk.title} className="h-full w-full object-cover" /> : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-black">{talk.episodeNo ? `第${talk.episodeNo}期 · ` : ""}{talk.title}</div>
+                    <div className="mt-0.5 truncate text-[11px] font-bold text-muted-foreground">{talk.date} · {talk.category || "talk"} · {(talk.tags || []).slice(0, 2).join(" / ") || "无标签"}</div>
+                  </div>
+                </button>
+              )) : (
+                <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs font-black text-muted-foreground">没有匹配录像</div>
+              )}
+            </div>
             {liveTalk && (
               <button
                 type="button"
@@ -409,13 +456,22 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                 <h3 className="font-bold flex items-center gap-2"><FileText className="size-4 text-blue-500" /> 杂谈会录像库</h3>
                 <p className="mt-1 text-xs text-muted-foreground">点击封面卡片进入二级编辑弹窗，封面上传只在弹窗内出现。</p>
               </div>
-              <button onClick={addArchiveTalk} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-muted disabled:opacity-50">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-black text-muted-foreground">{visibleArchiveTalks.length} / {draft.archive.length}</span>
+                {hasHiddenArchiveTalks && (
+                  <button onClick={() => setShowAllTalksArchive((current) => !current)} type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-muted">
+                    {showAllTalksArchive ? "收起" : "显示全部"}
+                  </button>
+                )}
+                <button onClick={addArchiveTalk} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-muted disabled:opacity-50">
                 <Plus className="size-4" /> 新增录像
               </button>
             </div>
 
+            </div>
+
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-              {draft.archive.map((talk) => (
+              {visibleArchiveTalks.map((talk) => (
                 <button
                   key={talk.id}
                   onClick={() => { setSelectedId(talk.id); setIsTalkEditorOpen(true); }}
