@@ -31,6 +31,33 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "a8d916f",
+    "hash": "a8d916f34b5cbbb34a1f9d72d351c76ea1b4b1ff",
+    "date": "2026-06-10",
+    "title": "Make gaming page content-driven",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 1、内容数据 2。",
+    "files": [
+      "src/content/defaults/gaming.ts",
+      "src/content/types.ts",
+      "src/generated/changelog.ts",
+      "src/pages/Gaming.tsx",
+      "src/pages/Workspace.tsx",
+      "src/workspace/GamingAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Make gaming page content-driven",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 2、工作台 1、内容数据 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "afc0d63",
     "hash": "afc0d63c6b6b58394ed9de383c9e49f1521d9226",
     "date": "2026-06-10",
@@ -595,32 +622,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "3d6b953",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-09",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "feat: derive screenings library views from real data",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、工作台 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "74c28b2",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -640,7 +647,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -660,7 +667,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -680,7 +687,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -700,7 +707,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -720,7 +727,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -740,7 +747,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "维护",
@@ -750,6 +757,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、脚本配置 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "a8d916f",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "Make gaming page content-driven",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 1、内容数据 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 2、工作台 1、内容数据 2",
         "description": ""
       }
     ]

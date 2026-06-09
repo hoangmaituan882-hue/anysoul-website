@@ -1174,7 +1174,8 @@ export function Workspace() {
                  </button>
                  <button
                    onClick={() => setActiveTab('games')}
-                   className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'games' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
+                   title="游戏回控制"
+                   className={cn("flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'games' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
                    <Gamepad2 className="size-4" /> 游戏回控制
                  </button>
                  <button
