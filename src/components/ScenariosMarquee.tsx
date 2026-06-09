@@ -9,10 +9,10 @@ const ScenarioWebCompanion = () => (
     <div className="flex flex-col h-[260px] bg-background border-b border-border overflow-hidden">
         <div className="p-4 border-b border-border flex items-center gap-2">
             <div className="size-6 bg-primary/20 rounded-full border border-primary/30"></div>
-            <div className="text-xs font-semibold text-foreground">Philosophy Daily</div>
+            <div className="text-xs font-semibold text-foreground">本周放映会</div>
         </div>
         <div className="p-4 flex-1">
-            <p className="text-xs text-muted-foreground mb-4">"The only true wisdom is in knowing you know nothing." - Socrates</p>
+            <p className="text-xs text-muted-foreground mb-4">周六 20:00 · 动画补完 / 经典片源回看</p>
             <div className="flex gap-4 opacity-50 mb-4 scale-75 origin-left text-muted-foreground">
                 <MessageSquare className="size-4" />
                 <Heart className="size-4" />
@@ -22,14 +22,14 @@ const ScenarioWebCompanion = () => (
             <div className="bg-secondary p-3 rounded-xl border border-border shadow-sm flex gap-3">
                <div className="size-6 rounded-full bg-primary shrink-0 flex items-center justify-center"><Bot className="size-3 text-white" /></div>
                <div className="text-xs text-secondary-foreground">
-                  <span className="font-semibold text-primary">AnySoul:</span> That's a classic paradox! Socrates is acknowledging his limits...
+                  <span className="font-semibold text-primary">站点:</span> 排期、片源和月度记录已同步到放映会页面。
                </div>
             </div>
         </div>
     </div>
 );
 
-const ScenarioVtuber = () => (
+const ScenarioGallery = () => (
     <div className="flex flex-col h-[260px] bg-[#0e0e10] border-b border-border overflow-hidden relative text-white">
         {/* Stream video area */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black">
@@ -40,9 +40,9 @@ const ScenarioVtuber = () => (
         </div>
         {/* Chat sidebar mock */}
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-[#18181b] border-l border-white/10 p-2 flex flex-col gap-2 opacity-80">
-            <div className="text-[8px]"><span className="text-red-400">User123:</span> Hello Miko!</div>
-            <div className="text-[8px]"><span className="text-green-400">FanBoy:</span> Love the new outfit.</div>
-            <div className="text-[8px] pr-2 bg-white/10 p-1 rounded border border-white/20"><span className="text-yellow-400">$5</span> Miko reacts to this!</div>
+            <div className="text-[8px]"><span className="text-red-400">访客:</span> 这张海报比例好看</div>
+            <div className="text-[8px]"><span className="text-green-400">投稿:</span> 补一个来源链接</div>
+            <div className="text-[8px] pr-2 bg-white/10 p-1 rounded border border-white/20"><span className="text-yellow-400">图库</span> 新作品已归档</div>
         </div>
     </div>
 );
@@ -55,15 +55,15 @@ const ScenarioGroupChat = ({ title }: { title: string }) => (
         <div className="p-4 flex flex-col gap-3 flex-1 overflow-hidden">
             <div className="flex gap-2">
                 <div className="size-6 bg-blue-100 rounded-full border border-blue-200"></div>
-                <div className="bg-secondary p-2 rounded-lg text-[10px] max-w-[80%] text-foreground">Have you guys finished chapter 3?</div>
+                <div className="bg-secondary p-2 rounded-lg text-[10px] max-w-[80%] text-foreground">本月杂谈记录更新了吗？</div>
             </div>
             <div className="flex gap-2 flex-row-reverse">
                 <div className="size-6 bg-green-100 rounded-full border border-green-200"></div>
-                <div className="bg-primary text-primary-foreground p-2 rounded-lg text-[10px] max-w-[80%]">Yeah, the ending was crazy.</div>
+                <div className="bg-primary text-primary-foreground p-2 rounded-lg text-[10px] max-w-[80%]">已自动读取本月条目数量。</div>
             </div>
             <div className="flex gap-2">
                 <div className="size-6 bg-primary/20 rounded-full border border-primary/30 flex items-center justify-center shrink-0"><Bot className="size-3 text-primary" /></div>
-                <div className="bg-secondary p-2 rounded-lg text-[10px] max-w-[80%] text-foreground"><span className="font-semibold text-primary block mb-0.5">AnySoul</span> Absolutely! The plot twist really redefining the protagonist's motivation...</div>
+                <div className="bg-secondary p-2 rounded-lg text-[10px] max-w-[80%] text-foreground"><span className="font-semibold text-primary block mb-0.5">工作台</span> 放映会、文章和图库都已进入发布队列。</div>
             </div>
         </div>
     </div>
@@ -86,7 +86,7 @@ const ScenarioDesktopPet = () => (
         {/* Pet */}
         <div className="absolute bottom-4 right-4 flex items-end gap-2">
             <div className="bg-white/80 backdrop-blur-md px-3 py-2 rounded-2xl rounded-br-sm border border-white shadow-sm text-[10px] text-foreground font-medium mb-4">
-                You have 2 unread emails!
+                服务器监控正常，暂无异常待办。
             </div>
             <div className="size-12 bg-primary/10 rounded-full border border-primary/30 animate-[bounce_3s_infinite] flex items-center justify-center shadow-[0_0_15px_rgba(134,158,113,0.3)]">
                 <Bot className="size-6 text-primary" strokeWidth={1.5} />
@@ -107,7 +107,7 @@ export function ScenariosMarquee() {
       {
         title: t("scen.2.t"),
         desc: t("scen.2.d"),
-        visual: <ScenarioVtuber />
+        visual: <ScenarioGallery />
       },
       {
         title: t("scen.3.t"),

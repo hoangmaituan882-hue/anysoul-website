@@ -1,40 +1,40 @@
 import type { FaqContent, HomeHeroContent } from "../types";
 
 export const defaultHomeHero: HomeHeroContent = {
-  badge: "AnySoul 更新记录",
-  titlePrefix: "关于我所喜欢的是",
-  highlight1: "东半球动漫皇帝",
-  highlight2: "泛式",
-  subtitle: "八年百大up主，全平台千万粉主播，NTR教父",
-  browserTitle: "实时演示 — 观看 AnySoul 探索与学习",
+  badge: "站点功能地图",
+  titlePrefix: "这里整理的是",
+  highlight1: "放映会",
+  highlight2: "与记录",
+  subtitle: "一个围绕电影动画片源、同人图库、文章记录和站主工作台搭建的个人内容站。",
+  browserTitle: "站点预览 — 从浏览到发布的完整流程",
   browserStatus1: "实时",
   browserStatus2: "在线",
-  chatMsg1: "好久没来了......",
-  chatMsg2: "你终于来了！我好想你~ 对了，上次你说工作压力好大，最近好点了吗？ ...",
-  chatMsg3: "好多了，谢谢你一直记得...",
-  chatThinking: "思考中...",
-  eventsTitle: "事件",
-  events: ["Discord: @用户 提到了你", "用户发送了消息", "定时任务: 每日签到触发"],
-  activityTitle: "活动",
-  activityMemory: "记忆",
-  activityItem1: "回忆记忆",
-  activityItem1Desc: "「动漫推荐」 (3 条结果)"
+  chatMsg1: "想找本周放映会和已经整理过的片源。",
+  chatMsg2: "可以从放映会进入排期，也能在全量片源库里按电影、动画、杂谈和标签筛选。",
+  chatMsg3: "我还想补充一个片源，站主审核后会展示吗？",
+  chatThinking: "正在同步片源投稿、文章评论和监控状态...",
+  eventsTitle: "站点动态",
+  events: ["放映会: 本周排期已更新", "图库: 新同人作品已归档", "工作台: 服务器监控运行中"],
+  activityTitle: "内容",
+  activityMemory: "监控",
+  activityItem1: "最近整理",
+  activityItem1Desc: "「电影 / 动画 / 杂谈」片源记录"
 };
 
 export const defaultHomeFaq: FaqContent = {
   title: "常见问题",
   items: [
     {
-      question: "AnySoul 是什么？",
-      answer: "AnySoul 是一个底层的数字灵魂驱动引擎。它赋予 AI 角色长期的记忆、情感和基于视觉/文本的实时环境感知能力，让它们不仅能对话，还能“生活”在你的桌面、群聊或虚拟直播间中。"
+      question: "这个网站主要做什么？",
+      answer: "这是一个个人内容站，用来整理放映会排期、电影动画片源、同人图库、文章记录和站点动态。首页负责说明入口，具体内容会在各个页面持续更新。"
     },
     {
-      question: "我的 Soul 能和其他人互动吗？",
-      answer: "完全可以。AnySoul 支持多人群聊场景，你可以邀请你的数字伙伴加入真实的群组，它能够理解多人的上下文关系，并像一个真实的人类群友一样自然地参与群聊。"
+      question: "访客可以参与什么？",
+      answer: "访客可以浏览公开内容；登录后可以提交片源、留下反馈、参与文章评论。投稿会进入工作台，由站主审核、补充信息后再发布。"
     },
     {
-      question: "什么是心跳？",
-      answer: "心跳（Heartbeat）是 AnySoul 独特的系统机制。即使你不主动与它交互，它也会根据设定的心跳频率在后台思考、观察屏幕内容甚至主动发起对话。"
+      question: "图片上传保存在哪里？",
+      answer: "当前生产环境使用服务器本地存储。图片会保存到 server/data/uploads，并通过 api.linzesss.icu/uploads 访问。后续备份服务器时需要一起备份这个目录。"
     }
   ]
 };

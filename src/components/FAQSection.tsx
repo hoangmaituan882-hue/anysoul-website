@@ -127,7 +127,7 @@ export function FAQSection() {
 
             {/* Bottom Button */}
             <a 
-              href="#"
+              href="#workspace"
               className="border-[4px] border-[#e5e5e5] rounded-2xl bg-card px-8 py-4 flex items-center justify-center gap-3 hover:bg-muted/30 transition-colors group dark:border-border"
             >
               <span className="text-xl font-bold tracking-widest text-foreground">{t("faq.doc")}</span>

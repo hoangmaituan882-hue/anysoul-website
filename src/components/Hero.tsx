@@ -85,7 +85,7 @@ export function Hero() {
           className="relative z-20 mt-12 mb-2"
         >
           <a
-            href="#changelog"
+            href="#screenings"
             className="group relative inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 backdrop-blur-md shadow-[0_0_20px_rgba(164,198,57,0.1)] hover:shadow-[0_0_25px_rgba(164,198,57,0.2)] transition-all cursor-pointer"
           >
             <div className="absolute inset-0 rounded-full border border-primary/40 animate-[ping_2.5s_ease-in-out_infinite] opacity-30 -z-10" />
