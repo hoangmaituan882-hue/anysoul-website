@@ -253,6 +253,7 @@ export function Workspace() {
   const [todoView, setTodoView] = useLocalStorage<'list' | 'calendar' | 'monitor'>('workspace-todoView', 'list');
   const [todoFilter, setTodoFilter] = useLocalStorage<'all' | 'pending' | 'approved' | 'rejected'>('workspace-todoFilter', 'all');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsPage, setSettingsPage] = useState<"main" | "account">("main");
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
   const [isTodoFilterOpen, setIsTodoFilterOpen] = useState(false);
   const [aiSettings, setAiSettings] = useState<AiSettings>({
@@ -274,13 +275,20 @@ export function Workspace() {
   const [siteAnalytics, setSiteAnalytics] = useState<SiteAnalyticsContent | null>(null);
   const [serverMonitoring, setServerMonitoring] = useState<ServerMonitoringSummary | null>(null);
   const [monitoringStatus, setMonitoringStatus] = useState("监控同步中...");
+  const [profileName, setProfileName] = useState("");
+  const [profileStatus, setProfileStatus] = useState("");
+  const [passwordDraft, setPasswordDraft] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordStatus, setPasswordStatus] = useState("");
+  const [isAccountBusy, setIsAccountBusy] = useState(false);
   const [workspaceLayout, setWorkspaceLayout] = useLocalStorage<WorkspaceLayout>('workspace-panel-layout', { leftWidth: 35, leftTop: 35, rightTop: 75 });
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [selectedTodoDate, setSelectedTodoDate] = useState(() => formatDateKey(new Date()));
   const { theme, toggleTheme, language, toggleLanguage } = useThemeLanguage();
-  const { user, canEditWorkspace, canManageUsers, authFetch } = useAuth();
+  const { user, canEditWorkspace, canManageUsers, authFetch, updateProfile, changePassword } = useAuth();
   const readOnly = !canEditWorkspace;
   const roleLabel = user?.role === "owner" ? "站主" : user?.role === "admin" ? "管理员" : user ? "普通用户" : "访客";
+  const accountName = user?.name || "未登录用户";
+  const accountInitial = accountName.trim().slice(0, 1).toUpperCase() || "A";
   const allUserSubmissions = useMemo<PendingUserSubmission[]>(() => [
     ...sourceSubmissions.items.map((submission) => ({
       id: submission.id,
@@ -367,6 +375,17 @@ export function Workspace() {
   }, [isSettingsOpen]);
 
   useEffect(() => {
+    if (!isSettingsOpen) setSettingsPage("main");
+  }, [isSettingsOpen]);
+
+  useEffect(() => {
+    setProfileName(user?.name || "");
+    setProfileStatus("");
+    setPasswordStatus("");
+    setPasswordDraft({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  }, [user?.id, user?.name]);
+
+  useEffect(() => {
     if (!canEditWorkspace) return;
 
     void loadSourceSubmissions();
@@ -388,6 +407,60 @@ export function Workspace() {
       setAiStatus(data.settings.configured ? `已配置 ${data.settings.model}` : "未配置");
     } catch (error) {
       setAiStatus(error instanceof Error ? error.message : "AI 设置加载失败");
+    }
+  }
+
+  async function saveProfileName() {
+    if (!user) {
+      setProfileStatus("请先登录后再修改用户名");
+      return;
+    }
+
+    if (!profileName.trim()) {
+      setProfileStatus("用户名不能为空");
+      return;
+    }
+
+    setIsAccountBusy(true);
+    setProfileStatus("正在保存用户名...");
+
+    try {
+      await updateProfile({ name: profileName });
+      setProfileStatus("用户名已更新");
+    } catch (error) {
+      setProfileStatus(error instanceof Error ? error.message : "用户名修改失败");
+    } finally {
+      setIsAccountBusy(false);
+    }
+  }
+
+  async function savePasswordChange() {
+    if (!user) {
+      setPasswordStatus("请先登录后再修改密码");
+      return;
+    }
+
+    if (passwordDraft.newPassword.length < 8) {
+      setPasswordStatus("新密码至少需要 8 位");
+      return;
+    }
+
+    if (passwordDraft.newPassword !== passwordDraft.confirmPassword) {
+      setPasswordStatus("两次新密码不一致");
+      return;
+    }
+
+    setIsAccountBusy(true);
+    setPasswordStatus("正在修改密码...");
+
+    try {
+      await changePassword({ currentPassword: passwordDraft.currentPassword, newPassword: passwordDraft.newPassword });
+      setPasswordDraft({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordStatus("密码已修改，当前设备保持登录");
+    } catch (error) {
+      setPasswordStatus(error instanceof Error ? error.message : "密码修改失败");
+    } finally {
+      setIsAccountBusy(false);
     }
   }
 
@@ -1688,28 +1761,93 @@ export function Workspace() {
               className="relative w-full max-w-md bg-card border-l border-border/80 shadow-[-20px_0_60px_rgba(0,0,0,0.15)] h-screen overflow-hidden flex flex-col z-10"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-muted/20">
-                <h2 className="text-xl font-bold tracking-tight">设置</h2>
+                <div className="flex items-center gap-2">
+                  {settingsPage === "account" ? (
+                    <button onClick={() => setSettingsPage("main")} className="p-1 hover:bg-muted-foreground/10 rounded-full transition-colors text-muted-foreground hover:text-foreground">
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                  ) : null}
+                  <h2 className="text-xl font-bold tracking-tight">{settingsPage === "account" ? "账号设置" : "设置"}</h2>
+                </div>
                 <button onClick={() => setIsSettingsOpen(false)} className="p-1 hover:bg-muted-foreground/10 rounded-full transition-colors text-muted-foreground hover:text-foreground">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-card/50">
+                {settingsPage === "account" ? (
+                  <div className="space-y-5">
+                    <div className="bg-background border border-border/60 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full bg-[#7c5cdb] text-white flex items-center justify-center text-3xl font-medium shadow-sm border-2 border-background">
+                          {accountInitial}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-bold">{accountName}</h3>
+                          <div className="mt-1 flex flex-wrap gap-2 text-xs font-bold">
+                            <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">UID {user?.uid || "-"}</span>
+                            <span className="rounded-full bg-[#f8f9e6] px-2.5 py-1 text-[#8db33a] dark:bg-[#eaf1c9]/10 dark:text-[#aee041]">{roleLabel}</span>
+                            <span className={cn("rounded-full px-2.5 py-1", user?.status === "active" ? "bg-emerald-500/10 text-emerald-600" : user ? "bg-rose-500/10 text-rose-600" : "bg-muted text-muted-foreground")}>{user?.status === "active" ? "启用" : user ? "停用" : "未登录"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 grid gap-2 text-sm">
+                        <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2"><span className="text-muted-foreground">邮箱</span><span className="max-w-[220px] truncate font-bold">{user?.email || "未登录"}</span></div>
+                        <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2"><span className="text-muted-foreground">注册时间</span><span className="font-bold">{user?.createdAt ? new Date(user.createdAt).toLocaleString() : "-"}</span></div>
+                        <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2"><span className="text-muted-foreground">最近登录</span><span className="font-bold">{user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "-"}</span></div>
+                      </div>
+                    </div>
+
+                    {!user ? (
+                      <div className="rounded-xl border border-border/60 bg-background p-5 text-sm font-medium text-muted-foreground shadow-sm">
+                        登录后可以在这里查看 UID、用户级别，并修改用户名和密码。
+                      </div>
+                    ) : (
+                      <>
+                        <div className="rounded-xl border border-border/60 bg-background p-5 shadow-sm">
+                          <div className="mb-3 text-sm font-black text-foreground">修改用户名</div>
+                          <div className="space-y-3">
+                            <input value={profileName} onChange={(event) => setProfileName(event.target.value)} className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm outline-none focus:border-[#afc33a]" placeholder="用户名/昵称" />
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="truncate text-[12px] text-muted-foreground">{profileStatus || "用户名会用于评论、工作台身份和站内展示。"}</div>
+                              <button type="button" onClick={saveProfileName} disabled={isAccountBusy} className="rounded-lg bg-[#afc33a] px-3 py-1.5 text-[12px] font-bold text-white hover:bg-[#9eb02f] disabled:opacity-50">保存</button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-border/60 bg-background p-5 shadow-sm">
+                          <div className="mb-3 text-sm font-black text-foreground">修改密码</div>
+                          <div className="space-y-3">
+                            <input type="password" value={passwordDraft.currentPassword} onChange={(event) => setPasswordDraft((current) => ({ ...current, currentPassword: event.target.value }))} className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm outline-none focus:border-[#afc33a]" placeholder="当前密码" />
+                            <input type="password" value={passwordDraft.newPassword} onChange={(event) => setPasswordDraft((current) => ({ ...current, newPassword: event.target.value }))} className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm outline-none focus:border-[#afc33a]" placeholder="新密码，至少 8 位" />
+                            <input type="password" value={passwordDraft.confirmPassword} onChange={(event) => setPasswordDraft((current) => ({ ...current, confirmPassword: event.target.value }))} className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm outline-none focus:border-[#afc33a]" placeholder="再次输入新密码" />
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="truncate text-[12px] text-muted-foreground">{passwordStatus || "修改成功后当前设备保持登录，其他设备需要重新登录。"}</div>
+                              <button type="button" onClick={savePasswordChange} disabled={isAccountBusy} className="rounded-lg bg-[#afc33a] px-3 py-1.5 text-[12px] font-bold text-white hover:bg-[#9eb02f] disabled:opacity-50">修改</button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <>
                 {/* Profile Card */}
                 <div className="bg-background border border-border/60 rounded-xl p-5 shadow-sm relative overflow-hidden group">
-                  <div className="absolute top-3 right-3 text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                  <button type="button" onClick={() => setSettingsPage("account")} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
                     <Settings className="w-4 h-4" />
-                  </div>
+                  </button>
                   <div className="flex flex-col items-center">
                     <div className="w-16 h-16 rounded-full bg-[#7c5cdb] text-white flex items-center justify-center text-3xl font-medium mb-3 shadow-sm border-2 border-background">
-                      S
+                      {accountInitial}
                     </div>
-                    <h3 className="text-lg font-bold">Stephano Avrohom</h3>
+                    <h3 className="text-lg font-bold">{accountName}</h3>
 
-                    <div className="mt-4 w-full bg-[#f8f9e6] dark:bg-[#eaf1c9]/10 rounded-lg p-3 flex justify-between items-center sm:text-sm text-xs border border-[#eaf1c9] dark:border-[#eaf1c9]/20 shadow-inner">
-                      <span className="font-bold text-[#8db33a] dark:text-[#aee041]">免费版</span>
-                      <span className="text-muted-foreground font-medium flex items-center cursor-pointer hover:text-foreground transition-colors">方案与充值</span>
-                    </div>
+                    <button type="button" onClick={() => setSettingsPage("account")} className="mt-4 w-full bg-[#f8f9e6] dark:bg-[#eaf1c9]/10 rounded-lg p-3 flex justify-between items-center sm:text-sm text-xs border border-[#eaf1c9] dark:border-[#eaf1c9]/20 shadow-inner text-left">
+                      <span className="font-bold text-[#8db33a] dark:text-[#aee041]">{roleLabel}</span>
+                      <span className="text-muted-foreground font-medium flex items-center hover:text-foreground transition-colors">账号设置</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1917,6 +2055,8 @@ export function Workspace() {
                   </div>
                 </div>
 
+                  </>
+                )}
               </div>
 
               <div className="px-6 py-4 border-t border-border/50 bg-background flex flex-col gap-2">

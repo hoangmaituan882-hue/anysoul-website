@@ -22,7 +22,7 @@ function readDemoUsers(currentUser: AuthUser | null) {
 }
 
 function writeDemoUsers(users: DemoStoredUser[]) {
-  localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(users));
+  localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(users.map((user, index) => ({ ...user, uid: user.uid || index + 1 }))));
 }
 
 export function UserAdminPanel() {
@@ -117,6 +117,7 @@ export function UserAdminPanel() {
       const now = new Date().toISOString();
       const createdUser: DemoStoredUser = {
         id: `demo-created-${Date.now()}`,
+        uid: Math.max(0, ...readDemoUsers(currentUser).map((user) => user.uid || 0)) + 1,
         email: draftUser.email.trim().toLowerCase(),
         name: draftUser.name.trim(),
         role: draftUser.role,
@@ -174,6 +175,7 @@ export function UserAdminPanel() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="truncate text-lg font-black text-foreground">{user.name}</h3>
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-black text-muted-foreground">UID {user.uid || "-"}</span>
                   <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-black text-primary"><Shield className="mr-1 inline size-3" /> {roleLabels[user.role]}</span>
                   <span className={user.status === "active" ? "rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-600" : "rounded-full bg-rose-500/10 px-2.5 py-1 text-xs font-black text-rose-600"}>{statusLabels[user.status]}</span>
                   {currentUser?.id === user.id ? <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-black text-muted-foreground">当前账号</span> : null}

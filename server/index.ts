@@ -88,6 +88,7 @@ type UserStatus = "active" | "disabled";
 
 type AuthUser = {
   id: string;
+  uid?: number;
   email: string;
   name: string;
   role: UserRole;
@@ -103,6 +104,9 @@ type PublicUser = Omit<AuthUser, "passwordHash" | "passwordSalt">;
 
 type AuthSessionContext = { user: AuthUser };
 type AuthenticatedRequest = express.Request & { authContext?: AuthSessionContext | null };
+
+const AUTH_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const AUTH_SESSION_RENEW_THRESHOLD_MS = 15 * 24 * 60 * 60 * 1000;
 
 type MediaAiSuggestion = {
   id: string;
@@ -2044,6 +2048,7 @@ function sendDatabaseRequired(res: express.Response) {
 function authUserFromRow(row: any): AuthUser {
   return {
     id: row.id,
+    uid: row.uid === null || row.uid === undefined ? undefined : Number(row.uid),
     email: row.email,
     name: row.name,
     role: row.role,
@@ -2061,9 +2066,11 @@ async function ensureAuthDatabase() {
 
   authDatabaseReady = (async () => {
     const database = requireDatabase();
+    await database.query("create sequence if not exists auth_users_uid_seq start 1");
     await database.query(`
       create table if not exists auth_users (
         id text primary key,
+        uid integer unique default nextval('auth_users_uid_seq'),
         email text not null unique,
         name text not null,
         role text not null check (role in ('owner', 'admin', 'user')),
@@ -2075,6 +2082,30 @@ async function ensureAuthDatabase() {
         last_login_at timestamptz
       )
     `);
+    await database.query("alter table auth_users add column if not exists uid integer");
+    await database.query("alter table auth_users alter column uid set default nextval('auth_users_uid_seq')");
+    await database.query(`
+      with base as (
+        select coalesce(max(uid), 0) as max_uid from auth_users
+      ),
+      numbered as (
+        select id, (select max_uid from base) + row_number() over (order by created_at, id) as next_uid
+        from auth_users
+        where uid is null
+      )
+      update auth_users
+      set uid = numbered.next_uid
+      from numbered
+      where auth_users.id = numbered.id
+    `);
+    await database.query(`
+      select setval(
+        'auth_users_uid_seq',
+        greatest(coalesce((select max(uid) from auth_users), 0), 1),
+        coalesce((select max(uid) from auth_users), 0) > 0
+      )
+    `);
+    await database.query("create unique index if not exists auth_users_uid_idx on auth_users(uid)");
     await database.query(`
       create table if not exists auth_sessions (
         id text primary key,
@@ -2138,6 +2169,7 @@ function demoAuthUserFromToken(token: string) {
   return {
     user: {
       id,
+      uid: 1,
       email: `${id}@local.test`,
       name: role === "owner" ? "本地演示站主" : role === "admin" ? "本地演示管理员" : "本地演示用户",
       role,
@@ -2243,7 +2275,7 @@ async function createAuthSession(userId: string) {
   const database = requireDatabase();
   const token = randomBytes(32).toString("hex");
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(now.getTime() + AUTH_SESSION_DURATION_MS).toISOString();
   await database.query(
     "insert into auth_sessions (id, user_id, token_hash, created_at, expires_at) values ($1, $2, $3, $4, $5)",
     [`session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, userId, hashToken(token), now.toISOString(), expiresAt]
@@ -2274,11 +2306,27 @@ async function currentAuthUser(req: AuthenticatedRequest) {
   const database = requireDatabase();
   const tokenHash = hashToken(token);
   const result = await database.query(
-    `select u.* from auth_sessions s join auth_users u on u.id = s.user_id where s.token_hash = $1 and s.expires_at > now() and u.status = 'active' limit 1`,
+    `select u.*, s.expires_at as session_expires_at
+     from auth_sessions s
+     join auth_users u on u.id = s.user_id
+     where s.token_hash = $1 and s.expires_at > now() and u.status = 'active'
+     limit 1`,
     [tokenHash]
   );
 
-  req.authContext = result.rows[0] ? { user: authUserFromRow(result.rows[0]) } : null;
+  const row = result.rows[0];
+  if (!row) {
+    req.authContext = null;
+    return req.authContext;
+  }
+
+  const expiresAt = row.session_expires_at instanceof Date ? row.session_expires_at.getTime() : new Date(row.session_expires_at).getTime();
+  if (!Number.isNaN(expiresAt) && expiresAt - Date.now() < AUTH_SESSION_RENEW_THRESHOLD_MS) {
+    const renewedExpiresAt = new Date(Date.now() + AUTH_SESSION_DURATION_MS).toISOString();
+    await database.query("update auth_sessions set expires_at = $1 where token_hash = $2", [renewedExpiresAt, tokenHash]);
+  }
+
+  req.authContext = { user: authUserFromRow(row) };
   return req.authContext;
 }
 
@@ -2748,10 +2796,11 @@ app.post("/api/auth/register", authRegisterLimit, async (req, res) => {
     updatedAt: now,
     lastLoginAt: now
   };
-  await database.query(
-    `insert into auth_users (id, email, name, role, status, password_hash, password_salt, created_at, updated_at, last_login_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+  const insertResult = await database.query(
+    `insert into auth_users (id, email, name, role, status, password_hash, password_salt, created_at, updated_at, last_login_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning uid`,
     [user.id, user.email, user.name, user.role, user.status, user.passwordHash, user.passwordSalt, user.createdAt, user.updatedAt, user.lastLoginAt]
   );
+  user.uid = insertResult.rows[0]?.uid === undefined ? undefined : Number(insertResult.rows[0].uid);
   const token = await createAuthSession(user.id);
 
   res.json({ user: toPublicUser(user), token });
@@ -2809,6 +2858,76 @@ app.post("/api/auth/logout", async (req, res) => {
 app.get("/api/auth/me", async (req, res) => {
   const auth = await currentAuthUser(req);
   res.json({ user: auth ? toPublicUser(auth.user) : null });
+});
+
+app.patch("/api/auth/me/profile", async (req, res) => {
+  const auth = await requireSignedIn(req, res);
+  if (!auth) return;
+  if (!db) {
+    sendDatabaseRequired(res);
+    return;
+  }
+
+  const name = trimText(req.body?.name, 80);
+  if (!name) {
+    res.status(400).json({ error: "Name is required" });
+    return;
+  }
+
+  await ensureAuthDatabase();
+  const database = requireDatabase();
+  const updatedAt = new Date().toISOString();
+  const result = await database.query(
+    "update auth_users set name = $1, updated_at = $2 where id = $3 returning *",
+    [name, updatedAt, auth.user.id]
+  );
+
+  const user = result.rows[0] ? authUserFromRow(result.rows[0]) : null;
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  res.json({ user: toPublicUser(user) });
+});
+
+app.patch("/api/auth/me/password", async (req, res) => {
+  const auth = await requireSignedIn(req, res);
+  if (!auth) return;
+  if (!db) {
+    sendDatabaseRequired(res);
+    return;
+  }
+
+  const currentPassword = typeof req.body?.currentPassword === "string" ? req.body.currentPassword : "";
+  const newPassword = typeof req.body?.newPassword === "string" ? req.body.newPassword : "";
+
+  if (!currentPassword || newPassword.length < 8) {
+    res.status(400).json({ error: "Current password and a new password with at least 8 characters are required" });
+    return;
+  }
+
+  await ensureAuthDatabase();
+  const database = requireDatabase();
+  const result = await database.query("select * from auth_users where id = $1 limit 1", [auth.user.id]);
+  const user = result.rows[0] ? authUserFromRow(result.rows[0]) : null;
+
+  if (!user || !verifyPassword(currentPassword, user.passwordSalt, user.passwordHash)) {
+    res.status(403).json({ error: "Current password is incorrect" });
+    return;
+  }
+
+  const passwordData = hashPassword(newPassword);
+  const updatedAt = new Date().toISOString();
+  const tokenHash = hashToken(bearerToken(req));
+  await database.query(
+    "update auth_users set password_hash = $1, password_salt = $2, updated_at = $3 where id = $4",
+    [passwordData.hash, passwordData.salt, updatedAt, user.id]
+  );
+  await database.query("delete from auth_sessions where user_id = $1 and token_hash <> $2", [user.id, tokenHash]);
+
+  user.updatedAt = updatedAt;
+  res.json({ user: toPublicUser(user) });
 });
 
 app.get("/api/me/watched-sources", async (req, res) => {
@@ -2967,10 +3086,11 @@ app.post("/api/admin/users", async (req, res) => {
     updatedAt: now
   };
 
-  await database.query(
-    `insert into auth_users (id, email, name, role, status, password_hash, password_salt, created_at, updated_at, last_login_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+  const insertResult = await database.query(
+    `insert into auth_users (id, email, name, role, status, password_hash, password_salt, created_at, updated_at, last_login_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning uid`,
     [user.id, user.email, user.name, user.role, user.status, user.passwordHash, user.passwordSalt, user.createdAt, user.updatedAt, user.lastLoginAt || null]
   );
+  user.uid = insertResult.rows[0]?.uid === undefined ? undefined : Number(insertResult.rows[0].uid);
   const usersResult = await database.query("select * from auth_users order by created_at desc");
   res.json({ user: toPublicUser(user), users: usersResult.rows.map((row) => toPublicUser(authUserFromRow(row))) });
 });

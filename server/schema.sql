@@ -1,5 +1,8 @@
+create sequence if not exists auth_users_uid_seq start 1;
+
 create table if not exists auth_users (
   id text primary key,
+  uid integer unique default nextval('auth_users_uid_seq'),
   email text not null unique,
   name text not null,
   role text not null check (role in ('owner', 'admin', 'user')),
@@ -11,6 +14,29 @@ create table if not exists auth_users (
   last_login_at timestamptz
 );
 
+alter table auth_users add column if not exists uid integer;
+alter table auth_users alter column uid set default nextval('auth_users_uid_seq');
+
+with base as (
+  select coalesce(max(uid), 0) as max_uid from auth_users
+),
+numbered as (
+  select id, (select max_uid from base) + row_number() over (order by created_at, id) as next_uid
+  from auth_users
+  where uid is null
+)
+update auth_users
+set uid = numbered.next_uid
+from numbered
+where auth_users.id = numbered.id;
+
+select setval(
+  'auth_users_uid_seq',
+  greatest(coalesce((select max(uid) from auth_users), 0), 1),
+  coalesce((select max(uid) from auth_users), 0) > 0
+);
+
+create unique index if not exists auth_users_uid_idx on auth_users(uid);
 create table if not exists auth_sessions (
   id text primary key,
   user_id text not null references auth_users(id) on delete cascade,
