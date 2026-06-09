@@ -60,8 +60,14 @@ export type TalkMentionItem = {
   summary: string;
 };
 
+export type TalkHighlightItem = {
+  time: string;
+  desc: string;
+};
+
 export type TalkItem = {
   id: string;
+  episodeNo?: number;
   title: string;
   subtitle: string;
   date: string;
@@ -69,14 +75,22 @@ export type TalkItem = {
   duration: string;
   coverUrl: string;
   status: "live" | "scheduled" | "archived";
+  category?: "talk" | "special" | "selected" | "notice" | "other";
   host: string;
   guests: string[];
   tags: string[];
   summary: string;
+  summaryBullets?: string[];
+  highlights?: TalkHighlightItem[];
   viewers: number;
   danmaku: number;
   likes: number;
   sourceUrl?: string;
+  videoUrl?: string;
+  videoProvider?: "bilibili" | "youtube" | "web" | "cloud" | "other";
+  animeMentions?: number;
+  isFeatured?: boolean;
+  isLiked?: boolean;
   transcript: TalkTranscriptItem[];
   comments: TalkCommentItem[];
   mentions: TalkMentionItem[];

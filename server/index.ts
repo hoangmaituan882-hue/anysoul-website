@@ -14,7 +14,7 @@ import { defaultPlazaContent } from "../src/content/defaults/plaza";
 import { defaultFeedbackSubmissions } from "../src/content/defaults/feedback";
 import { defaultSiteAnalytics } from "../src/content/defaults/analytics";
 import { defaultScreeningLibrary } from "../src/content/defaults/screeningLibrary";
-import type { FeedbackSubmission, FeedbackSubmissionsContent, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint } from "../src/content/types";
+import type { FeedbackSubmission, FeedbackSubmissionsContent, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalkTranscriptItem } from "../src/content/types";
 import {
   defaultScreeningsAnime,
   defaultScreeningsClassics,
@@ -1145,6 +1145,90 @@ async function completeMediaItem(item: ScreeningSourceItem): Promise<MediaAiSugg
     risks: [...risks, ...(Array.isArray(aiPayload.risks) ? aiPayload.risks.map(String) : [])],
     sourceProviders
   };
+}
+
+function cleanStringArray(value: unknown, limit: number, maxLength: number) {
+  return Array.isArray(value)
+    ? value.map((item) => trimText(item, maxLength)).filter(Boolean).slice(0, limit)
+    : [];
+}
+
+function sanitizeTalkAiPayload(raw: unknown) {
+  const input = isRecord(raw) ? raw : {};
+  const highlights: TalkHighlightItem[] = Array.isArray(input.highlights)
+    ? input.highlights.map((item) => {
+      const record = isRecord(item) ? item : {};
+      return {
+        time: trimText(record.time, 24),
+        desc: trimText(record.desc || record.description, 240)
+      };
+    }).filter((item) => item.time || item.desc).slice(0, 12)
+    : [];
+
+  const transcript: TalkTranscriptItem[] = Array.isArray(input.transcript)
+    ? input.transcript.map((item) => {
+      const record = isRecord(item) ? item : {};
+      return {
+        time: trimText(record.time, 24),
+        speaker: trimText(record.speaker, 80) || "主持人：",
+        text: trimText(record.text, 1200)
+      };
+    }).filter((item) => item.time || item.text).slice(0, 120)
+    : [];
+
+  return {
+    summary: trimText(input.summary, 2400),
+    summaryBullets: cleanStringArray(input.summaryBullets || input.bullets, 8, 240),
+    highlights,
+    transcript,
+    tags: cleanStringArray(input.tags, 10, 40)
+  };
+}
+
+async function summarizeTalkWithAi(request: { title: string; date?: string; text: string; videoUrl?: string }) {
+  const settings = await loadAiCoreSettings();
+  if (!settings.apiKey) throw new Error("OPENAI_API_KEY is not configured");
+
+  const response = await fetch(`${settings.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${settings.apiKey}`
+    },
+    body: JSON.stringify({
+      model: settings.model,
+      temperature: 0.25,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: "你是个人站杂谈回录像整理助手。只返回 JSON。根据输入生成中文摘要、摘要要点、时间轴高光、可编辑逐字稿草稿和标签。不要编造无法从文本推断的事实。"
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            title: request.title,
+            date: request.date,
+            videoUrl: request.videoUrl,
+            rawText: request.text,
+            schema: {
+              summary: "中文摘要，200-600字",
+              summaryBullets: "中文要点数组，3-8条",
+              highlights: "数组，每项 { time, desc }",
+              transcript: "数组，每项 { time, speaker, text }，可从原文整理，不足时返回空数组",
+              tags: "中文标签数组，3-10个"
+            }
+          })
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) throw new Error(`OpenAI summarize failed: ${response.status}`);
+  const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error("OpenAI response is empty");
+  return sanitizeTalkAiPayload(safeJsonParse(content));
 }
 
 function normalizeLibraryContent(value: unknown): ScreeningLibraryContent {
@@ -4079,6 +4163,27 @@ app.post("/api/admin/media/ai/complete", async (req, res) => {
       skipped: rawItems.length - items.length,
       warnings: ["AI 补全失败，片源库草稿未被修改"]
     });
+  }
+});
+
+app.post("/api/admin/talks/ai/summarize", async (req, res) => {
+  const auth = await requireWorkspaceAdmin(req, res);
+  if (!auth) return;
+
+  const title = trimText(req.body?.title, 180);
+  const date = trimText(req.body?.date, 40) || undefined;
+  const text = trimText(req.body?.text, 50000);
+  const videoUrl = trimText(req.body?.videoUrl, 700) || undefined;
+
+  if (!title || text.length < 20) {
+    res.status(400).json({ error: "Title and at least 20 characters of source text are required" });
+    return;
+  }
+
+  try {
+    res.json(await summarizeTalkWithAi({ title, date, text, videoUrl }));
+  } catch (error) {
+    res.status(502).json({ error: error instanceof Error ? error.message : "Talk AI summarize failed" });
   }
 });
 

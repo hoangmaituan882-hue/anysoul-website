@@ -5,6 +5,144 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import { TalkModal } from "../components/TalkModal";
 import { TopicsModal } from "../components/TopicsModal";
+import { useContent } from "../content/useContent";
+import { defaultTalksContent } from "../content/defaults/talks";
+import type { TalkItem, TalkScheduleItem, TalksContent } from "../content/types";
+
+type TalkCard = {
+  id: string;
+  timestamp: number;
+  date: string;
+  day: string;
+  cat: string;
+  isLiked: boolean;
+  title: string;
+  desc: string;
+  min: number;
+  color: "pink" | "yellow" | "blue" | "green";
+  cover: string;
+  imgs: string[];
+  hasAiSummary: boolean;
+  viewers: number;
+  danmaku: number;
+  animeMentions: number;
+  summaryText: string;
+  summaryBullets: string[];
+  transcript: Array<{ time: string; speaker: string; text: string }>;
+  animes: string[];
+  highlights: Array<{ time: string; desc: string }>;
+  comments: string[];
+  biliUrl?: string;
+  videoUrl?: string;
+};
+
+const fallbackCover = "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=900&q=70";
+const avatarImages = [
+  "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=100&h=100&fit=crop",
+  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop"
+];
+
+function parseTalkDate(date: string) {
+  const parsed = new Date(`${date || new Date().toISOString().slice(0, 10)}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+function formatTalkDate(date: string) {
+  const parsed = parseTalkDate(date);
+  return `${parsed.getFullYear()}.${String(parsed.getMonth() + 1).padStart(2, "0")}.${String(parsed.getDate()).padStart(2, "0")}`;
+}
+
+function durationToMinutes(duration: string) {
+  const match = String(duration || "").match(/\d+/);
+  return match ? Number(match[0]) : 60;
+}
+
+function categoryMeta(category?: TalkItem["category"], tags: string[] = []) {
+  const value = category || (tags.includes("精选") ? "selected" : tags.includes("特别") ? "special" : "talk");
+  if (value === "selected") return { label: "精选系列", color: "pink" as const };
+  if (value === "special") return { label: "特别回", color: "yellow" as const };
+  if (value === "notice") return { label: "公告", color: "blue" as const };
+  if (value === "other") return { label: "其他", color: "green" as const };
+  return { label: "杂谈", color: "blue" as const };
+}
+
+function normalizeTalksContent(value: TalksContent): TalksContent {
+  return {
+    ...defaultTalksContent,
+    ...(value || {}),
+    hero: { ...defaultTalksContent.hero, ...(value?.hero || {}) },
+    live: { ...defaultTalksContent.live, ...(value?.live || {}) },
+    upcoming: Array.isArray(value?.upcoming) ? value.upcoming : defaultTalksContent.upcoming,
+    weekly: Array.isArray(value?.weekly) ? value.weekly : defaultTalksContent.weekly,
+    archive: Array.isArray(value?.archive) ? value.archive : defaultTalksContent.archive,
+    recentUpdates: Array.isArray(value?.recentUpdates) ? value.recentUpdates : defaultTalksContent.recentUpdates,
+    topArticles: Array.isArray(value?.topArticles) ? value.topArticles : defaultTalksContent.topArticles,
+    newUploads: Array.isArray(value?.newUploads) ? value.newUploads : defaultTalksContent.newUploads,
+    topics: Array.isArray(value?.topics) ? value.topics : defaultTalksContent.topics
+  };
+}
+
+function talkToCard(talk: TalkItem, index = 0): TalkCard {
+  const parsed = parseTalkDate(talk.date);
+  const meta = categoryMeta(talk.category, talk.tags);
+  const mentions = Array.isArray(talk.mentions) ? talk.mentions : [];
+  return {
+    id: talk.id,
+    timestamp: parsed.getTime(),
+    date: formatTalkDate(talk.date),
+    day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][parsed.getDay()],
+    cat: meta.label,
+    isLiked: Boolean(talk.isLiked),
+    title: talk.episodeNo ? `第 ${talk.episodeNo} 期 · ${talk.title}` : talk.title,
+    desc: talk.subtitle || talk.summary,
+    min: durationToMinutes(talk.duration),
+    color: meta.color,
+    cover: talk.coverUrl || fallbackCover,
+    imgs: avatarImages.slice(0, Math.max(1, Math.min(3, (talk.guests?.length || 1) + 1))),
+    hasAiSummary: Boolean(talk.summary || talk.summaryBullets?.length || talk.highlights?.length),
+    viewers: Number(talk.viewers || 0),
+    danmaku: Number(talk.danmaku || 0),
+    animeMentions: Number(talk.animeMentions || mentions.length || talk.tags?.length || 0),
+    summaryText: talk.summary || "",
+    summaryBullets: talk.summaryBullets || [],
+    transcript: talk.transcript || [],
+    animes: mentions.length ? mentions.map((item) => item.title) : talk.tags || [],
+    highlights: talk.highlights || [],
+    comments: (talk.comments || []).map((comment) => typeof comment === "string" ? comment : comment.content),
+    biliUrl: talk.videoUrl || talk.sourceUrl,
+    videoUrl: talk.videoUrl || talk.sourceUrl
+  };
+}
+
+function scheduleToCard(item: TalkScheduleItem, index: number): TalkCard {
+  const date = parseTalkDate(item.date);
+  const meta = categoryMeta(index % 2 === 0 ? "talk" : "notice", item.tags);
+  return {
+    id: item.id,
+    timestamp: date.getTime(),
+    date: formatTalkDate(item.date),
+    day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()],
+    cat: meta.label,
+    isLiked: false,
+    title: item.title,
+    desc: item.topic,
+    min: durationToMinutes(item.time),
+    color: meta.color,
+    cover: "",
+    imgs: avatarImages.slice(0, 2),
+    hasAiSummary: false,
+    viewers: 0,
+    danmaku: 0,
+    animeMentions: item.tags.length,
+    summaryText: item.topic,
+    summaryBullets: item.tags,
+    transcript: [],
+    animes: item.tags,
+    highlights: [],
+    comments: []
+  };
+}
 
 function WaveScrollbar({ scrollRef, schedules }: { scrollRef: React.RefObject<HTMLDivElement>, schedules?: any[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -125,6 +263,7 @@ function WaveScrollbar({ scrollRef, schedules }: { scrollRef: React.RefObject<HT
 
 export function Talks() {
   const { t } = useThemeLanguage();
+  const talksContent = normalizeTalksContent(useContent<TalksContent>("talks.main", defaultTalksContent));
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedTalk, setSelectedTalk] = useState<any | null>(null);
   const [showAllArchive, setShowAllArchive] = useState(false);
@@ -141,66 +280,18 @@ export function Talks() {
     }
   }, [showAllArchive, archiveFilter]);
 
-  const archiveData = useMemo(() => {
-    return Array.from({ length: 48 }).map((_, i) => {
-      const year = 2026 - Math.floor(i / 15);
-      const month = Math.floor(Math.random() * 12) + 1;
-      const day = Math.floor(Math.random() * 28) + 1;
-      const d = new Date(year, month - 1, day);
-      const timestamp = d.getTime();
-      const hasAiSummary = Math.random() > 0.4;
-      const cat = ["杂谈", "特殊", "精选"][i % 3];
-      const isLiked = Math.random() > 0.7; // add mock liked status
-      return {
-        id: i,
-        timestamp,
-        date: `${year}.${month.toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`,
-        day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()],
-        cat,
-        isLiked,
-        title: `过往杂谈回 - 第 ${100 - i} 期`,
-        desc: "这是过去的一期精彩回顾录像，点击查看详细的 AI 总结与时间轴高光点以及精华弹幕。",
-        min: Math.floor(Math.random() * 60 + 60),
-        color: ["pink", "yellow", "blue"][i % 3],
-        cover: `https://images.unsplash.com/photo-${1605810230434 - i * 1000}?auto=format&fit=crop&w=500&q=60&sig=${i}`,
-        imgs: [
-          "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=100&h=100&fit=crop"
-        ],
-        hasAiSummary,
-        viewers: Math.floor(Math.random() * 8000 + 1000),
-        danmaku: Math.floor(Math.random() * 5000 + 500),
-        animeMentions: Math.floor(Math.random() * 15 + 1),
-        summaryText: "本次杂谈主要回顾了近期的业界动态，主持人与嘉宾深入探讨了新番的制作质量和叙事节奏。讨论了各种热门话题与未来的看点。",
-        summaryBullets: [
-          "前30分钟：开场白与近期生活琐事分享",
-          "30-60分钟：霸权候补动画的优缺点分析",
-          "最后阶段：观众QA问答互动与下放企划预告"
-        ],
-        transcript: [
-          { time: "00:00", speaker: "主持人：", text: `这是第 ${100 - i} 期的开场白，欢迎大家的到来。` },
-          { time: "05:30", speaker: "嘉宾1：", text: "这一期的内容非常有趣，我有很多想跟观众分享的。" },
-          { time: "15:10", speaker: "主持人：", text: "没错，请大家多多发弹幕和我们互动！" }
-        ],
-        animes: ["葬送的芙莉莲", "咒术回战", "迷宫饭", "绝区零"].slice(0, Math.floor(Math.random() * 4 + 1)),
-        highlights: [
-          { time: "12:45", desc: "嘉宾犀利吐槽主角的降智行为，弹幕沸腾。" },
-          { time: "34:20", desc: "关于经费都去哪了的深度行业探讨。" }
-        ],
-        comments: [
-          "深有同感！前面的确有点拖沓，但后面真的很神！",
-          "嘉宾太敢说了，这真的是可以免费听的吗哈哈哈哈",
-          "这一期学到了很多东西！"
-        ]
-      };
-    });
-  }, []);
+  const archiveData = useMemo(() => (
+    (talksContent.archive.length ? talksContent.archive : defaultTalksContent.archive)
+      .map((talk, index) => talkToCard(talk, index))
+      .sort((a, b) => b.timestamp - a.timestamp)
+  ), [talksContent.archive]);
 
   const filteredArchiveData = useMemo(() => {
     let list = archiveData;
     if (archiveFilter !== '全部') {
       if (archiveFilter === 'AI总结') list = list.filter(item => item.hasAiSummary);
-      else if (archiveFilter === '精选系列') list = list.filter(item => item.cat === '精选');
-      else if (archiveFilter === '特殊回') list = list.filter(item => item.cat === '特殊');
+      else if (archiveFilter === '精选系列') list = list.filter(item => item.cat === '精选系列');
+      else if (archiveFilter === '特别回') list = list.filter(item => item.cat === '特别回');
       else if (archiveFilter === 'liked') list = list.filter(item => item.isLiked);
       else if (archiveFilter === 'history') list = list.filter(item => parseInt(item.date.substring(0, 4)) <= 2024);
       else list = list.filter(item => item.date.startsWith(archiveFilter));
@@ -218,7 +309,7 @@ export function Talks() {
 
   const latestYearTalks = useMemo(() => {
     return [...archiveData]
-      .filter(item => item.date.startsWith("2026"))
+      .filter(item => item.date.startsWith('2026'))
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [archiveData]);
 
@@ -226,9 +317,11 @@ export function Talks() {
     return [...latestYearTalks].sort((a, b) => b.viewers - a.viewers).slice(0, 3);
   }, [latestYearTalks]);
 
-  const liveTalkData = latestYearTalks[0] || archiveData[0];
-  const schedules = latestYearTalks.slice(1);
-
+  const liveTalkData = talkToCard(talksContent.live);
+  const schedules = talksContent.upcoming.length
+    ? talksContent.upcoming.map(scheduleToCard)
+    : latestYearTalks.slice(1);
+  const weeklyDisplay = (talksContent.weekly.length ? talksContent.weekly : defaultTalksContent.weekly).slice(0, 7);
   if (showAllArchive) {
     return (
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 animate-in fade-in duration-700 bg-background text-foreground">
@@ -248,7 +341,7 @@ export function Talks() {
                <button onClick={() => setArchiveFilter('全部')} className={cn("flex items-center gap-1.5 px-4 py-2 font-bold text-sm rounded-full shrink-0 transition-colors", archiveFilter === '全部' ? "bg-foreground text-background shadow-sm" : "bg-[#fcf8f3] dark:bg-[#2d2822] border border-[#f5eade] dark:border-[#3a332a] text-muted-foreground hover:text-foreground")}>
                  <Filter className="size-4" /> 全部 {archiveData.length}
                </button>
-               {[{label: "2026", filterValue: "2026"}, {label: "2025", filterValue: "2025"}, {label: "我喜欢的", filterValue: "liked"}, {label: "历史", filterValue: "history"}, {label: "精选系列", filterValue: "精选系列"}, {label: "特殊回", filterValue: "特殊回"}, {label: "AI总结", filterValue: "AI总结"}].map(f => (
+               {[{label: "2026", filterValue: "2026"}, {label: "2025", filterValue: "2025"}, {label: "我喜欢的", filterValue: "liked"}, {label: "历史", filterValue: "history"}, {label: "精选系列", filterValue: "精选系列"}, {label: "特别回", filterValue: "特别回"}, {label: "AI总结", filterValue: "AI总结"}].map(f => (
                  <button key={f.filterValue} onClick={() => setArchiveFilter(f.filterValue)} className={cn("px-4 py-2 hover:bg-muted font-semibold text-[13px] md:text-sm rounded-full transition-colors shrink-0", archiveFilter === f.filterValue ? "bg-pink-100 text-pink-700 dark:bg-pink-900/60 dark:text-pink-300 shadow-sm" : "bg-[#fcf8f3] dark:bg-[#2d2822] border border-[#f5eade] dark:border-[#3a332a] text-muted-foreground")}>
                    {f.label}
                  </button>
@@ -339,10 +432,10 @@ export function Talks() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
         <div className="flex-1 max-w-2xl">
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
-            {t("talks.title")}
+            {talksContent.hero.title || t("talks.title")}
           </h1>
           <p className="text-muted-foreground text-[15px] md:text-[16px] max-w-3xl leading-relaxed">
-            {t("talks.subtitle")}
+            {talksContent.hero.subtitle || t("talks.subtitle")}
           </p>
         </div>
       </div>
@@ -484,11 +577,12 @@ export function Talks() {
             </div>
             
             <div className="flex overflow-x-auto pb-4 pt-1 -mx-4 px-4 snap-x snap-mandatory gap-2.5 md:gap-3 md:grid md:grid-cols-4 lg:grid-cols-7 md:overflow-visible md:p-0 md:mx-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+              {weeklyDisplay.map((weekItem, index) => {
+                const day = index + 1;
                 // Determine if today is the iterated day (1 for Monday, etc)
                 const isToday = new Date().getDay() === (day === 7 ? 0 : day);
                 return (
-                  <div key={day} className={cn(
+                  <div key={weekItem.id || day} className={cn(
                     "flex flex-col p-3 md:p-4 rounded-2xl md:rounded-3xl border transition-all duration-300 w-[140px] md:w-auto shrink-0 snap-center md:snap-align-none",
                     isToday 
                       ? "bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800 shadow-sm ring-1 ring-pink-500/20 md:-translate-y-1" 
@@ -499,7 +593,7 @@ export function Talks() {
                         "text-xs md:text-sm font-bold",
                         isToday ? "text-pink-600 dark:text-pink-400" : "text-muted-foreground"
                       )}>
-                        {t(`talks.plan.d${day}`)}
+                        {weekItem.date || t(`talks.plan.d${day}`)}
                       </div>
                       {isToday && (
                          <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-pink-500 animate-pulse" />
@@ -507,10 +601,10 @@ export function Talks() {
                     </div>
                     <div className="flex-1">
                        <h4 className="font-bold text-[13px] md:text-[14px] leading-tight mb-1 md:mb-1.5">
-                         {t(`talks.plan.d${day}.title`)}
+                         {weekItem.title || t(`talks.plan.d${day}.title`)}
                        </h4>
                        <p className="text-[11px] md:text-[12px] text-muted-foreground flex items-center gap-1 md:gap-1.5 break-words">
-                         {t(`talks.plan.d${day}.desc`)}
+                         {weekItem.topic || t(`talks.plan.d${day}.desc`)}
                        </p>
                     </div>
                   </div>
@@ -542,7 +636,7 @@ export function Talks() {
                 { title: "2025", label: "2025年杂谈回", filterValue: "2025", count: archiveData.filter(item => item.date.startsWith("2025")).length, color: "text-cyan-500", bg: "bg-cyan-50 dark:bg-cyan-500/10" },
                 { title: "喜欢", label: "我喜欢的", filterValue: "liked", count: archiveData.filter(item => item.isLiked).length, color: "text-red-500", bg: "bg-red-50 dark:bg-red-500/10" },
                 { title: "历史", label: "2024年及以前", filterValue: "history", count: archiveData.filter(item => parseInt(item.date.substring(0, 4)) <= 2024).length, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-500/10" },
-                { title: "精选", label: "历史精选杂谈", filterValue: "精选系列", count: archiveData.filter(item => item.cat === '精选').length, color: "text-pink-500", bg: "bg-pink-50 dark:bg-pink-500/10" },
+                { title: "精选", label: "历史精选杂谈", filterValue: "精选系列", count: archiveData.filter(item => item.cat === '精选系列').length, color: "text-pink-500", bg: "bg-pink-50 dark:bg-pink-500/10" },
               ].map((folder, idx) => (
                  <div 
                    key={idx} 
@@ -582,51 +676,31 @@ export function Talks() {
               </div>
 
               <div className="space-y-3">
-                 {/* Card 1 */}
-                 <div onClick={() => { setActiveTopicId("upd1"); setShowTopicsModal(true); }} className="bg-[#f0ece5] dark:bg-[#282725] p-5 rounded-3xl cursor-pointer hover:bg-[#e8e4dc] dark:hover:bg-[#32302e] transition-colors relative">
+                 {(talksContent.recentUpdates.length ? talksContent.recentUpdates : defaultTalksContent.recentUpdates).slice(0, 2).map((update, index) => (
+                 <div key={update.id} onClick={() => { setActiveTopicId(update.id); setShowTopicsModal(true); }} className="bg-[#f0ece5] dark:bg-[#282725] p-5 rounded-3xl cursor-pointer hover:bg-[#e8e4dc] dark:hover:bg-[#32302e] transition-colors relative overflow-hidden">
                     <div className="flex items-start gap-4 mb-4">
-                       <div className="bg-yellow-400 w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 text-black shadow-sm transform -rotate-6">
-                         <FileText className="size-5" />
+                       <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm relative z-10", index === 0 ? "bg-yellow-400 text-black transform -rotate-6" : "bg-[#d2e0f5] text-blue-700")}>
+                         {index === 0 ? <FileText className="size-5" /> : <div className="bg-white rounded-md p-1"><FileText className="size-4" /></div>}
                        </div>
-                       <h4 className="font-bold text-[15px] leading-tight mt-1">{t("talks.upd1.title")}</h4>
+                       <h4 className="font-bold text-[15px] leading-tight mt-1 relative z-10">{update.title}</h4>
                     </div>
-                    
-                    <div className="text-[13px] text-muted-foreground mb-4 font-medium">
-                       {t("talks.upd1.date")}
-                    </div>
-                    <p className="text-[13px] text-muted-foreground mb-6 line-clamp-3">
-                       {t("talks.upd1.desc")}
-                    </p>
-                    <div className="flex items-center justify-center gap-2 border-t border-black/5 dark:border-white/5 pt-4 text-[14px] font-bold group">
-                       {t("talks.open")} <ArrowUpRight className="size-4 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                 </div>
-
-                 {/* Card 2 */}
-                 <div onClick={() => { setActiveTopicId("upd2"); setShowTopicsModal(true); }} className="bg-[#f0ece5] dark:bg-[#282725] p-5 rounded-3xl cursor-pointer hover:bg-[#e8e4dc] dark:hover:bg-[#32302e] transition-colors relative overflow-hidden">
-                    <div className="flex items-start gap-4 mb-4">
-                       <div className="bg-[#d2e0f5] text-blue-700 w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm relative z-10">
-                         <div className="bg-white rounded-md p-1"><FileText className="size-4" /></div>
-                       </div>
-                       <h4 className="font-bold text-[15px] leading-tight mt-1 relative z-10">{t("talks.upd2.title")}</h4>
-                    </div>
-                    {/* decorative background star pattern */}
-                    <div className="absolute right-[-20px] top-4 text-blue-200 dark:text-blue-900/30 opacity-50 z-0 pointer-events-none">
+                    {index > 0 && <div className="absolute right-[-20px] top-4 text-blue-200 dark:text-blue-900/30 opacity-50 z-0 pointer-events-none">
                        <svg width="100" height="100" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
                        </svg>
-                    </div>
+                    </div>}
                     
                     <div className="text-[13px] text-muted-foreground mb-4 font-medium relative z-10">
-                       {t("talks.upd2.date")}
+                       {update.date || "最近更新"}
                     </div>
                     <p className="text-[13px] text-muted-foreground mb-6 line-clamp-3 relative z-10">
-                       {t("talks.upd2.desc")}
+                       {update.description}
                     </p>
                     <div className="flex items-center justify-center gap-2 border-t border-black/5 dark:border-white/5 pt-4 text-[14px] font-bold group relative z-10">
                        {t("talks.open")} <ArrowUpRight className="size-4 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                  </div>
+                 ))}
               </div>
            </section>
 
@@ -634,26 +708,31 @@ export function Talks() {
            <section>
               <h2 className="text-xl font-bold mb-4 mt-6">{t("talks.top")}</h2>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                 {topTalks.map((talk) => (
-                   <div 
-                     key={talk.id} 
-                     onClick={() => setSelectedTalk(talk)}
+                 {(talksContent.topArticles.length ? talksContent.topArticles.slice(0, 3) : topTalks).map((item, index) => {
+                   const talk = "cover" in item ? item : topTalks[index] || archiveData[0];
+                   const title = "description" in item ? item.title : talk.title;
+                   const description = "description" in item ? item.description : talk.cat;
+                   const href = "href" in item ? item.href : undefined;
+                   const card = (
+                   <div
+                     onClick={() => href ? undefined : setSelectedTalk(talk)}
                      className="bg-[#f0ece5] dark:bg-[#282725] rounded-3xl overflow-hidden h-[180px] relative group cursor-pointer hover:shadow-md transition-all"
                    >
                       <img src={talk.cover} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10 group-hover:bg-black/40 transition-colors" />
                       <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col justify-end z-10">
                         <div className="flex items-center gap-1.5 mb-1.5 transform translate-y-1 group-hover:translate-y-0 transition-transform">
-                          <span className={cn("text-background text-[9px] font-bold px-1.5 py-0.5 rounded-sm", talk.color === 'pink' ? 'bg-pink-500' : talk.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500')}>{talk.cat}</span>
+                          <span className={cn("text-background text-[9px] font-bold px-1.5 py-0.5 rounded-sm", talk.color === 'pink' ? 'bg-pink-500' : talk.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500')}>{description}</span>
                           <span className="text-white/80 text-[10px] font-semibold flex items-center gap-0.5"><Eye className="size-3" /> {talk.viewers}</span>
                         </div>
-                        <h4 className="text-white font-bold leading-tight text-[13px] line-clamp-2 shadow-sm">{talk.title}</h4>
+                        <h4 className="text-white font-bold leading-tight text-[13px] line-clamp-2 shadow-sm">{title}</h4>
                       </div>
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 shadow-xl">
                          <Play className="size-4 ml-0.5 text-white" fill="currentColor" />
                       </div>
-                   </div>
-                 ))}
+                   </div>);
+                   return href ? <a key={item.id} href={href}>{card}</a> : <div key={item.id}>{card}</div>;
+                 })}
               </div>
            </section>
 
@@ -662,27 +741,18 @@ export function Talks() {
               <h2 className="text-xl font-bold mb-4 mt-6">{t("talks.new")}</h2>
               <div className="space-y-4">
                  
-                 <div className="flex items-center gap-4 group cursor-pointer">
+                 {(talksContent.newUploads.length ? talksContent.newUploads : defaultTalksContent.newUploads).slice(0, 2).map((upload, index) => (
+                 <a key={upload.id} href={upload.href || "#talks"} className="flex items-center gap-4 group cursor-pointer">
                     <div className="w-10 h-10 bg-black text-white dark:bg-white dark:text-black rounded-full flex items-center justify-center flex-shrink-0">
-                       <span className="text-[10px] font-bold">PDF</span>
+                       <span className="text-[10px] font-bold">{index === 0 ? "PDF" : "MD"}</span>
                     </div>
-                    <span className="font-semibold text-sm flex-1 group-hover:text-primary transition-colors">{t("talks.file1")}</span>
+                    <span className="font-semibold text-sm flex-1 group-hover:text-primary transition-colors">{upload.title}</span>
                     <div className="flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                       <Search className="size-4" />
                       <FileDown className="size-4" />
                     </div>
-                 </div>
-
-                 <div className="flex items-center gap-4 group cursor-pointer">
-                    <div className="w-10 h-10 bg-black text-white dark:bg-white dark:text-black rounded-full flex items-center justify-center flex-shrink-0">
-                       <span className="text-[10px] font-bold">ZIP</span>
-                    </div>
-                    <span className="font-semibold text-sm flex-1 group-hover:text-primary transition-colors">{t("talks.file2")}</span>
-                    <div className="flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                      <Search className="size-4" />
-                      <FileDown className="size-4" />
-                    </div>
-                 </div>
+                 </a>
+                 ))}
 
               </div>
            </section>
@@ -691,7 +761,7 @@ export function Talks() {
       </div>
       
       <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />
-      <TopicsModal isOpen={showTopicsModal} onClose={() => setShowTopicsModal(false)} t={t} initialTopicId={activeTopicId} />
+      <TopicsModal isOpen={showTopicsModal} onClose={() => setShowTopicsModal(false)} t={t} initialTopicId={activeTopicId} topics={[...talksContent.recentUpdates, ...talksContent.topics]} />
       
     </div>
   );

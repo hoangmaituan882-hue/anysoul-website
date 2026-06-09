@@ -2,17 +2,18 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, FileText, Bell, Tag, ArrowRight } from "lucide-react";
 import { cn } from "../lib/utils";
+import type { TalkSidebarItem } from "../content/types";
 
 interface TopicsModalProps {
   isOpen: boolean;
   onClose: () => void;
   t: (key: string) => string;
   initialTopicId?: string;
+  topics?: TalkSidebarItem[];
 }
 
-export function TopicsModal({ isOpen, onClose, t, initialTopicId }: TopicsModalProps) {
-  // We use the two existing updates plus some mock ones to make a real list
-  const topics = [
+export function TopicsModal({ isOpen, onClose, t, initialTopicId, topics: contentTopics }: TopicsModalProps) {
+  const fallbackTopics = [
     {
       id: "upd1",
       title: t("talks.upd1.title") || "论异世界动画的十年变迁：从王道到反套路",
@@ -39,7 +40,18 @@ export function TopicsModal({ isOpen, onClose, t, initialTopicId }: TopicsModalP
     }
   ];
 
-  const [activeTopicId, setActiveTopicId] = useState(initialTopicId || topics[0].id);
+  const topics = contentTopics && contentTopics.length > 0
+    ? contentTopics.map((topic) => ({
+      id: topic.id,
+      title: topic.title,
+      date: topic.date || "最近更新",
+      desc: topic.description,
+      content: topic.description,
+      badges: topic.tags && topic.tags.length > 0 ? topic.tags : ["杂谈回"]
+    }))
+    : fallbackTopics;
+
+  const [activeTopicId, setActiveTopicId] = useState(initialTopicId || topics[0]?.id);
 
   // Update activeTopicId when modal opens with a new initialTopicId
   React.useEffect(() => {

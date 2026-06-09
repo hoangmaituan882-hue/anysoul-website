@@ -20,6 +20,7 @@ import { ScreeningsAdminPanel } from "../workspace/ScreeningsAdminPanel";
 import { PlazaAdminPanel } from "../workspace/PlazaAdminPanel";
 import { UserAdminPanel } from "../workspace/UserAdminPanel";
 import { PostAdminPanel } from "../workspace/PostAdminPanel";
+import { TalksAdminPanel } from "../workspace/TalksAdminPanel";
 import type { AdminContentEntry, FeedbackSubmission, FeedbackSubmissionsContent, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ServerAlert, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint } from "../content/types";
 import { CONTENT_API_BASE, getLocalFeedbackSubmissions, getLocalSourceSubmissions, saveLocalFeedbackSubmissions, saveLocalSourceSubmissions } from "../content/client";
 import { defaultScreeningSourceSubmissions } from "../content/defaults/screenings";
@@ -249,7 +250,7 @@ function ResizeHandle({
 }
 
 export function Workspace() {
-  const [activeTab, setActiveTab] = useLocalStorage<'content' | 'posts' | 'screenings' | 'games' | 'plaza' | 'users' | 'monitor'>('workspace-activeTab', 'content');
+  const [activeTab, setActiveTab] = useLocalStorage<'content' | 'posts' | 'screenings' | 'talks' | 'games' | 'plaza' | 'users' | 'monitor'>('workspace-activeTab', 'content');
   const [todoView, setTodoView] = useLocalStorage<'list' | 'calendar' | 'monitor'>('workspace-todoView', 'list');
   const [todoFilter, setTodoFilter] = useLocalStorage<'all' | 'pending' | 'approved' | 'rejected'>('workspace-todoFilter', 'all');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -1151,6 +1152,11 @@ export function Workspace() {
                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'games' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
                    <Gamepad2 className="size-4" /> 游戏回控制
                  </button>
+                 <button
+                   onClick={() => setActiveTab('talks')}
+                   className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'talks' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
+                   <Video className="size-4" /> 杂谈回控制
+                 </button>
                   <button
                     onClick={() => setActiveTab('plaza')}
                     className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'plaza' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
@@ -1403,7 +1409,19 @@ export function Workspace() {
                         </div>
                         </div>
                      </motion.div>
-                   )}
+                  )}
+
+                  {activeTab === 'talks' && (
+                    <motion.div
+                      key="talks"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <TalksAdminPanel readOnly={readOnly} />
+                    </motion.div>
+                  )}
 
                   {activeTab === 'games' && (
                     <motion.div
