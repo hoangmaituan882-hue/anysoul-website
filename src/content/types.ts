@@ -40,6 +40,82 @@ export type FaqContent = {
   }>;
 };
 
+export type TalkTranscriptItem = {
+  time: string;
+  speaker: string;
+  text: string;
+};
+
+export type TalkCommentItem = {
+  author: string;
+  content: string;
+  time: string;
+};
+
+export type TalkMentionItem = {
+  title: string;
+  type: string;
+  score?: string;
+  tags: string[];
+  summary: string;
+};
+
+export type TalkItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  date: string;
+  time: string;
+  duration: string;
+  coverUrl: string;
+  status: "live" | "scheduled" | "archived";
+  host: string;
+  guests: string[];
+  tags: string[];
+  summary: string;
+  viewers: number;
+  danmaku: number;
+  likes: number;
+  sourceUrl?: string;
+  transcript: TalkTranscriptItem[];
+  comments: TalkCommentItem[];
+  mentions: TalkMentionItem[];
+};
+
+export type TalkScheduleItem = {
+  id: string;
+  date: string;
+  time: string;
+  title: string;
+  topic: string;
+  tags: string[];
+};
+
+export type TalkSidebarItem = {
+  id: string;
+  title: string;
+  description: string;
+  date?: string;
+  href?: string;
+  tags?: string[];
+};
+
+export type TalksContent = {
+  hero: {
+    title: string;
+    subtitle: string;
+    eyebrow: string;
+  };
+  live: TalkItem;
+  upcoming: TalkScheduleItem[];
+  weekly: TalkScheduleItem[];
+  archive: TalkItem[];
+  recentUpdates: TalkSidebarItem[];
+  topArticles: TalkSidebarItem[];
+  newUploads: TalkSidebarItem[];
+  topics: TalkSidebarItem[];
+};
+
 export type ScreeningMovie = {
   id: string;
   libraryId?: string;

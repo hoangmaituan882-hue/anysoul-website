@@ -187,7 +187,53 @@ const zhTranslations = {
   "auth.has_account": "已有账户？"
 } as const;
 
-export type TranslationKey = keyof typeof zhTranslations;
+const supplementalTranslations = {
+  zh: {
+    "header.talks": "杂谈回",
+    "talks.eyebrow": "Talk Archive",
+    "talks.title": "杂谈回",
+    "talks.subtitle": "把每周讨论、站点更新和内容线索整理成可以检索、回看和继续补充的长期记录。",
+    "talks.livenow": "直播中",
+    "talks.open": "打开杂谈",
+    "talks.thisweek": "本周安排",
+    "talks.archive": "往期归档",
+    "talks.showall": "查看全部",
+    "talks.recent": "近期动态",
+    "talks.top": "热门文章",
+    "talks.new": "新上传"
+  },
+  ja: {
+    "header.talks": "雑談回",
+    "talks.eyebrow": "Talk Archive",
+    "talks.title": "雑談回",
+    "talks.subtitle": "毎週の話題、サイト更新、内容の手がかりを検索・回覧できる記録として整理します。",
+    "talks.livenow": "配信中",
+    "talks.open": "雑談を開く",
+    "talks.thisweek": "今週の予定",
+    "talks.archive": "過去ログ",
+    "talks.showall": "すべて見る",
+    "talks.recent": "最近の更新",
+    "talks.top": "人気記事",
+    "talks.new": "新着アップロード"
+  },
+  en: {
+    "header.talks": "Talks",
+    "talks.eyebrow": "Talk Archive",
+    "talks.title": "Talks",
+    "talks.subtitle": "A searchable archive for weekly conversations, site updates, and long-running content threads.",
+    "talks.livenow": "Live now",
+    "talks.open": "Open talk",
+    "talks.thisweek": "This Week",
+    "talks.archive": "Archive",
+    "talks.showall": "Show all",
+    "talks.recent": "Recent",
+    "talks.top": "Top Articles",
+    "talks.new": "New Uploads"
+  }
+} as const;
+
+type SupplementalTranslationKey = keyof typeof supplementalTranslations.zh;
+export type TranslationKey = keyof typeof zhTranslations | SupplementalTranslationKey;
 
 interface ThemeLanguageContextType {
   theme: Theme;
@@ -592,7 +638,9 @@ export function ThemeLanguageProvider({ children }: { children: ReactNode }) {
   };
 
   const t = (key: TranslationKey) => {
-    return translations[language]?.[key] || translations["zh"][key];
+    const supplemental = supplementalTranslations[language]?.[key as SupplementalTranslationKey]
+      || supplementalTranslations.zh[key as SupplementalTranslationKey];
+    return translations[language]?.[key] || translations.zh[key] || supplemental || key;
   };
 
   return (

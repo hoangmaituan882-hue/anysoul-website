@@ -1,16 +1,78 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
-import { motion } from "motion/react";
-import { ShieldAlert, Info, GraduationCap, Search, AlertCircle, Coffee, Send, MessageSquareText } from "lucide-react";
+import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { GraduationCap, MessageSquareText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { appendLocalFeedbackSubmission, CONTENT_API_BASE } from "../content/client";
 import type { FeedbackSubmission } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";
+import { cn } from "../lib/utils";
+
+const aboutData = [
+  {
+    id: "source",
+    number: "01",
+    title: "数据 来源",
+    shortTitle: "数据来源",
+    icon: Search,
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+    summary: "站内资料主要整理自公开网络平台和站主手动归档记录。",
+    body: "本网站涉及的片源、图片说明、文章和放映会信息，均用于个人学习、记录、整理和展示。公开来源会尽量保留出处线索；如有缺失或需要修正，可以通过意见通道反馈。"
+  },
+  {
+    id: "thesis",
+    number: "02",
+    title: "毕业 设计",
+    shortTitle: "毕业设计",
+    icon: GraduationCap,
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+    summary: "这是一个围绕个人内容站、后台管理和部署实践展开的项目。",
+    body: "项目把首页、放映会、图库、文章、用户系统、服务器监控和工作台整合在同一套网站里，用真实部署流程验证前后端协作、内容管理和生产环境维护。"
+  },
+  {
+    id: "craft",
+    number: "03",
+    title: "古法 匠人",
+    shortTitle: "古法匠人",
+    icon: Wrench,
+    color: "text-amber-500",
+    bg: "bg-amber-500/10",
+    summary: "页面和功能由 AI 辅助生成，再持续手工调整、验证和部署。",
+    body: "它不是一次性生成的展示稿，而是边使用边修补的个人站：每一次上传失败、部署报错、交互不顺手，都会变成下一轮优化的输入。"
+  },
+  {
+    id: "disclaimer",
+    number: "04",
+    title: "免责 声明",
+    shortTitle: "免责声明",
+    icon: ShieldAlert,
+    color: "text-rose-500",
+    bg: "bg-rose-500/10",
+    summary: "网站内容仅供学习、交流、记录与娱乐，不用于商业用途。",
+    body: "如果页面中的文字、图片、链接或描述涉及版权、名誉、出处标注等问题，请通过意见通道联系。核实后会尽快修正、隐藏或删除相关内容。"
+  },
+  {
+    id: "feedback",
+    number: "05",
+    title: "意见 反馈",
+    shortTitle: "意见通道",
+    icon: MessageSquareText,
+    color: "text-violet-500",
+    bg: "bg-violet-500/10",
+    summary: "访客和登录用户都可以提交修正、版权、Bug 或功能建议。",
+    body: "提交后会进入工作台待办。内容服务暂时不可用时，也会先保存到本地待办队列，方便后续处理。"
+  }
+];
 
 export function About() {
   const { user } = useAuth();
+  const [activeIdx, setActiveIdx] = useState(0);
   const [feedback, setFeedback] = useState({ category: "content", title: "", content: "", contact: "" });
   const [feedbackStatus, setFeedbackStatus] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+
+  const active = aboutData[activeIdx];
+  const ActiveIcon = active.icon;
 
   async function submitFeedback(event: FormEvent) {
     event.preventDefault();
@@ -35,7 +97,7 @@ export function About() {
       if (!response.ok) throw new Error(data.error || "提交失败");
       setFeedback({ category: "content", title: "", content: "", contact: "" });
       setFeedbackStatus("已提交到后台待办，管理员会在工作台审核处理。");
-    } catch (error) {
+    } catch {
       const localSubmission: FeedbackSubmission = {
         id: `local-feedback-${Date.now()}`,
         category: feedback.category as FeedbackSubmission["category"],
@@ -55,177 +117,153 @@ export function About() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto w-full px-6 flex flex-col gap-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mt-8 space-y-4"
-      >
-        <div className="inline-flex items-center justify-center p-3 sm:p-4 bg-primary/10 rounded-full mb-2">
-          <Info className="size-8 sm:size-10 text-primary" />
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6">
+      <section className="relative min-h-[72vh] overflow-hidden rounded-[2rem] border border-border bg-[#fbf5ea] p-5 dark:bg-zinc-950 sm:p-8 lg:p-10">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-6 top-4 text-[18vw] font-black leading-none tracking-tighter text-foreground/[0.035] sm:text-[150px]">ABOUT</div>
+          <div className="absolute -right-28 top-10 h-72 w-72 rounded-full bg-[#a4c639]/20 blur-3xl" />
+          <div className="absolute -bottom-28 left-1/4 h-80 w-80 rounded-full bg-rose-400/20 blur-3xl" />
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground">
-          关于本项目
-        </h1>
-        <p className="text-muted-foreground text-lg sm:text-xl font-medium tracking-wide">
-          纯属图一乐 / Just for Fun
-        </p>
-      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Box 1: Info Source */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-             <Search className="size-32" />
-          </div>
-          <div className="size-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-            <Search className="size-6 text-blue-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-foreground mb-2">数据来源</h3>
-            <p className="text-muted-foreground leading-relaxed">
-              本项目涉及到的人设、头像、事件记录等所有信息，<strong>全部来源于公开网络平台</strong>（如社交媒体、视频网站等）。不涉及任何私密数据获取。
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Box 2: Graduation Project */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-             <GraduationCap className="size-32" />
-          </div>
-          <div className="size-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-            <GraduationCap className="size-6 text-emerald-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-foreground mb-2">毕业设计</h3>
-            <p className="text-muted-foreground leading-relaxed">
-              这是作者的一项<strong>个人毕业设计作品</strong>。旨在探索前端技术与 AI 结合的可能性，通过构建一个具有交互性的界面来进行技术实践和验证。
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Box 3: Handcrafted Platform */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group md:col-span-2"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-             <Coffee className="size-32" />
-          </div>
-          <div className="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-            <Coffee className="size-6 text-amber-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-foreground mb-2">古法手搓匠人 AI</h3>
-            <p className="text-muted-foreground leading-relaxed">
-              本项目自诩为“<strong>古法手搓匠人 AI</strong>”。虽然利用了现代的 AI 技术进行辅助生成和构建，但背后蕴含着对每一个组件、每一处排版、每一次动画的“手工”调配与执着。它不仅仅是机器的产物，更是融合了开发者与 AI 协作心血的结晶。纯属图一乐，切勿过分当真。
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Box 4: Disclaimer */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-card border border-border border-red-500/20 dark:border-red-500/20 rounded-3xl p-8 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group md:col-span-2 bg-red-500/5"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity pointer-events-none">
-             <ShieldAlert className="size-32 text-red-500" />
-          </div>
-          <div className="flex items-center gap-3">
-             <div className="size-10 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
-               <AlertCircle className="size-5 text-red-500" />
-             </div>
-             <h3 className="text-lg font-bold text-foreground text-red-600 dark:text-red-400">免责声明</h3>
-          </div>
-          <div>
-            <p className="text-muted-foreground leading-relaxed text-[15px]">
-              本页面及应用仅供学习、交流与娱乐使用，不具有任何商业目的。提到的任何团体、个人、品牌等仅为展示功能需要，<strong>如同人作品一般</strong>。
-              <br/><br/>
-              如果本页面的任何内容（包括但不限于文字、图像、界面设计）让您感到不适，或者有<strong>侵犯到您的版权、名誉权等合法权益</strong>的情况，请立即联系作者，我们会查实后在<strong>第一时间进行清理和删除</strong>。非常感谢理解与包容！
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.45 }}
-          className="bg-card border border-border rounded-3xl p-8 flex flex-col gap-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group md:col-span-2"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-            <MessageSquareText className="size-32" />
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-              <MessageSquareText className="size-5 text-primary" />
-            </div>
+        <div className="relative grid min-h-[620px] gap-6 lg:grid-cols-[360px_1fr]">
+          <aside className="flex flex-col justify-between gap-6 rounded-[1.5rem] border border-white/70 bg-background/70 p-4 shadow-sm backdrop-blur dark:border-zinc-800">
             <div>
-              <h3 className="text-lg font-bold text-foreground">意见通道</h3>
-              <p className="text-sm font-medium text-muted-foreground">游客和用户都可以提交意见，内容会进入后台工作台待办卡片等待审核。</p>
-            </div>
-          </div>
-
-          <form onSubmit={submitFeedback} className="relative z-10 grid gap-3 text-left">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]">
-              <label className="grid gap-1.5">
-                <span className="text-xs font-bold text-muted-foreground">类型</span>
-                <select value={feedback.category} onChange={(event) => setFeedback((current) => ({ ...current, category: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                  <option value="content">内容修正</option>
-                  <option value="copyright">版权/权益</option>
-                  <option value="bug">问题反馈</option>
-                  <option value="feature">功能建议</option>
-                  <option value="other">其他</option>
-                </select>
-              </label>
-              <label className="grid gap-1.5">
-                <span className="text-xs font-bold text-muted-foreground">标题</span>
-                <input value={feedback.title} onChange={(event) => setFeedback((current) => ({ ...current, title: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="例如：某张图片来源需要补充说明" />
-              </label>
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-black text-primary">
+                <Sparkles className="size-3.5" /> linzesss.icu
+              </div>
+              <h1 className="mt-5 text-4xl font-black tracking-tight text-foreground sm:text-5xl">关于这个站点</h1>
+              <p className="mt-4 text-sm font-medium leading-relaxed text-muted-foreground">
+                一个把放映会、图库、文章、投稿、后台监控和部署实践串在一起的个人内容站。
+              </p>
             </div>
 
-            <label className="grid gap-1.5">
-              <span className="text-xs font-bold text-muted-foreground">详细意见</span>
-              <textarea value={feedback.content} onChange={(event) => setFeedback((current) => ({ ...current, content: event.target.value }))} rows={4} className="resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium leading-relaxed outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="请写明页面位置、问题描述、希望如何处理。" />
-            </label>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
-              <label className="grid gap-1.5">
-                <span className="text-xs font-bold text-muted-foreground">联系方式（可选）</span>
-                <input value={feedback.contact} onChange={(event) => setFeedback((current) => ({ ...current, contact: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="邮箱 / B站 / 其他联系方式" />
-              </label>
-              <button disabled={isSubmittingFeedback} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
-                <Send className="size-4" /> {isSubmittingFeedback ? "提交中..." : "提交意见"}
-              </button>
+            <div className="space-y-2">
+              {aboutData.map((item, index) => {
+                const Icon = item.icon;
+                const isActive = index === activeIdx;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveIdx(index)}
+                    className={cn(
+                      "group flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all",
+                      isActive ? "border-primary/30 bg-primary/10 shadow-sm" : "border-transparent bg-card/60 hover:bg-muted/60"
+                    )}
+                  >
+                    <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", item.bg, item.color)}>
+                      <Icon className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-black text-muted-foreground">{item.number}</div>
+                      <div className="truncate text-sm font-black text-foreground">{item.shortTitle}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            {feedbackStatus ? <div className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold text-muted-foreground">{feedbackStatus}</div> : null}
-          </form>
-        </motion.div>
+          </aside>
+
+          <main className="relative overflow-hidden rounded-[1.75rem] border border-border bg-background shadow-sm">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active.id}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -18 }}
+                transition={{ duration: 0.28 }}
+                className="flex min-h-full flex-col p-5 sm:p-8 lg:p-10"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-black uppercase tracking-[0.35em] text-muted-foreground">{active.number}</div>
+                    <h2 className="mt-3 max-w-3xl text-5xl font-black leading-none tracking-tight text-foreground sm:text-7xl">{active.title}</h2>
+                  </div>
+                  <div className={cn("flex size-16 items-center justify-center rounded-[1.5rem]", active.bg, active.color)}>
+                    <ActiveIcon className="size-8" />
+                  </div>
+                </div>
+
+                <p className="mt-8 max-w-2xl text-xl font-black leading-snug text-foreground">{active.summary}</p>
+                <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-muted-foreground sm:text-base">{active.body}</p>
+
+                {active.id === "feedback" ? (
+                  <FeedbackForm
+                    feedback={feedback}
+                    setFeedback={setFeedback}
+                    status={feedbackStatus}
+                    isSubmitting={isSubmittingFeedback}
+                    onSubmit={submitFeedback}
+                  />
+                ) : (
+                  <div className="mt-auto grid gap-3 pt-10 sm:grid-cols-3">
+                    {[
+                      ["内容", "放映会 / 图库 / 文章"],
+                      ["管理", "工作台 / 待办 / 监控"],
+                      ["部署", "本地存储 / PostgreSQL / PM2"]
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-2xl border border-border bg-card p-4">
+                        <div className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+                        <div className="mt-2 text-sm font-black text-foreground">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FeedbackForm({
+  feedback,
+  setFeedback,
+  status,
+  isSubmitting,
+  onSubmit
+}: {
+  feedback: { category: string; title: string; content: string; contact: string };
+  setFeedback: Dispatch<SetStateAction<{ category: string; title: string; content: string; contact: string }>>;
+  status: string;
+  isSubmitting: boolean;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="mt-8 grid gap-3 rounded-[1.5rem] border border-border bg-card p-4 text-left sm:p-5">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[170px_1fr]">
+        <label className="grid gap-1.5">
+          <span className="text-xs font-bold text-muted-foreground">类型</span>
+          <select value={feedback.category} onChange={(event) => setFeedback((current) => ({ ...current, category: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+            <option value="content">内容修正</option>
+            <option value="copyright">版权/权益</option>
+            <option value="bug">问题反馈</option>
+            <option value="feature">功能建议</option>
+            <option value="other">其他</option>
+          </select>
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-xs font-bold text-muted-foreground">标题</span>
+          <input value={feedback.title} onChange={(event) => setFeedback((current) => ({ ...current, title: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="例如：某张图片来源需要补充说明" />
+        </label>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="flex items-center justify-center text-sm font-mono text-muted-foreground/60 py-8 mb-8"
-      >
-        Designed with curiosity · 2026
-      </motion.div>
-    </div>
+      <label className="grid gap-1.5">
+        <span className="text-xs font-bold text-muted-foreground">详细意见</span>
+        <textarea value={feedback.content} onChange={(event) => setFeedback((current) => ({ ...current, content: event.target.value }))} rows={4} className="resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium leading-relaxed outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="请写明页面位置、问题描述、希望如何处理。" />
+      </label>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
+        <label className="grid gap-1.5">
+          <span className="text-xs font-bold text-muted-foreground">联系方式（可选）</span>
+          <input value={feedback.contact} onChange={(event) => setFeedback((current) => ({ ...current, contact: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="邮箱 / B站 / 其他联系方式" />
+        </label>
+        <button disabled={isSubmitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
+          <Send className="size-4" /> {isSubmitting ? "提交中..." : "提交意见"}
+        </button>
+      </div>
+      {status ? <div className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold text-muted-foreground">{status}</div> : null}
+    </form>
   );
 }

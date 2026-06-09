@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, Check, Database, FileText, HelpCircle, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2 } from "lucide-react";
 import { CONTENT_API_BASE } from "../content/client";
-import { useAuth } from "../contexts/AuthContext";
 import { defaultHomeFaq, defaultHomeHero } from "../content/defaults/home";
-import type { AdminContentEntry, FaqContent, HomeHeroContent } from "../content/types";
+import { defaultTalksContent } from "../content/defaults/talks";
+import type { AdminContentEntry, FaqContent, HomeHeroContent, TalksContent } from "../content/types";
+import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 
 type AdminContentResponse = {
@@ -21,6 +22,11 @@ const editableLabels: Record<string, { title: string; description: string; icon:
     title: "常见问题",
     description: "管理首页 FAQ 的问题与答案，发布后前台自动更新。",
     icon: HelpCircle
+  },
+  "talks.main": {
+    title: "杂谈回内容",
+    description: "管理杂谈回直播、近期计划、归档列表、侧边栏动态和话题入口。",
+    icon: FileText
   }
 };
 
@@ -74,12 +80,29 @@ function normalizeFaq(value: unknown): FaqContent {
   };
 }
 
+function normalizeTalks(value: unknown): TalksContent {
+  const talks = value as Partial<TalksContent> | null;
+  return {
+    ...defaultTalksContent,
+    ...(talks || {}),
+    hero: { ...defaultTalksContent.hero, ...(talks?.hero || {}) },
+    live: { ...defaultTalksContent.live, ...(talks?.live || {}) },
+    upcoming: Array.isArray(talks?.upcoming) ? talks.upcoming : defaultTalksContent.upcoming,
+    weekly: Array.isArray(talks?.weekly) ? talks.weekly : defaultTalksContent.weekly,
+    archive: Array.isArray(talks?.archive) ? talks.archive : defaultTalksContent.archive,
+    recentUpdates: Array.isArray(talks?.recentUpdates) ? talks.recentUpdates : defaultTalksContent.recentUpdates,
+    topArticles: Array.isArray(talks?.topArticles) ? talks.topArticles : defaultTalksContent.topArticles,
+    newUploads: Array.isArray(talks?.newUploads) ? talks.newUploads : defaultTalksContent.newUploads,
+    topics: Array.isArray(talks?.topics) ? talks.topics : defaultTalksContent.topics
+  };
+}
+
 async function readAdminError(response: Response, fallback: string) {
   try {
     const data = await response.json() as { error?: string };
-    return data.error ? `${fallback}：${response.status} ${data.error}` : `${fallback}：HTTP ${response.status}`;
+    return data.error ? `${fallback}: ${response.status} ${data.error}` : `${fallback}: HTTP ${response.status}`;
   } catch {
-    return `${fallback}：HTTP ${response.status}`;
+    return `${fallback}: HTTP ${response.status}`;
   }
 }
 
@@ -91,6 +114,7 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
   const [draft, setDraft] = useState<unknown>(null);
   const [status, setStatus] = useState("正在连接内容服务...");
   const [isSaving, setIsSaving] = useState(false);
+  const [jsonError, setJsonError] = useState("");
 
   const selectedEntry = useMemo(
     () => entries.find((entry) => entry.key === selectedKey),
@@ -119,6 +143,7 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
     if (nextSelected) {
       setSelectedKey(nextSelected.key);
       setDraft(nextSelected.draft);
+      setJsonError("");
     }
   };
 
@@ -132,11 +157,13 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
   useEffect(() => {
     if (selectedEntry) {
       setDraft(selectedEntry.draft);
+      setJsonError("");
     }
   }, [selectedEntry?.key]);
 
   const persistDraft = async () => {
     if (readOnly) throw new Error("read-only");
+    if (jsonError) throw new Error(jsonError);
 
     const response = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${selectedKey}/draft`, {
       method: "PATCH",
@@ -160,7 +187,6 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
     }
 
     setIsSaving(true);
-
     try {
       await persistDraft();
       setStatus("草稿已保存。确认无误后点击发布同步到前台。");
@@ -180,7 +206,6 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
     }
 
     setIsSaving(true);
-
     try {
       const savedEntry = await persistDraft();
       const response = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${selectedKey}/publish`, {
@@ -209,7 +234,16 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
   };
 
   const updateFaq = (updater: (current: FaqContent) => FaqContent) => {
-    setDraft((current) => updater(current as FaqContent));
+    setDraft((current) => updater(normalizeFaq(current)));
+  };
+
+  const updateJsonDraft = (value: string) => {
+    try {
+      setDraft(JSON.parse(value));
+      setJsonError("");
+    } catch (error) {
+      setJsonError(error instanceof Error ? `JSON 格式错误：${error.message}` : "JSON 格式错误");
+    }
   };
 
   const renderEditor = () => {
@@ -218,7 +252,7 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
 
       return (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <TextField label="顶部小标签" value={hero.badge} onChange={(value) => updateHero("badge", value)} />
             <TextField label="副标题" value={hero.subtitle} onChange={(value) => updateHero("subtitle", value)} />
             <TextField label="主标题前半句" value={hero.titlePrefix} onChange={(value) => updateHero("titlePrefix", value)} />
@@ -227,18 +261,11 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
             <TextField label="演示窗口标题" value={hero.browserTitle} onChange={(value) => updateHero("browserTitle", value)} />
           </div>
 
-          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
+          <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
             <h3 className="text-sm font-bold">聊天演示文案</h3>
             <TextAreaField label="用户第一句" value={hero.chatMsg1} onChange={(value) => updateHero("chatMsg1", value)} rows={2} />
-            <TextAreaField label="AI 回复" value={hero.chatMsg2} onChange={(value) => updateHero("chatMsg2", value)} rows={3} />
+            <TextAreaField label="系统回复" value={hero.chatMsg2} onChange={(value) => updateHero("chatMsg2", value)} rows={3} />
             <TextAreaField label="用户第二句" value={hero.chatMsg3} onChange={(value) => updateHero("chatMsg3", value)} rows={2} />
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs font-bold text-muted-foreground mb-2">前台预览摘要</div>
-            <div className="text-2xl font-black tracking-tight">{hero.titlePrefix}</div>
-            <div className="text-2xl font-black tracking-tight"><span className="text-[#a4c639]">{hero.highlight1}</span><span className="text-[#ea4c89]">{hero.highlight2}</span></div>
-            <p className="mt-2 text-sm text-muted-foreground">{hero.subtitle}</p>
           </div>
         </div>
       );
@@ -256,7 +283,7 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
           />
 
           {faq.items.map((item, index) => (
-            <div key={index} className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
+            <div key={index} className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">问题 {index + 1}</h3>
                 <button
@@ -296,47 +323,70 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
       );
     }
 
+    if (selectedKey === "talks.main") {
+      const talks = normalizeTalks(draft);
+      const jsonValue = jsonError ? JSON.stringify(draft ?? talks, null, 2) : JSON.stringify(talks, null, 2);
+
+      return (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-muted/20 p-4">
+            <div className="text-sm font-bold text-foreground">杂谈回 JSON 内容</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              这里管理直播卡片、近期计划、归档、近期动态、热门文章和上传入口。保持 JSON 格式正确后即可保存并发布。
+            </p>
+          </div>
+          <textarea
+            value={jsonValue}
+            onChange={(event) => updateJsonDraft(event.target.value)}
+            spellCheck={false}
+            className="min-h-[520px] w-full resize-y rounded-xl border border-border bg-zinc-950 px-4 py-3 font-mono text-xs leading-relaxed text-zinc-100 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+          />
+          {jsonError ? <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-600">{jsonError}</div> : null}
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
         <div className="text-sm font-bold text-foreground">这个内容还没有可视化控制面板</div>
-        <p className="mt-2 text-sm text-muted-foreground">后续会为游戏回、放映会、图库等模块提供专用表单，不需要编辑代码。</p>
+        <p className="mt-2 text-sm text-muted-foreground">后续可以继续补专用表单。</p>
       </div>
     );
   };
 
   return (
-    <div className="space-y-5 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
             <Database className="size-6 text-primary" /> 可视化内容管理
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">像填表一样修改网站内容。保存为草稿后，点击发布即可同步到前台。</p>
+          <p className="mt-1 text-sm text-muted-foreground">像填表一样修改网站内容。保存为草稿后，点击发布即可同步到前台。</p>
         </div>
         <button
           onClick={() => loadEntries()}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-background hover:bg-muted text-sm font-medium transition-colors shadow-sm"
+          className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
         >
           <RefreshCw className="size-4" /> 刷新
         </button>
       </div>
 
       <div className="grid grid-cols-12 gap-5">
-        <div className="col-span-12 xl:col-span-4 space-y-4">
+        <div className="col-span-12 space-y-4 xl:col-span-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-background border border-border rounded-xl p-4 shadow-sm">
-              <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><Activity className="size-3.5" /> 站点版本</div>
-              <div className="text-3xl font-black text-foreground mt-1">{siteVersion || "-"}</div>
+            <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><Activity className="size-3.5" /> 站点版本</div>
+              <div className="mt-1 text-3xl font-black text-foreground">{siteVersion || "-"}</div>
             </div>
-            <div className="bg-background border border-border rounded-xl p-4 shadow-sm">
-              <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><FileText className="size-3.5" /> 可编辑模块</div>
-              <div className="text-3xl font-black text-foreground mt-1">{visibleEntries.length || "-"}</div>
+            <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><FileText className="size-3.5" /> 可编辑模块</div>
+              <div className="mt-1 text-3xl font-black text-foreground">{visibleEntries.length || "-"}</div>
             </div>
           </div>
 
-          <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-border bg-muted/20 text-sm font-bold">选择要修改的区域</div>
-            <div className="p-2 space-y-1">
+          <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+            <div className="border-b border-border bg-muted/20 px-4 py-3 text-sm font-bold">选择要修改的区域</div>
+            <div className="space-y-1 p-2">
               {visibleEntries.map((entry) => {
                 const meta = editableLabels[entry.key];
                 const Icon = meta.icon;
@@ -345,18 +395,18 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
                     key={entry.key}
                     onClick={() => setSelectedKey(entry.key)}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg border transition-colors",
-                      selectedKey === entry.key ? "bg-primary/10 border-primary/30 text-foreground" : "bg-card border-transparent hover:bg-muted/40"
+                      "w-full rounded-lg border p-3 text-left transition-colors",
+                      selectedKey === entry.key ? "border-primary/30 bg-primary/10 text-foreground" : "border-transparent bg-card hover:bg-muted/40"
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary"><Icon className="size-4" /></div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-bold truncate">{meta.title}</span>
+                          <span className="truncate text-sm font-bold">{meta.title}</span>
                           <span className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded border",
-                            entry.status === "published" ? "text-emerald-600 border-emerald-500/20 bg-emerald-500/10" : "text-amber-600 border-amber-500/20 bg-amber-500/10"
+                            "rounded border px-1.5 py-0.5 text-[10px]",
+                            entry.status === "published" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600" : "border-amber-500/20 bg-amber-500/10 text-amber-600"
                           )}>{entry.status === "published" ? "已发布" : "草稿"}</span>
                         </div>
                         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{meta.description}</p>
@@ -369,8 +419,8 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
           </div>
         </div>
 
-        <div className="col-span-12 xl:col-span-8 bg-background border border-border rounded-xl shadow-sm overflow-hidden flex flex-col min-h-[560px]">
-          <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
+        <div className="col-span-12 flex min-h-[560px] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm xl:col-span-8">
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 px-4 py-3">
             <div>
               <div className="text-sm font-bold">{editableLabels[selectedKey]?.title || "内容编辑"}</div>
               <div className="text-[11px] text-muted-foreground">修改后先保存草稿，再发布到前台。</div>
@@ -378,24 +428,24 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
             <div className="flex items-center gap-2">
               <button
                 onClick={saveDraft}
-                disabled={isSaving || !selectedEntry || readOnly}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-bold transition-colors disabled:opacity-50"
+                disabled={isSaving || !selectedEntry || readOnly || Boolean(jsonError)}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-bold transition-colors hover:bg-muted disabled:opacity-50"
               >
                 <Save className="size-3.5" /> 保存草稿
               </button>
               <button
                 onClick={publish}
-                disabled={isSaving || !selectedEntry || readOnly}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+                disabled={isSaving || !selectedEntry || readOnly || Boolean(jsonError)}
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 <Rocket className="size-3.5" /> 发布同步
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-5 bg-card/60">
+          <div className="flex-1 overflow-y-auto bg-card/60 p-5">
             <fieldset disabled={readOnly} className={readOnly ? "opacity-75" : undefined}>{renderEditor()}</fieldset>
           </div>
-          <div className="px-4 py-3 border-t border-border bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 border-t border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
             <Check className="size-4 text-emerald-500" /> {status}
           </div>
         </div>

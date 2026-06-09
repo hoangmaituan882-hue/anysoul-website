@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import { Pool } from "pg";
 import { defaultHomeFaq, defaultHomeHero } from "../src/content/defaults/home";
 import { defaultGamingMain } from "../src/content/defaults/gaming";
+import { defaultTalksContent } from "../src/content/defaults/talks";
 import { defaultPlazaContent } from "../src/content/defaults/plaza";
 import { defaultFeedbackSubmissions } from "../src/content/defaults/feedback";
 import { defaultSiteAnalytics } from "../src/content/defaults/analytics";
@@ -245,6 +246,16 @@ const defaultStore: ContentStore = {
       publishedAt: new Date().toISOString(),
       draft: defaultGamingMain,
       published: defaultGamingMain
+    },
+    "talks.main": {
+      key: "talks.main",
+      type: "talks.main",
+      status: "published",
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      publishedAt: new Date().toISOString(),
+      draft: defaultTalksContent,
+      published: defaultTalksContent
     },
     "screenings.next": {
       key: "screenings.next",
