@@ -13,9 +13,10 @@ export function Footer() {
             <span className="flex items-center gap-2 opacity-60 uppercase">• {t("footer.anthropic")}</span>
          </div>
          
-         <div className="flex gap-6 uppercase">
+         <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 uppercase">
             <a href="#" className="hover:text-foreground transition-colors">{t("footer.terms")}</a>
             <a href="#" className="hover:text-foreground transition-colors">{t("footer.privacy")}</a>
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" className="hover:text-foreground transition-colors">赣ICP备2026006064号-1</a>
             <span className="cursor-default flex items-center gap-2 uppercase">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
