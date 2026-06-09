@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, CalendarClock, CheckCircle2, Database, Film, KeyRound, Plus, RefreshCw, Rocket, Save, Search, Settings, Sparkles, Trash2 } from "lucide-react";
+import { Bot, CalendarClock, CheckCircle2, Database, Film, KeyRound, Plus, RefreshCw, Rocket, Save, Search, Settings, Sparkles, Trash2, X } from "lucide-react";
 import { CONTENT_API_BASE, fetchPublishedContent } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultScreeningLibrary } from "../content/defaults/screeningLibrary";
@@ -104,7 +104,7 @@ function normalizeNext(value: unknown): ScreeningNextContent {
   return {
     ...defaultScreeningsNext,
     ...(next || {}),
-    movies: Array.isArray(next?.movies) && next.movies.length > 0 ? next.movies : defaultScreeningsNext.movies
+    movies: Array.isArray(next?.movies) ? next.movies : defaultScreeningsNext.movies
   };
 }
 
@@ -260,6 +260,124 @@ function sortScheduleWeeks(weeks: ScreeningWeek[]) {
   });
 }
 
+function dateKeyFromDate(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function timeWithSeconds(value: string) {
+  const time = value || "20:00";
+  return time.length === 5 ? `${time}:00` : time;
+}
+
+function scheduleDateTime(dateKey: string, schedule: ScreeningScheduleContent) {
+  return `${dateKey}T${timeWithSeconds(schedule.cycle.defaultTime)}${schedule.cycle.timezone || "+08:00"}`;
+}
+
+function nextSundayDateTime(schedule: ScreeningScheduleContent) {
+  const now = new Date();
+  const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
+  const nextSunday = new Date(now);
+  nextSunday.setDate(now.getDate() + daysUntilSunday);
+  return scheduleDateTime(dateKeyFromDate(nextSunday), schedule);
+}
+
+function normalizeSourceItem(item: ScreeningSourceItem): ScreeningSourceItem {
+  const today = dateKeyFromDate(new Date());
+  return {
+    ...item,
+    title: item.title.trim() || "未命名片源",
+    type: item.type || "movie",
+    category: item.category || "other",
+    description: item.description || "待补充简介。",
+    tags: Array.from(new Set((item.tags || []).map((tag) => tag.trim()).filter(Boolean))),
+    status: item.status || "available",
+    priority: item.priority || "normal",
+    timesWatched: Number.isFinite(item.timesWatched) ? item.timesWatched : 0,
+    addedAt: item.addedAt || today
+  };
+}
+
+function upsertLibrarySource(library: ScreeningLibraryContent, item: ScreeningSourceItem) {
+  const source = normalizeSourceItem(item);
+  const titleKey = source.title.trim().toLowerCase();
+  const existingIndex = library.items.findIndex((candidate) => candidate.id === source.id || candidate.title.trim().toLowerCase() === titleKey);
+  const exists = existingIndex >= 0;
+  const items = exists
+    ? library.items.map((candidate, index) => index === existingIndex ? normalizeSourceItem({ ...candidate, ...source, id: candidate.id }) : candidate)
+    : [source, ...library.items];
+
+  return {
+    exists,
+    source: exists ? items[existingIndex] : source,
+    library: {
+      ...library,
+      tags: Array.from(new Set([...library.tags, ...source.tags])),
+      items
+    }
+  };
+}
+
+function dedupeMovies(movies: ScreeningMovie[]) {
+  const order: string[] = [];
+  const byKey = new Map<string, ScreeningMovie>();
+
+  movies.forEach((movie) => {
+    const key = movie.libraryId || movie.id || movie.title.trim().toLowerCase();
+    if (!byKey.has(key)) order.push(key);
+    byKey.set(key, movie);
+  });
+
+  return order.map((key) => byKey.get(key)).filter((movie): movie is ScreeningMovie => Boolean(movie));
+}
+
+function buildNextWithMovie(current: ScreeningNextContent, source: ScreeningSourceItem, startsAt: string): ScreeningNextContent {
+  const movie = sourceItemToMovie(source);
+  return {
+    ...current,
+    title: current.title === "待补充" ? "下周放映会" : current.title || "下周放映会",
+    theme: current.theme === "待补充" ? "" : current.theme,
+    status: "preview",
+    statusText: "预告",
+    startsAt,
+    movies: dedupeMovies([...current.movies, movie])
+  };
+}
+
+function buildPendingNext(current: ScreeningNextContent, schedule: ScreeningScheduleContent): ScreeningNextContent {
+  return {
+    ...current,
+    title: "下周放映会",
+    theme: "待补充",
+    status: "preview",
+    statusText: "待补充",
+    startsAt: current.startsAt || nextSundayDateTime(schedule),
+    movies: []
+  };
+}
+
+function buildArchivedWeekFromSource(source: ScreeningSourceItem, schedule: ScreeningScheduleContent, dateKey: string, existing?: ScreeningWeek): ScreeningWeek {
+  const movie = sourceItemToMovie(source);
+  const startsAt = existing?.startsAt || scheduleDateTime(dateKey, schedule);
+  return {
+    id: existing?.id || `screening-${dateKey}`,
+    date: dateKey,
+    startsAt,
+    title: existing?.title || `${dateKey} 放映会`,
+    theme: existing?.theme || "放映会归档",
+    status: "ended",
+    statusText: "已归档",
+    movies: dedupeMovies([...(existing?.movies || []), movie]),
+    notes: existing?.notes || source.description,
+    viewerCount: existing?.viewerCount || 0,
+    discussionCount: existing?.discussionCount || 0,
+    recordUrl: existing?.recordUrl || source.sourceUrl,
+    archivedAt: new Date().toISOString()
+  };
+}
+
 export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const { authFetch } = useAuth();
   const [activeMode, setActiveMode] = useState<"next" | "library">("next");
@@ -289,10 +407,30 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const [isAiCompleting, setIsAiCompleting] = useState(false);
   const [scrapeFeedback, setScrapeFeedback] = useState<{ key: string; message: string } | null>(null);
   const [entryMeta, setEntryMeta] = useState<Record<string, ContentEntryMeta>>({});
+  const [selectedCandidate, setSelectedCandidate] = useState<MediaScrapeCandidate | null>(null);
+  const [candidateDraft, setCandidateDraft] = useState<ScreeningSourceItem | null>(null);
+  const [archiveDate, setArchiveDate] = useState(dateKeyFromDate(new Date()));
+  const [nextStartsAtDraft, setNextStartsAtDraft] = useState(() => nextSundayDateTime(defaultScreeningsSchedule));
 
+  const hasNextMovies = next.movies.length > 0;
   const movieSummary = useMemo(
-    () => next.movies.map((movie) => `《${movie.title || "未命名"}》`).join(" + "),
-    [next.movies]
+    () => hasNextMovies ? next.movies.map((movie) => `《${movie.title || "未命名"}》`).join(" + ") : "待补充",
+    [hasNextMovies, next.movies]
+  );
+
+  const nextPreviewTitle = useMemo(
+    () => hasNextMovies ? next.title || "下周放映会" : "待补充",
+    [hasNextMovies, next.title]
+  );
+
+  const nextPreviewDescription = useMemo(
+    () => hasNextMovies ? next.theme || next.description || "填写主题后，这里会成为前台的放映说明。" : "下周日片单待补充。",
+    [hasNextMovies, next.description, next.theme]
+  );
+
+  const candidateFeedbackKey = useMemo(
+    () => selectedCandidate ? `${selectedCandidate.provider}-${selectedCandidate.id}` : "",
+    [selectedCandidate]
   );
 
   const filteredLibraryItems = useMemo(() => {
@@ -319,7 +457,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       setLibrary(normalizeLibrary(data.content[SCREENINGS_LIBRARY_KEY]));
       setSourceSubmissions(normalizeSourceSubmissions(data.content[SCREENINGS_SOURCE_SUBMISSIONS_KEY]));
       setSchedule(normalizeSchedule(data.content[SCREENINGS_SCHEDULE_KEY]));
-      setStatus("只读模式已加载前台已发布的放映会内容，登录管理员后可编辑草稿。");
+      setStatus("只读模式已加载前台已发布的放映会内容，登录管理员后可编辑。");
       return;
     }
 
@@ -374,13 +512,13 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     }
   }, [readOnly]);
 
-  const save = async (publish = false) => {
+  const publishNextNow = async () => {
     if (readOnly) {
-      setStatus("只读模式无法保存或发布下周播放");
+      setStatus("只读模式无法发布下周播放");
       return;
     }
 
-    if (publish && hasUnboundMovies(next)) {
+    if (hasUnboundMovies(next)) {
       setStatus("下周播放存在未绑定片源库的条目，请先从片源库添加或补建片源");
       return;
     }
@@ -388,23 +526,24 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     setIsSaving(true);
 
     try {
-      const syncedNext = syncNextMoviesFromLibrary(next, library);
+      const sourceNext = next.movies.length > 0 ? next : buildPendingNext(next, schedule);
+      const syncedNext = syncNextMoviesFromLibrary(sourceNext, library);
       setNext(syncedNext);
       await commitScreeningBatch([
-        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish, message: publish ? "Publish next screening movie" : "Save next screening draft" }
-      ], publish ? "Publish next screening movie" : "Save next screening draft");
+        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Publish next screening movie" }
+      ], "Publish next screening movie");
 
-      setStatus(publish ? "已发布，下周播放已按片源库主数据同步到前台" : "草稿已保存，并已从片源库同步播放快照");
+      setStatus(syncedNext.movies.length > 0 ? "下周播放已保存并发布到前台" : "下周播放已发布为待补充");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : publish ? "发布失败，请检查内容服务" : "保存失败，请检查内容服务");
+      setStatus(error instanceof Error ? error.message : "发布失败，请检查内容服务");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const saveLibrary = async (publish = false) => {
+  const publishLibraryNow = async () => {
     if (readOnly) {
-      setStatus("只读模式无法保存或发布片源库");
+      setStatus("只读模式无法发布片源库");
       return;
     }
 
@@ -414,13 +553,13 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       const syncedNext = syncNextMoviesFromLibrary(next, library);
       setNext(syncedNext);
       await commitScreeningBatch([
-        { key: SCREENINGS_LIBRARY_KEY, payload: library, publish, message: publish ? "Publish screening source library" : "Save screening source library draft" },
-        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish, message: publish ? "Sync next screening from source library" : "Sync next screening draft from source library" }
-      ], publish ? "Publish screening source library and synced next screening" : "Save screening source library and synced next screening drafts");
+        { key: SCREENINGS_LIBRARY_KEY, payload: library, publish: true, message: "Publish screening source library" },
+        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening from source library" }
+      ], "Publish screening source library and synced next screening");
 
-      setStatus(publish ? "片源库已发布到前台，并同步已绑定的下周播放" : "片源库草稿已保存，并同步已绑定的下周播放草稿");
+      setStatus("片源库已保存并发布到前台，并同步已绑定的下周播放");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : publish ? "片源库发布失败，请检查内容服务" : "片源库保存失败，请检查内容服务");
+      setStatus(error instanceof Error ? error.message : "片源库发布失败，请检查内容服务");
     } finally {
       setIsSaving(false);
     }
@@ -592,58 +731,173 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     setStatus(items.length ? `已扫描到 ${missingFieldItems.length} 个缺项片源，本次预备处理 ${items.length} 个` : "未发现缺项片源");
   };
 
-  const applyAiSuggestion = (suggestion: MediaAiSuggestion) => {
+  const applyAiSuggestion = async (suggestion: MediaAiSuggestion) => {
     if (readOnly) {
       setStatus("只读模式无法应用 AI 建议");
       return;
     }
 
-    setLibrary((current) => ({
-      ...current,
-      tags: suggestion.patch.tags ? Array.from(new Set([...current.tags, ...suggestion.patch.tags])) : current.tags,
-      items: current.items.map((item) => item.id === suggestion.id ? { ...item, ...suggestion.patch } : item)
-    }));
-    setAiSuggestions((current) => current.filter((item) => item.id !== suggestion.id));
-    setStatus(`已把《${suggestion.title}》AI 建议应用到片源库草稿，请保存草稿后生效`);
+    setIsSaving(true);
+
+    try {
+      const nextLibrary: ScreeningLibraryContent = {
+        ...library,
+        tags: suggestion.patch.tags ? Array.from(new Set([...library.tags, ...suggestion.patch.tags])) : library.tags,
+        items: library.items.map((item) => item.id === suggestion.id ? normalizeSourceItem({ ...item, ...suggestion.patch }) : item)
+      };
+      const syncedNext = syncNextMoviesFromLibrary(next, nextLibrary);
+      await commitScreeningBatch([
+        { key: SCREENINGS_LIBRARY_KEY, payload: nextLibrary, publish: true, message: "Apply AI source suggestion" },
+        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening after AI suggestion" }
+      ], "Apply AI source suggestion and publish");
+      setLibrary(nextLibrary);
+      setNext(syncedNext);
+      setAiSuggestions((current) => current.filter((item) => item.id !== suggestion.id));
+      setStatus(`已把《${suggestion.title}》AI 建议应用并发布`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "AI 建议应用失败，请检查内容服务");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const addScrapedCandidate = async (candidate: MediaScrapeCandidate) => {
+  const openScrapedCandidate = (candidate: MediaScrapeCandidate) => {
     if (readOnly) {
-      setStatus("只读模式无法写入片源库草稿");
+      setStatus("只读模式无法写入片源库");
       return;
     }
 
     const { provider: _provider, confidence: _confidence, ...item } = candidate;
-    const feedbackKey = `${candidate.provider}-${candidate.id}`;
-    const titleKey = item.title.trim().toLowerCase();
-    const existingIndex = library.items.findIndex((source) => source.id === item.id || source.title.trim().toLowerCase() === titleKey);
-    const exists = existingIndex >= 0;
-    const nextLibrary: ScreeningLibraryContent = exists ? {
-      ...library,
-      tags: Array.from(new Set([...library.tags, ...item.tags])),
-      items: library.items.map((source, index) => index === existingIndex ? { ...source, ...item, id: source.id } : source)
-    } : {
-      ...library,
-      tags: Array.from(new Set([...library.tags, ...item.tags])),
-      items: [item, ...library.items]
-    };
+    setSelectedCandidate(candidate);
+    setCandidateDraft(normalizeSourceItem(item));
+    setArchiveDate(dateKeyFromDate(new Date()));
+    setNextStartsAtDraft(nextSundayDateTime(schedule));
+    setStatus(`正在确认《${candidate.title}》的片源信息`);
+  };
+
+  const closeCandidateModal = () => {
+    setSelectedCandidate(null);
+    setCandidateDraft(null);
+  };
+
+  const updateCandidateDraft = (patch: Partial<ScreeningSourceItem>) => {
+    setCandidateDraft((current) => current ? normalizeSourceItem({ ...current, ...patch }) : current);
+  };
+
+  const addDraftToLibrary = async () => {
+    if (readOnly) {
+      setStatus("只读模式无法写入片源库");
+      return;
+    }
+
+    if (!candidateDraft) return;
+
+    const { exists, source, library: nextLibrary } = upsertLibrarySource(library, candidateDraft);
     const syncedNext = syncNextMoviesFromLibrary(next, nextLibrary);
-    const message = exists ? `已更新《${item.title}》片源元数据，并保存到后端片源库草稿` : `已添加《${item.title}》到后端片源库草稿`;
+    const message = exists ? `已更新《${source.title}》片源库并发布` : `已添加《${source.title}》到片源库并发布`;
 
     setIsSaving(true);
-    setStatus(`正在保存《${item.title}》到后端片源库草稿...`);
+    setStatus(`正在发布《${source.title}》到片源库...`);
 
     try {
       await commitScreeningBatch([
-        { key: SCREENINGS_LIBRARY_KEY, payload: nextLibrary, message: exists ? "Update scraped source metadata" : "Add scraped source to library" },
-        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, message: "Sync next screening draft after library metadata change" }
-      ], exists ? "Update scraped source metadata and sync next screening" : "Add scraped source to library and sync next screening");
+        { key: SCREENINGS_LIBRARY_KEY, payload: nextLibrary, publish: true, message: exists ? "Update scraped source metadata" : "Add scraped source to library" },
+        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening after library metadata change" }
+      ], exists ? "Update scraped source metadata and publish" : "Add scraped source to library and publish");
       setLibrary(nextLibrary);
       setNext(syncedNext);
-      setScrapeFeedback({ key: feedbackKey, message });
-      setStatus(`${message}；如需前台可见，请点击「发布到前台」。`);
+      if (candidateFeedbackKey) setScrapeFeedback({ key: candidateFeedbackKey, message });
+      setStatus(message);
+      closeCandidateModal();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : `保存《${item.title}》失败，请确认内容服务已启动并且当前账号有后台权限`);
+      setStatus(error instanceof Error ? error.message : `发布《${source.title}》失败，请确认内容服务已启动并且当前账号有后台权限`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const archiveDraftToSchedule = async () => {
+    if (readOnly) {
+      setStatus("只读模式无法归档放映会影视");
+      return;
+    }
+
+    if (!candidateDraft) return;
+
+    const dateKey = archiveDate || dateKeyFromDate(new Date());
+    const { source, library: sourceLibrary } = upsertLibrarySource(library, candidateDraft);
+    const existingWeek = schedule.weeks.find((week) => week.date === dateKey || week.id === `screening-${dateKey}`);
+    const archivedWeek = buildArchivedWeekFromSource(source, schedule, dateKey, existingWeek);
+    const updatedSchedule: ScreeningScheduleContent = {
+      ...schedule,
+      weeks: sortScheduleWeeks([
+        ...schedule.weeks.filter((week) => week.id !== archivedWeek.id && week.date !== dateKey),
+        archivedWeek
+      ])
+    };
+    const updatedLibrary: ScreeningLibraryContent = {
+      ...sourceLibrary,
+      items: sourceLibrary.items.map((item) => item.id === source.id ? {
+        ...item,
+        status: "watched",
+        timesWatched: item.timesWatched + 1,
+        lastWatchedAt: dateKey
+      } : item)
+    };
+    const syncedNext = syncNextMoviesFromLibrary(next, updatedLibrary);
+
+    setIsSaving(true);
+    setStatus(`正在归档《${source.title}》到 ${dateKey} 放映会...`);
+
+    try {
+      await commitScreeningBatch([
+        { key: SCREENINGS_LIBRARY_KEY, payload: updatedLibrary, publish: true, message: "Archive source and mark watched" },
+        { key: SCREENINGS_SCHEDULE_KEY, payload: updatedSchedule, publish: true, message: "Archive movie into screening schedule" },
+        { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening after archive" }
+      ], "Archive movie into screening history and publish");
+      setLibrary(updatedLibrary);
+      setSchedule(updatedSchedule);
+      setNext(syncedNext);
+      if (candidateFeedbackKey) setScrapeFeedback({ key: candidateFeedbackKey, message: `已归档到 ${dateKey} 放映会` });
+      setStatus(`已归档到 ${dateKey} 放映会`);
+      closeCandidateModal();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "放映会影视归档失败，请检查内容服务");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const addDraftToNext = async () => {
+    if (readOnly) {
+      setStatus("只读模式无法加入下周放映");
+      return;
+    }
+
+    if (!candidateDraft) return;
+
+    const { source, library: sourceLibrary } = upsertLibrarySource(library, { ...candidateDraft, status: "planned" });
+    const updatedLibrary: ScreeningLibraryContent = {
+      ...sourceLibrary,
+      items: sourceLibrary.items.map((item) => item.id === source.id && item.status === "available" ? { ...item, status: "planned" } : item)
+    };
+    const nextContent = buildNextWithMovie(next, source, nextStartsAtDraft || nextSundayDateTime(schedule));
+
+    setIsSaving(true);
+    setStatus(`正在把《${source.title}》加入下周放映并发布...`);
+
+    try {
+      await commitScreeningBatch([
+        { key: SCREENINGS_LIBRARY_KEY, payload: updatedLibrary, publish: true, message: "Add source for next screening" },
+        { key: SCREENINGS_NEXT_KEY, payload: nextContent, publish: true, message: "Add movie to next screening" }
+      ], "Add movie to next screening and publish");
+      setLibrary(updatedLibrary);
+      setNext(nextContent);
+      if (candidateFeedbackKey) setScrapeFeedback({ key: candidateFeedbackKey, message: "已加入下周放映并发布" });
+      setStatus("已加入下周放映并发布");
+      closeCandidateModal();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "加入下周放映失败，请检查内容服务");
     } finally {
       setIsSaving(false);
     }
@@ -655,21 +909,36 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     setLibrary((current) => ({ ...current, items: current.items.filter((_, itemIndex) => itemIndex !== index) }));
   };
 
-  const addLibraryItemToNext = (item: ScreeningSourceItem) => {
+  const addLibraryItemToNext = async (item: ScreeningSourceItem) => {
     if (readOnly) {
       setStatus("只读模式无法加入下周播放");
       return;
     }
 
-    setNext((current) => ({
-      ...current,
-      movies: [
-        ...current.movies,
-        sourceItemToMovie(item)
-      ]
-    }));
-    setShowLibraryPicker(false);
-    setStatus(`已把《${item.title}》加入下周播放草稿，保存下周播放后生效`);
+    const plannedLibrary: ScreeningLibraryContent = {
+      ...library,
+      items: library.items.map((source) => source.id === item.id && source.status === "available" ? { ...source, status: "planned" } : source)
+    };
+    const plannedSource = plannedLibrary.items.find((source) => source.id === item.id) || item;
+    const nextContent = buildNextWithMovie(next, plannedSource, next.startsAt || nextSundayDateTime(schedule));
+
+    setIsSaving(true);
+    setStatus(`正在把《${item.title}》加入下周放映并发布...`);
+
+    try {
+      await commitScreeningBatch([
+        { key: SCREENINGS_LIBRARY_KEY, payload: plannedLibrary, publish: true, message: "Mark selected source planned" },
+        { key: SCREENINGS_NEXT_KEY, payload: nextContent, publish: true, message: "Add library source to next screening" }
+      ], "Add library source to next screening and publish");
+      setLibrary(plannedLibrary);
+      setNext(nextContent);
+      setShowLibraryPicker(false);
+      setStatus(`已把《${item.title}》加入下周放映并发布`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "加入下周放映失败，请检查内容服务");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const reviewSourceSubmission = async (submission: ScreeningSourceSubmission, decision: "approved" | "rejected") => {
@@ -705,11 +974,6 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       return;
     }
 
-    if (next.movies.length === 0) {
-      setStatus("下周播放清单为空，无法生成排播周");
-      return;
-    }
-
     if (hasUnboundMovies(next)) {
       setStatus("下周播放存在未绑定片源库的条目，无法生成排播周");
       return;
@@ -718,7 +982,8 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     setIsSaving(true);
 
     try {
-      const syncedNext = syncNextMoviesFromLibrary(next, library);
+      const sourceNext = next.movies.length > 0 ? next : buildPendingNext(next, schedule);
+      const syncedNext = syncNextMoviesFromLibrary(sourceNext, library);
       const week = buildScheduleWeekFromNext(syncedNext);
       const updatedSchedule: ScreeningScheduleContent = {
         ...schedule,
@@ -745,7 +1010,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         { key: SCREENINGS_LIBRARY_KEY, payload: updatedLibrary, publish: true, message: "Mark scheduled screening sources as planned" }
       ], "Generate schedule week from next screening and mark sources planned");
 
-      setStatus(`已生成排播周：${week.title} / ${week.date}`);
+      setStatus(syncedNext.movies.length > 0 ? `已生成排播周并发布：${week.title} / ${week.date}` : `已生成 ${week.date} 待补充排播并发布`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "生成排播周失败，请检查内容服务");
     } finally {
@@ -871,12 +1136,6 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
           <button onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold transition-colors hover:bg-muted">
             <RefreshCw className="size-4" /> 刷新
           </button>
-          <button disabled={readOnly || isSaving} onClick={() => activeMode === "next" ? save() : saveLibrary()} className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-bold transition-colors hover:bg-muted disabled:opacity-50">
-            <Save className="size-4" /> 保存草稿
-          </button>
-          <button disabled={readOnly || isSaving} onClick={() => activeMode === "next" ? save(true) : saveLibrary(true)} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
-            <Rocket className="size-4" /> 发布到前台
-          </button>
         </div>
       </div>
 
@@ -969,8 +1228,8 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                           <CheckCircle2 className="size-3.5" /> {feedbackMessage}
                         </div>
                       ) : null}
-                      <button onClick={() => addScrapedCandidate(candidate)} disabled={isSaving} className={cn("mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition-colors disabled:opacity-50", feedbackMessage ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15" : "border-primary/20 bg-primary/10 text-primary hover:bg-primary/15")}>
-                        {feedbackMessage ? <CheckCircle2 className="size-3.5" /> : <Plus className="size-3.5" />} {isSaving ? "保存中" : feedbackMessage ? "已保存到后端草稿" : "保存到后端草稿"}
+                      <button onClick={() => openScrapedCandidate(candidate)} disabled={isSaving} className={cn("mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-black transition-colors disabled:opacity-50", feedbackMessage ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15" : "border-primary/20 bg-primary/10 text-primary hover:bg-primary/15")}>
+                        {feedbackMessage ? <CheckCircle2 className="size-3.5" /> : <Plus className="size-3.5" />} {feedbackMessage || "查看并添加"}
                       </button>
                     </div>
                     );
@@ -987,7 +1246,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   <Bot className="size-3.5" /> AI COMPLETION
                 </span>
                 <h3 className="mt-3 text-lg font-black text-foreground">AI 片源补全</h3>
-                <p className="mt-1 text-sm text-muted-foreground">仅后台使用。AI 会基于真实抓取源生成补丁预览，确认后才写入片源库草稿。</p>
+                <p className="mt-1 text-sm text-muted-foreground">仅后台使用。AI 会基于真实抓取源生成补丁预览，确认后直接写入片源库并发布。</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={scanMissingFields} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold transition-colors hover:bg-muted">
@@ -1030,7 +1289,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                         <div className="mt-1 text-xs font-bold text-muted-foreground">置信度 {Math.round(suggestion.confidence * 100)}% / 来源 {suggestion.sourceProviders.join("、") || "无"}</div>
                       </div>
                       <button onClick={() => applyAiSuggestion(suggestion)} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs font-black text-primary transition-colors hover:bg-primary/15">
-                        <CheckCircle2 className="size-3.5" /> 应用到草稿
+                        <CheckCircle2 className="size-3.5" /> 应用并发布
                       </button>
                     </div>
                     <p className="mb-2 text-xs font-medium leading-relaxed text-muted-foreground">{suggestion.reason}</p>
@@ -1054,9 +1313,14 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
               <h3 className="text-lg font-black text-foreground">全量片源</h3>
               <p className="text-sm text-muted-foreground">当前 {library.items.length} 个片源，片名、简介、海报、状态和播放链接会作为排播主数据。</p>
             </div>
-            <button onClick={addLibraryItem} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-border bg-card px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-muted">
-              <Plus className="size-4" /> 新增片源
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={publishLibraryNow} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
+                <Save className="size-4" /> 保存并发布片源库
+              </button>
+              <button onClick={addLibraryItem} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-border bg-card px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-muted">
+                <Plus className="size-4" /> 新增片源
+              </button>
+            </div>
           </div>
 
           <div className="mb-4 space-y-2">
@@ -1076,8 +1340,8 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                     <span className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-bold text-muted-foreground">{item.priority}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                   <button onClick={() => addLibraryItemToNext(item)} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/10">
-                      <Plus className="size-3.5" /> 加入下周播放
+                   <button onClick={() => addLibraryItemToNext(item)} disabled={isSaving} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50">
+                      <Plus className="size-3.5" /> 加入下周
                     </button>
                     <button disabled={isAiCompleting} onClick={() => requestAiCompletion([item], "single")} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50">
                       <Sparkles className="size-3.5" /> AI 补全
@@ -1158,13 +1422,13 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
               <div className="mt-auto space-y-4">
                 <div>
                   <p className="text-sm font-bold text-foreground/60">{formatStartsAt(next.startsAt)}</p>
-                  <h3 className="mt-2 text-4xl font-black tracking-tight text-foreground">{next.title || "下周放映会"}</h3>
-                  <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-foreground/70">{next.theme || next.description || "填写主题后，这里会成为前台的放映说明。"}</p>
+                  <h3 className="mt-2 text-4xl font-black tracking-tight text-foreground">{nextPreviewTitle}</h3>
+                  <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-foreground/70">{nextPreviewDescription}</p>
                 </div>
 
                 <div className="rounded-2xl border border-white/60 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-black/20">
                   <div className="text-xs font-bold text-muted-foreground">本次播放</div>
-                  <div className="mt-1 text-lg font-black text-foreground">{movieSummary || "尚未添加电影"}</div>
+                  <div className="mt-1 text-lg font-black text-foreground">{movieSummary}</div>
                 </div>
               </div>
             </div>
@@ -1183,6 +1447,11 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
 
           <div className="mt-4">
             <TextAreaField label="主题说明" value={next.theme} onChange={(value) => setNext({ ...next, theme: value })} placeholder="这次为什么播这些电影" />
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button onClick={publishNextNow} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
+              <Save className="size-4" /> 保存并发布下周放映
+            </button>
           </div>
         </div>
       </div>
@@ -1236,7 +1505,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
             {libraryFilters}
             <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
               {filteredLibraryItems.slice(0, 8).map((item) => (
-                <button key={item.id} onClick={() => addLibraryItemToNext(item)} className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 text-left transition-colors hover:border-primary/40">
+                <button key={item.id} onClick={() => addLibraryItemToNext(item)} disabled={isSaving} className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 text-left transition-colors hover:border-primary/40 disabled:opacity-50">
                   <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-muted">
                     {item.posterUrl ? <img src={item.posterUrl} alt={item.title} className="h-full w-full object-cover" /> : null}
                   </div>
@@ -1294,6 +1563,99 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         </div>
       </div>
       </>
+      )}
+
+      {candidateDraft && selectedCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-background shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-5 py-4 backdrop-blur">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-black text-primary">{selectedCandidate.provider.toUpperCase()}</span>
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-black text-muted-foreground">{Math.round(selectedCandidate.confidence * 100)}% 匹配</span>
+                </div>
+                <h3 className="mt-2 text-xl font-black text-foreground">确认影视信息</h3>
+              </div>
+              <button onClick={closeCandidateModal} className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="grid gap-5 p-5 lg:grid-cols-[220px_1fr]">
+              <div className="space-y-3">
+                <div className="overflow-hidden rounded-2xl border border-border bg-muted">
+                  {candidateDraft.posterUrl ? <img src={candidateDraft.posterUrl} alt={candidateDraft.title} className="aspect-[2/3] w-full object-cover" /> : <div className="flex aspect-[2/3] items-center justify-center px-4 text-center text-sm font-black text-muted-foreground">暂无海报</div>}
+                </div>
+                <ImageUploadField label="海报" value={candidateDraft.posterUrl || ""} onChange={(value) => updateCandidateDraft({ posterUrl: value })} admin readOnly={readOnly} scope="screening-poster" compact />
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-[1.2fr_1fr_120px_120px]">
+                  <Field label="片名" value={candidateDraft.title} onChange={(value) => updateCandidateDraft({ title: value })} />
+                  <Field label="原名" value={candidateDraft.originalTitle || ""} onChange={(value) => updateCandidateDraft({ originalTitle: value })} />
+                  <Field label="年份" value={candidateDraft.year || ""} onChange={(value) => updateCandidateDraft({ year: value })} />
+                  <Field label="评分" type="number" value={candidateDraft.rating || 0} onChange={(value) => updateCandidateDraft({ rating: value === "" ? undefined : Number(value) })} />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">媒体类型</span>
+                    <select value={candidateDraft.type} onChange={(event) => updateCandidateDraft({ type: event.target.value as ScreeningSourceItem["type"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {(["movie", "anime", "ova", "series", "short", "other"] as ScreeningSourceItem["type"][]).map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">分类标签</span>
+                    <select value={candidateDraft.category} onChange={(event) => updateCandidateDraft({ category: event.target.value as ScreeningSourceItem["category"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {movieTypes.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">片源状态</span>
+                    <select value={candidateDraft.status} onChange={(event) => updateCandidateDraft({ status: event.target.value as ScreeningSourceItem["status"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {(["available", "planned", "watched", "hidden", "rejected"] as ScreeningSourceItem["status"][]).map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[12px] font-bold text-muted-foreground">优先级</span>
+                    <select value={candidateDraft.priority} onChange={(event) => updateCandidateDraft({ priority: event.target.value as ScreeningSourceItem["priority"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                      {(["low", "normal", "high"] as ScreeningSourceItem["priority"][]).map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-[140px_1fr]">
+                  <Field label="时长" value={candidateDraft.duration || ""} onChange={(value) => updateCandidateDraft({ duration: value })} />
+                  <Field label="播放/录播链接" value={candidateDraft.sourceUrl || ""} onChange={(value) => updateCandidateDraft({ sourceUrl: value })} placeholder="https://www.bilibili.com/video/..." />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <TextAreaField label="简介" value={candidateDraft.description} onChange={(value) => updateCandidateDraft({ description: value })} />
+                  <TextAreaField label="标签，逗号分隔" value={candidateDraft.tags.join(", ")} onChange={(value) => updateCandidateDraft({ tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })} />
+                  <TextAreaField label="播放备注" value={candidateDraft.sourceNote || ""} onChange={(value) => updateCandidateDraft({ sourceNote: value })} placeholder="例如 B 站录播 P2 / 正片从 05:30 开始" />
+                  <TextAreaField label="站主评价" value={candidateDraft.fanshiReview || ""} onChange={(value) => updateCandidateDraft({ fanshiReview: value })} />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-2">
+                  <DateTimePicker label="放映会归档日期" mode="date" value={archiveDate} onChange={setArchiveDate} />
+                  <DateTimePicker label="下周放映时间" mode="datetime" value={nextStartsAtDraft} onChange={setNextStartsAtDraft} />
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                  <button onClick={addDraftToLibrary} disabled={isSaving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-black text-foreground transition-colors hover:bg-muted disabled:opacity-50">
+                    <Database className="size-4" /> 仅添加到片源库
+                  </button>
+                  <button onClick={archiveDraftToSchedule} disabled={isSaving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50">
+                    <CheckCircle2 className="size-4" /> 放映会影视
+                  </button>
+                  <button onClick={addDraftToNext} disabled={isSaving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-black text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
+                    <CalendarClock className="size-4" /> 下周放映
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3 text-xs font-medium text-muted-foreground">{status}</div>
