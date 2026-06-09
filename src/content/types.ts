@@ -437,6 +437,46 @@ export type GamingCategory = {
   img: string;
 };
 
+export type GamingPlayRecord = {
+  date: string;
+  durationHours: number;
+  note?: string;
+};
+
+export type GamingLibraryItem = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  platform: string;
+  genre: string;
+  mode: string;
+  status: "playing" | "planned" | "finished" | "paused" | "archived";
+  tags: string[];
+  coverUrl: string;
+  heroImage?: string;
+  rating?: string;
+  totalHours?: string;
+  lastPlayedAt?: string;
+  streamUrl?: string;
+  videoUrl?: string;
+  description: string;
+  review?: string;
+  playRecords: GamingPlayRecord[];
+};
+
+export type GamingExploreItem = {
+  id: string;
+  gameId?: string;
+  title: string;
+  author: string;
+  description?: string;
+  coverUrl: string;
+  tags: string[];
+  stars: number;
+  views: number;
+  badge?: string;
+};
+
 export type GamingMainContent = {
   searchPlaceholder: string;
   currentGameTitle: string;
@@ -448,6 +488,10 @@ export type GamingMainContent = {
   heroGames: GamingHeroGame[];
   categories: GamingCategory[];
   recentGames: GamingRecentGame[];
+  currentGameId?: string;
+  streamGameId?: string;
+  library?: GamingLibraryItem[];
+  exploreItems?: GamingExploreItem[];
 };
 
 export type PlazaVisibility = "visible" | "hidden" | "pending" | "rejected";

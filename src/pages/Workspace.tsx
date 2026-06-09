@@ -21,6 +21,7 @@ import { PlazaAdminPanel } from "../workspace/PlazaAdminPanel";
 import { UserAdminPanel } from "../workspace/UserAdminPanel";
 import { PostAdminPanel } from "../workspace/PostAdminPanel";
 import { TalksAdminPanel } from "../workspace/TalksAdminPanel";
+import { GamingAdminPanel } from "../workspace/GamingAdminPanel";
 import type { AdminContentEntry, FeedbackSubmission, FeedbackSubmissionsContent, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ServerAlert, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint } from "../content/types";
 import { CONTENT_API_BASE, getLocalFeedbackSubmissions, getLocalSourceSubmissions, saveLocalFeedbackSubmissions, saveLocalSourceSubmissions } from "../content/client";
 import { defaultScreeningSourceSubmissions } from "../content/defaults/screenings";
@@ -395,7 +396,6 @@ export function Workspace() {
 
   useEffect(() => {
     if (activeTab === "users" && !canManageUsers) setActiveTab("content");
-    if (activeTab === "games") setActiveTab("content");
   }, [activeTab, canManageUsers, setActiveTab]);
 
   async function loadAiSettings() {
@@ -1173,6 +1173,11 @@ export function Workspace() {
                    <Film className="size-4" /> 放映会控制
                  </button>
                  <button
+                   onClick={() => setActiveTab('games')}
+                   className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'games' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
+                   <Gamepad2 className="size-4" /> 游戏回控制
+                 </button>
+                 <button
                    onClick={() => setActiveTab('talks')}
                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'talks' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
                    <Video className="size-4" /> 杂谈回控制
@@ -1450,8 +1455,9 @@ export function Workspace() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.2 }}
-                      className="space-y-6 max-w-4xl mx-auto"
                     >
+                       <GamingAdminPanel readOnly={readOnly} />
+                       <div className="hidden">
                        <div className="grid grid-cols-3 gap-4">
                           <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-xl shadow-sm">
                             <div className="text-sm font-medium text-emerald-800 dark:text-emerald-400 mb-1">进行中游戏</div>
@@ -1477,6 +1483,7 @@ export function Workspace() {
                                 添加自定义记录
                               </button>
                           </div>
+                       </div>
                        </div>
                     </motion.div>
                   )}

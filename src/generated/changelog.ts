@@ -31,6 +31,31 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "afc0d63",
+    "hash": "afc0d63c6b6b58394ed9de383c9e49f1521d9226",
+    "date": "2026-06-10",
+    "title": "Generate changelog from git history",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、脚本配置 2。",
+    "files": [
+      "package.json",
+      "scripts/generate-changelog.mjs",
+      "src/generated/changelog.ts",
+      "src/pages/Changelog.tsx"
+    ],
+    "items": [
+      {
+        "type": "维护",
+        "text": "Generate changelog from git history",
+        "color": "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、脚本配置 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "ae0152f",
     "hash": "ae0152f752d982ddcf95fc913ddd01b629517715",
     "date": "2026-06-09",
@@ -570,32 +595,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "e9145af",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-09",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "feat: simplify screening publish workflow",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "3d6b953",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -615,7 +620,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -635,7 +640,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -655,7 +660,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -675,7 +680,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -695,7 +700,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -715,7 +720,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -725,6 +730,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 2、组件 1、工作台 1、内容数据 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "afc0d63",
+    "subtitle": "维护",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "维护",
+        "title": "Generate changelog from git history",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、脚本配置 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、脚本配置 2",
         "description": ""
       }
     ]
