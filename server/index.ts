@@ -130,6 +130,16 @@ type MediaAiSuggestion = {
   sourceProviders: string[];
 };
 
+class TmdbRequestError extends Error {
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "TmdbRequestError";
+    this.status = status;
+  }
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const dataDir = path.join(projectRoot, "server", "data");
@@ -764,15 +774,23 @@ function providerEnabled(request: MediaScrapeRequest, provider: MediaScrapeProvi
 
 async function fetchTmdbJson(pathname: string, settings: MediaScraperSettings, params: Record<string, string | undefined>) {
   const token = settings.tmdbApiKey || runtimeConfig.tmdbApiKey;
-  if (!token) return undefined;
+  if (!token) throw new TmdbRequestError("TMDB API Key 未配置");
 
   const url = new URL(`https://api.themoviedb.org/3/${pathname.replace(/^\/+/, "")}`);
   for (const [key, value] of Object.entries(params)) {
     if (value) url.searchParams.set(key, value);
   }
 
-  const response = await fetch(url, tmdbFetchOptions(url, token));
-  if (!response.ok) return undefined;
+  let response: Response;
+  try {
+    response = await fetch(url, tmdbFetchOptions(url, token));
+  } catch (error) {
+    throw new TmdbRequestError(error instanceof Error ? `TMDB 网络请求失败：${error.message}` : "TMDB 网络请求失败");
+  }
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new TmdbRequestError(`TMDB 请求失败 ${response.status}${message ? `：${message.slice(0, 180)}` : ""}`, response.status);
+  }
   return await response.json() as Record<string, unknown>;
 }
 
@@ -966,12 +984,21 @@ async function searchTmdbCandidatesEnhanced(request: MediaScrapeRequest, setting
   }
 
   const collected: MediaScrapeCandidate[] = [];
+  const errors: string[] = [];
   for (const searchQuery of Array.from(querySet).slice(0, 6)) {
     for (const endpoint of endpoints) {
       for (const language of ["zh-CN", "en-US"]) {
-        collected.push(...await searchTmdbEndpointCandidates(request, settings, searchQuery, endpoint, language).catch(() => []));
+        try {
+          collected.push(...await searchTmdbEndpointCandidates(request, settings, searchQuery, endpoint, language));
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : "TMDB 搜索失败");
+        }
       }
     }
+  }
+
+  if (collected.length === 0 && errors.length > 0) {
+    throw new TmdbRequestError(Array.from(new Set(errors)).slice(0, 2).join("；"));
   }
 
   const byKey = new Map<string, MediaScrapeCandidate>();
@@ -4457,6 +4484,40 @@ app.patch("/api/admin/media/settings", async (req, res) => {
 
   await saveMediaScraperSettings(settings);
   res.json({ settings });
+});
+
+app.post("/api/admin/media/tmdb/test", async (req, res) => {
+  const auth = await requireWorkspaceAdmin(req, res);
+  if (!auth) return;
+
+  const current = await loadMediaScraperSettings();
+  const payload = req.body as Partial<MediaScraperSettings>;
+  const settings: MediaScraperSettings = {
+    ...current,
+    tmdbApiKey: typeof payload.tmdbApiKey === "string" && payload.tmdbApiKey.trim() ? payload.tmdbApiKey.trim() : current.tmdbApiKey
+  };
+
+  try {
+    await fetchTmdbJson("configuration", settings, {});
+    const data = await fetchTmdbJson("search/movie", settings, {
+      query: "Inception",
+      language: "zh-CN",
+      include_adult: "false"
+    }) as { results?: Array<Record<string, unknown>> };
+
+    res.json({
+      ok: true,
+      configured: Boolean(settings.tmdbApiKey || runtimeConfig.tmdbApiKey),
+      resultCount: data.results?.length || 0,
+      firstTitle: data.results?.[0]?.title || data.results?.[0]?.original_title || null
+    });
+  } catch (error) {
+    res.status(502).json({
+      ok: false,
+      configured: Boolean(settings.tmdbApiKey || runtimeConfig.tmdbApiKey),
+      error: error instanceof Error ? error.message : "TMDB test failed"
+    });
+  }
 });
 
 app.get("/api/admin/ai/settings", async (req, res) => {

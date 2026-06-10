@@ -34,6 +34,7 @@ type MediaScraperSettings = {
   bangumiImageBase: string;
 };
 type MediaSettingsResponse = { settings: MediaScraperSettings };
+type TmdbTestResponse = { ok: boolean; configured: boolean; resultCount?: number; firstTitle?: string | null; error?: string };
 type MediaAiSuggestion = {
   id: string;
   title: string;
@@ -765,6 +766,32 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     }
   };
 
+  const testTmdbSettings = async () => {
+    if (readOnly) {
+      setStatus("只读模式无法测试 TMDB");
+      return;
+    }
+
+    setIsSaving(true);
+    setStatus("正在测试 TMDB 连接...");
+
+    try {
+      const response = await authFetch(`${CONTENT_API_BASE}/api/admin/media/tmdb/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tmdbApiKey: scraperSettings.tmdbApiKey })
+      });
+      const data = await response.json() as TmdbTestResponse;
+      if (!response.ok || !data.ok) throw new Error(data.error || "TMDB 测试失败");
+
+      setStatus(`TMDB 连接正常：测试搜索 Inception 返回 ${data.resultCount || 0} 条，首条「${data.firstTitle || "未知"}」`);
+    } catch (error) {
+      setStatus(error instanceof Error ? `TMDB 连接失败：${error.message}` : "TMDB 连接失败，请检查 API Key 或服务器网络");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const requestAiCompletion = async (items: ScreeningSourceItem[], mode: "single" | "batch") => {
     if (readOnly) {
       setStatus("只读模式无法执行 AI 补全");
@@ -1304,9 +1331,14 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                     <Field label="TMDB API Key" type="password" value={scraperSettings.tmdbApiKey} onChange={(value) => setScraperSettings((current) => ({ ...current, tmdbApiKey: value }))} placeholder="v3 API Key 或 v4 Bearer Token，可留空" />
                     <Field label="Bangumi API 反代" value={scraperSettings.bangumiApiBase} onChange={(value) => setScraperSettings((current) => ({ ...current, bangumiApiBase: value }))} placeholder="https://bgmapi.anibt.net" />
                     <Field label="Bangumi 图片反代" value={scraperSettings.bangumiImageBase} onChange={(value) => setScraperSettings((current) => ({ ...current, bangumiImageBase: value }))} placeholder="https://bgmimg.anibt.net" />
-                    <button disabled={isSaving} onClick={saveScraperSettings} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-black text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
-                      <Save className="size-4" /> 保存设置
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button disabled={isSaving} onClick={saveScraperSettings} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-black text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
+                        <Save className="size-4" /> 保存设置
+                      </button>
+                      <button disabled={isSaving} onClick={testTmdbSettings} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 text-sm font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50">
+                        <Search className="size-4" /> 测试 TMDB
+                      </button>
+                    </div>
                   </div>
                   <p className="mt-2 text-xs font-medium text-muted-foreground">TMDB 用于电影/剧集海报简介增强，支持普通 v3 API Key 或 v4 Bearer Token；Bangumi 反代用于中文动漫搜索和封面加载。设置保存在本地内容服务，不会发布到前台。</p>
                 </div>
