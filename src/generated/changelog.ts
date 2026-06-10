@@ -31,6 +31,32 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "7e775df",
+    "hash": "7e775df109f5bf7f636eed594c7e5107ea647b79",
+    "date": "2026-06-10",
+    "title": "杂谈系统类型强化+硬编码日期动态化+导入SSE实时刷新",
+    "description": "- TalkModal: talk: any → TalkCard 强类型\n- Talks.tsx: 硬编码 2026 日期 → new Date().getFullYear() 动态取值\n- server: 导入接口广播 content.published 使 SSE 推送前台自动刷新\n- ContentProvider: 新增 talks.imported 事件监听",
+    "files": [
+      "server/index.ts",
+      "src/components/TalkModal.tsx",
+      "src/content/ContentProvider.tsx",
+      "src/generated/changelog.ts",
+      "src/pages/Talks.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "fix: 杂谈系统类型强化+硬编码日期动态化+导入SSE实时刷新",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 1、内容数据 1、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "66600ba",
     "hash": "66600baad7f9b0274933ff6420f3704f3466f9b1",
     "date": "2026-06-10",
@@ -945,32 +971,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "2b75986",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add TMDB metadata completion for screenings",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "a29c2c9",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -990,7 +996,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -1010,7 +1016,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1030,7 +1036,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1050,7 +1056,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1070,7 +1076,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -1090,7 +1096,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1100,6 +1106,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 2、组件 3、工作台 4、内容数据 1、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "7e775df",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "fix: 杂谈系统类型强化+硬编码日期动态化+导入SSE实时刷新",
+        "description": "- TalkModal: talk: any → TalkCard 强类型\n- Talks.tsx: 硬编码 2026 日期 → new Date().getFullYear() 动态取值\n- server: 导入接口广播 content.published 使 SSE 推送前台自动刷新\n- ContentProvider: 新增 talks.imported 事件监听"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、组件 1、内容数据 1、后端 1",
         "description": ""
       }
     ]

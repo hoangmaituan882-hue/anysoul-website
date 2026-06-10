@@ -8,6 +8,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { useContent } from "../content/useContent";
 import { FeedbackChannelForm } from "../components/FeedbackChannelForm";
 import {
+  screeningSourceStatusLabel,
+  screeningSourceTimingLabel,
+  screeningSourceSortTime,
+  formatDateKey,
+  defaultFanshiReview
+} from "../content/screeningUtils";
+import {
   defaultScreeningLibrary,
 } from "../content/defaults/screeningLibrary";
 import {
@@ -128,39 +135,24 @@ function formatDistanceFromNow(startsAt?: string) {
 }
 
 function formatDateLabel(value?: string) {
-  const time = parseTime(value);
-  if (!time) return value || "待补";
-  const date = new Date(time);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return formatDateKey(value);
 }
 
 function sourceSortTime(item: ScreeningSourceItem) {
-  return parseTime(item.lastWatchedAt) || parseTime(item.addedAt) || 0;
+  return screeningSourceSortTime(item);
 }
 
 function sourceStatusDateLabel(item: ScreeningSourceItem) {
-  if (item.status === "watched" && item.lastWatchedAt) return `播放 ${formatDateLabel(item.lastWatchedAt)}`;
-  if (item.status === "planned") return "已排期";
-  if (item.status === "available") return "待放映";
-  if (item.status === "hidden") return "已隐藏";
-  if (item.status === "rejected") return "已拒绝";
-  return "待放映";
+  return screeningSourceTimingLabel(item);
 }
 
 function sourceTimingLabel(item: ScreeningSourceItem) {
-  return `上映 ${item.year || "待补"} · ${sourceStatusDateLabel(item)}`;
+  const year = item.year || "待补";
+  return `${year} · ${screeningSourceTimingLabel(item)}`;
 }
 
 function percentageOf(value: number, total: number) {
   return total > 0 ? Math.round((value / total) * 100) : 0;
-}
-
-function defaultFanshiReview(item: ScreeningSourceItem) {
-  if (item.fanshiReview) return item.fanshiReview;
-  if (item.category === "bad") return "泛式评价：适合当作反面案例一起吐槽，重点看它怎么把好点子拍歪。";
-  if (item.category === "anime") return "泛式评价：动画片源优先看演出、节奏和弹幕讨论密度。";
-  if (item.category === "good" || item.category === "classic") return "泛式评价：放映会适合复盘结构、表演和名场面，属于可以沉淀进片单的作品。";
-  return "泛式评价：资料仍可继续补完，欢迎补充播放入口、版本说明或吐槽点。";
 }
 
 function buildScreeningRecords(schedule: ScreeningScheduleContent, library: ScreeningLibraryContent) {
@@ -442,7 +434,7 @@ export function Screenings() {
     myWatched: libraryContent.items.filter((item) => myWatchedSourceIds.has(item.id)).length
   };
   const categoryLabels: Record<string, string> = { all: "全部分类", good: "经典好片", bad: "绝世烂片", classic: "往期经典", anime: "动画", topic: "主题片", other: "其他" };
-  const statusLabels: Record<string, string> = { all: "全部状态", available: "可排播", planned: "已计划", watched: "已看", hidden: "隐藏", rejected: "拒绝" };
+  const statusLabels: Record<string, string> = { all: "全部状态", available: "可排播", planned: "已排期", watched: "已归档", hidden: "隐藏", rejected: "拒绝" };
   const typeLabels: Record<string, string> = { all: "全部类型", movie: "电影", anime: "动画", ova: "OVA", series: "剧集", short: "短片", other: "其他" };
   const priorityLabels: Record<string, string> = { all: "全部优先级", low: "低优先级", normal: "普通优先级", high: "高优先级" };
   const specialLabels: Record<string, string> = { all: "全部", missingPoster: "缺海报", missingSource: "缺片源", recentlyAdded: "最近入库", myWatched: "我看过" };

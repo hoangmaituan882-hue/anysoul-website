@@ -1273,8 +1273,8 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       <select value={libraryStatusFilter} onChange={(event) => setLibraryStatusFilter(event.target.value)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none">
         <option value="all">全部状态</option>
         <option value="available">可排播</option>
-        <option value="planned">已计划</option>
-        <option value="watched">已看</option>
+        <option value="planned">已排期</option>
+        <option value="watched">已归档</option>
         <option value="hidden">隐藏</option>
         <option value="rejected">拒绝</option>
       </select>
@@ -1521,7 +1521,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                     {item.posterUrl ? <img src={item.posterUrl} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center px-3 text-center text-xs font-black text-muted-foreground">暂无海报</div>}
                     <span className="absolute left-2 top-2 flex size-8 items-center justify-center rounded-xl bg-background/90 text-xs font-black text-foreground shadow-sm">{stableLibraryNumbers.get(item.id) || index + 1}</span>
                     <span className={cn("absolute right-2 top-2 rounded-full px-2 py-1 text-[10px] font-black shadow-sm", isWatched ? "bg-emerald-500 text-white" : item.status === "planned" ? "bg-sky-500 text-white" : "bg-background/90 text-foreground")}>
-                      {isWatched ? "已归档" : item.status === "planned" ? "已排期" : "待放映"}
+                      {isWatched ? "已归档" : item.status === "planned" ? "已排期" : item.status === "hidden" ? "已隐藏" : item.status === "rejected" ? "已拒绝" : "可排播"}
                     </span>
                   </div>
                   <div className="space-y-2 p-3">
@@ -1571,7 +1571,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[12px] font-bold text-muted-foreground">放映状态</span>
-                      <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{item.status === "planned" ? "已排期" : "待放映"}</div>
+                       <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{item.status === "watched" ? "已归档" : item.status === "planned" ? "已排期" : item.status === "hidden" ? "已隐藏" : item.status === "rejected" ? "已拒绝" : "可排播"}</div>
                     </div>
                   )}
                 </div>
@@ -1816,7 +1816,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                 </button>
                 <div className="rounded-2xl border border-border bg-card p-3 text-xs font-bold text-muted-foreground">
                   <div>入库序号：<span className="text-foreground">{stableLibraryNumbers.get(editingLibraryItem.id) || editingLibraryIndex + 1}</span></div>
-                  <div className="mt-1">状态：<span className="text-foreground">{editingLibraryItem.status === "watched" ? "已归档" : editingLibraryItem.status === "planned" ? "已排期" : "待放映"}</span></div>
+                   <div className="mt-1">状态：<span className="text-foreground">{editingLibraryItem.status === "watched" ? "已归档" : editingLibraryItem.status === "planned" ? "已排期" : editingLibraryItem.status === "hidden" ? "已隐藏" : editingLibraryItem.status === "rejected" ? "已拒绝" : "可排播"}</span></div>
                 </div>
               </div>
 
@@ -1836,7 +1836,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[12px] font-bold text-muted-foreground">放映状态</span>
-                      <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{editingLibraryItem.status === "hidden" ? "已隐藏" : editingLibraryItem.status === "rejected" ? "已拒绝" : "待放映"}</div>
+                       <div className="flex h-10 items-center rounded-xl border border-border bg-muted/40 px-3 text-sm font-black text-muted-foreground">{editingLibraryItem.status === "hidden" ? "已隐藏" : editingLibraryItem.status === "rejected" ? "已拒绝" : "可排播"}</div>
                     </div>
                   )}
                 </div>

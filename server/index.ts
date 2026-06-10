@@ -1688,14 +1688,38 @@ function mergeLibraryItems(base: ScreeningLibraryContent, additions: ScreeningSo
   const byTitle = new Map(base.items.map((item) => [item.title.trim().toLowerCase(), item.id]));
   let changed = false;
 
+  const statusPriority: Record<string, number> = { watched: 4, planned: 3, available: 2, hidden: 0, rejected: 0 };
+
   for (const item of additions) {
     const titleKey = item.title.trim().toLowerCase();
     const existingId = byId.has(item.id) ? item.id : byTitle.get(titleKey);
 
     if (existingId) {
       const existing = byId.get(existingId);
-      if (existing && existing.tags.length === 0 && item.tags.length > 0) {
-        byId.set(existingId, { ...existing, tags: item.tags });
+      if (!existing) continue;
+
+      const patch: Partial<ScreeningSourceItem> = {};
+
+      if (!existing.posterUrl && item.posterUrl) patch.posterUrl = item.posterUrl;
+      if (!existing.sourceUrl && item.sourceUrl) patch.sourceUrl = item.sourceUrl;
+      if (!existing.sourceNote && item.sourceNote) patch.sourceNote = item.sourceNote;
+      if (!existing.originalTitle && item.originalTitle) patch.originalTitle = item.originalTitle;
+      if (!existing.year && item.year) patch.year = item.year;
+      if (!existing.duration && item.duration) patch.duration = item.duration;
+      if ((!existing.rating || existing.rating === 0) && item.rating && item.rating > 0) patch.rating = item.rating;
+      if ((!existing.description || existing.description.length < 10) && item.description && item.description.length >= 10) patch.description = item.description;
+      if (existing.tags.length === 0 && item.tags.length > 0) patch.tags = item.tags;
+      if (item.lastWatchedAt && (!existing.lastWatchedAt || item.lastWatchedAt > existing.lastWatchedAt)) patch.lastWatchedAt = item.lastWatchedAt;
+      if (item.plannedAt && (!existing.plannedAt || item.plannedAt > existing.plannedAt)) patch.plannedAt = item.plannedAt;
+
+      const existingPrio = statusPriority[existing.status] ?? 0;
+      const itemPrio = statusPriority[item.status] ?? 0;
+      if (itemPrio > existingPrio && existingPrio > 0) patch.status = item.status;
+
+      if (item.timesWatched > (existing.timesWatched || 0)) patch.timesWatched = item.timesWatched;
+
+      if (Object.keys(patch).length > 0) {
+        byId.set(existingId, { ...existing, ...patch });
         changed = true;
       }
       continue;
@@ -4349,6 +4373,15 @@ app.post("/api/public/screenings/source-submissions", publicWriteLimit, async (r
     if (!entry) return { status: 500, error: "Submission store is not configured" };
 
     const current = normalizeSourceSubmissions(entry.draft);
+
+    const dedupContent = content.trim().toLowerCase();
+    const duplicate = current.items.find(
+      (item) => item.sourceId === sourceId && item.field === field && (item.content || "").trim().toLowerCase() === dedupContent
+    );
+    if (duplicate) {
+      return { data: { submission: duplicate, duplicate: true } };
+    }
+
     entry.draft = { items: [submission, ...current.items] };
     entry.status = "draft";
     entry.updatedAt = new Date().toISOString();
@@ -4356,6 +4389,10 @@ app.post("/api/public/screenings/source-submissions", publicWriteLimit, async (r
   });
 
   if (result.status !== 200) {
+    if (result.data) {
+      res.json({ ok: true, submission: result.data.submission, duplicate: true });
+      return;
+    }
     res.status(result.status).json({ error: result.error });
     return;
   }
@@ -4452,6 +4489,45 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
       entry.draft = nextContent;
       entry.published = nextContent;
       entry.status = "published";
+
+      if (decision === "approved") {
+        const libEntry = store.entries["screenings.library"];
+        if (libEntry) {
+          const libContent = libEntry.draft || {};
+          const libItems = Array.isArray((libContent as any)?.items) ? [...(libContent as any).items] : [];
+          const target = libItems.find((item: any) => item.id === existing.sourceId);
+          if (target) {
+            const f = existing.field;
+            const c = (existing.content || "").trim();
+            if (f === "description" && c.length > 10 && (!target.description || target.description.length < 10)) {
+              target.description = c;
+            }
+            if (f === "sourceUrl" && c) {
+              const u = (c.match(/https?:\/\/[^\s]+/) || [])[0] || c;
+              if (!target.sourceUrl) target.sourceUrl = u;
+              if (!target.sourceNote) target.sourceNote = c;
+              else if (target.sourceNote !== c) target.sourceNote = target.sourceNote + "; " + c;
+            }
+            if (f === "sourceNote" && c) {
+              if (!target.sourceNote) target.sourceNote = c;
+              else if (!target.sourceNote.includes(c)) target.sourceNote = target.sourceNote + "; " + c;
+            }
+            if (f === "fanshiReview" && c) {
+              if (!target.fanshiReview) target.fanshiReview = c;
+              else if (!target.fanshiReview.includes(c)) target.fanshiReview = target.fanshiReview + "\n" + c;
+            }
+            if (f === "other" && c) {
+              if (!target.sourceNote) target.sourceNote = c;
+              else if (!target.sourceNote.includes(c)) target.sourceNote = target.sourceNote + "; " + c;
+            }
+            libEntry.draft = { ...(libContent as any), items: libItems };
+            libEntry.published = libEntry.draft;
+            libEntry.status = "published";
+            libEntry.version += 1;
+            libEntry.updatedAt = reviewedAt;
+          }
+        }
+      }
     } else {
       const content = normalizeFeedbackSubmissions(entry.draft);
       const existing = content.items.find((item) => item.id === submissionId);
@@ -4468,10 +4544,11 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
     entry.updatedAt = reviewedAt;
     if (kind === "source") entry.publishedAt = reviewedAt;
 
+    const eventKeys = kind === "source" && decision === "approved" ? [key, "screenings.library"] : [key];
     const event = {
       id: `evt_${Date.now()}`,
       type: "submission.reviewed",
-      keys: [key],
+      keys: eventKeys,
       version: store.siteVersion,
       message,
       ...authEventActor(auth),
