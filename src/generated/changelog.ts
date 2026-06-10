@@ -31,6 +31,30 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "0a738de",
+    "hash": "0a738de969beacd9f0654f29207c329053ca4d9a",
+    "date": "2026-06-10",
+    "title": "Add TMDB diagnostics for screening scraper",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/generated/changelog.ts",
+      "src/workspace/ScreeningsAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add TMDB diagnostics for screening scraper",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "工作台 1、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "a29c2c9",
     "hash": "a29c2c97d38334f0080f76892e47abbf40faf5df",
     "date": "2026-06-10",
@@ -775,32 +799,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "afc0d63",
-    "subtitle": "维护",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "维护",
-        "title": "Generate changelog from git history",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、脚本配置 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、脚本配置 2",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "a8d916f",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -820,7 +824,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -840,7 +844,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -860,7 +864,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -880,7 +884,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -900,7 +904,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -920,11 +924,31 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
         "title": "Enhance screening metadata providers",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "工作台 1、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "0a738de",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add TMDB diagnostics for screening scraper",
         "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。"
       },
       {

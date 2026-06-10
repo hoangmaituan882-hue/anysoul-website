@@ -23,6 +23,7 @@ type MediaSearchResponse = {
   warnings?: string[];
   providerStatus: {
     tmdbConfigured: boolean;
+    tmdbApiBase?: string;
     bangumiApiBase?: string;
     bangumiImageBase?: string;
     redirectPlaybackOnly: boolean;
@@ -30,6 +31,7 @@ type MediaSearchResponse = {
 };
 type MediaScraperSettings = {
   tmdbApiKey: string;
+  tmdbApiBase: string;
   bangumiApiBase: string;
   bangumiImageBase: string;
 };
@@ -450,6 +452,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const [showScraperSettings, setShowScraperSettings] = useState(false);
   const [scraperSettings, setScraperSettings] = useState<MediaScraperSettings>({
     tmdbApiKey: "",
+    tmdbApiBase: "https://api.themoviedb.org/3",
     bangumiApiBase: "https://bgmapi.anibt.net",
     bangumiImageBase: "https://bgmimg.anibt.net"
   });
@@ -779,7 +782,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       const response = await authFetch(`${CONTENT_API_BASE}/api/admin/media/tmdb/test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tmdbApiKey: scraperSettings.tmdbApiKey })
+        body: JSON.stringify({ tmdbApiKey: scraperSettings.tmdbApiKey, tmdbApiBase: scraperSettings.tmdbApiBase })
       });
       const data = await response.json() as TmdbTestResponse;
       if (!response.ok || !data.ok) throw new Error(data.error || "TMDB 测试失败");
@@ -1327,8 +1330,9 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   <div className="mb-3 flex items-center gap-2 text-sm font-black text-foreground">
                     <KeyRound className="size-4 text-primary" /> API 与反代配置
                   </div>
-                  <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] md:items-end">
                     <Field label="TMDB API Key" type="password" value={scraperSettings.tmdbApiKey} onChange={(value) => setScraperSettings((current) => ({ ...current, tmdbApiKey: value }))} placeholder="v3 API Key 或 v4 Bearer Token，可留空" />
+                    <Field label="TMDB API Base" value={scraperSettings.tmdbApiBase} onChange={(value) => setScraperSettings((current) => ({ ...current, tmdbApiBase: value }))} placeholder="https://api.themoviedb.org/3" />
                     <Field label="Bangumi API 反代" value={scraperSettings.bangumiApiBase} onChange={(value) => setScraperSettings((current) => ({ ...current, bangumiApiBase: value }))} placeholder="https://bgmapi.anibt.net" />
                     <Field label="Bangumi 图片反代" value={scraperSettings.bangumiImageBase} onChange={(value) => setScraperSettings((current) => ({ ...current, bangumiImageBase: value }))} placeholder="https://bgmimg.anibt.net" />
                     <div className="flex flex-wrap gap-2">

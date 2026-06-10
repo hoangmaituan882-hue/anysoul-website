@@ -63,6 +63,7 @@ type MediaScrapeRequest = {
 
 type MediaScraperSettings = {
   tmdbApiKey: string;
+  tmdbApiBase: string;
   bangumiApiBase: string;
   bangumiImageBase: string;
 };
@@ -188,6 +189,7 @@ const runtimeConfig = {
   monitoringDiskWarningPercent: Number(process.env.MONITORING_DISK_WARNING_PERCENT || 90),
   monitoringFailureThreshold: Number(process.env.MONITORING_FAILURE_THRESHOLD || 2),
   tmdbApiKey: process.env.TMDB_API_KEY || "",
+  tmdbApiBase: normalizedUrl(process.env.TMDB_API_BASE || "", "https://api.themoviedb.org/3"),
   openAiApiKey: process.env.OPENAI_API_KEY || "",
   openAiBaseUrl: normalizedUrl(process.env.OPENAI_BASE_URL || "", "https://api.openai.com/v1"),
   openAiModel: process.env.OPENAI_MODEL || "gpt-4o-mini",
@@ -225,6 +227,7 @@ process.on("unhandledRejection", (error) => {
 
 const defaultMediaScraperSettings: MediaScraperSettings = {
   tmdbApiKey: runtimeConfig.tmdbApiKey,
+  tmdbApiBase: runtimeConfig.tmdbApiBase,
   bangumiApiBase: "https://bgmapi.anibt.net",
   bangumiImageBase: "https://bgmimg.anibt.net"
 };
@@ -776,7 +779,8 @@ async function fetchTmdbJson(pathname: string, settings: MediaScraperSettings, p
   const token = settings.tmdbApiKey || runtimeConfig.tmdbApiKey;
   if (!token) throw new TmdbRequestError("TMDB API Key 未配置");
 
-  const url = new URL(`https://api.themoviedb.org/3/${pathname.replace(/^\/+/, "")}`);
+  const apiBase = normalizedUrl(settings.tmdbApiBase || runtimeConfig.tmdbApiBase, runtimeConfig.tmdbApiBase);
+  const url = new URL(`${apiBase}/${pathname.replace(/^\/+/, "")}`);
   for (const [key, value] of Object.entries(params)) {
     if (value) url.searchParams.set(key, value);
   }
@@ -822,7 +826,8 @@ async function searchTmdbCandidates(request: MediaScrapeRequest, settings: Media
 
   const sourceUrl = normalizeBilibiliUrl(request.sourceUrl || request.query);
   const endpoint = request.mediaType === "anime" || request.mediaType === "series" ? "tv" : "movie";
-  const url = new URL(`https://api.themoviedb.org/3/search/${endpoint}`);
+  const apiBase = normalizedUrl(settings.tmdbApiBase || runtimeConfig.tmdbApiBase, runtimeConfig.tmdbApiBase);
+  const url = new URL(`${apiBase}/search/${endpoint}`);
   url.searchParams.set("query", query);
   url.searchParams.set("language", "zh-CN");
   url.searchParams.set("include_adult", "false");
@@ -2016,6 +2021,7 @@ async function loadMediaScraperSettings(): Promise<MediaScraperSettings> {
       ...defaultMediaScraperSettings,
       ...saved,
       tmdbApiKey: saved.tmdbApiKey || runtimeConfig.tmdbApiKey,
+      tmdbApiBase: saved.tmdbApiBase || runtimeConfig.tmdbApiBase,
       bangumiApiBase: saved.bangumiApiBase || defaultMediaScraperSettings.bangumiApiBase,
       bangumiImageBase: saved.bangumiImageBase || defaultMediaScraperSettings.bangumiImageBase
     };
@@ -4478,6 +4484,7 @@ app.patch("/api/admin/media/settings", async (req, res) => {
   const payload = req.body as Partial<MediaScraperSettings>;
   const settings: MediaScraperSettings = {
     tmdbApiKey: typeof payload.tmdbApiKey === "string" ? payload.tmdbApiKey.trim() : current.tmdbApiKey,
+    tmdbApiBase: typeof payload.tmdbApiBase === "string" && payload.tmdbApiBase.trim() ? payload.tmdbApiBase.trim().replace(/\/$/, "") : current.tmdbApiBase,
     bangumiApiBase: typeof payload.bangumiApiBase === "string" && payload.bangumiApiBase.trim() ? payload.bangumiApiBase.trim().replace(/\/$/, "") : current.bangumiApiBase,
     bangumiImageBase: typeof payload.bangumiImageBase === "string" && payload.bangumiImageBase.trim() ? payload.bangumiImageBase.trim().replace(/\/$/, "") : current.bangumiImageBase
   };
@@ -4494,7 +4501,8 @@ app.post("/api/admin/media/tmdb/test", async (req, res) => {
   const payload = req.body as Partial<MediaScraperSettings>;
   const settings: MediaScraperSettings = {
     ...current,
-    tmdbApiKey: typeof payload.tmdbApiKey === "string" && payload.tmdbApiKey.trim() ? payload.tmdbApiKey.trim() : current.tmdbApiKey
+    tmdbApiKey: typeof payload.tmdbApiKey === "string" && payload.tmdbApiKey.trim() ? payload.tmdbApiKey.trim() : current.tmdbApiKey,
+    tmdbApiBase: typeof payload.tmdbApiBase === "string" && payload.tmdbApiBase.trim() ? payload.tmdbApiBase.trim().replace(/\/$/, "") : current.tmdbApiBase
   };
 
   try {
@@ -4623,6 +4631,7 @@ app.post("/api/admin/media/search", async (req, res) => {
     warnings,
     providerStatus: {
       tmdbConfigured: Boolean(settings.tmdbApiKey || runtimeConfig.tmdbApiKey),
+      tmdbApiBase: settings.tmdbApiBase,
       bangumiApiBase: settings.bangumiApiBase,
       bangumiImageBase: settings.bangumiImageBase,
       redirectPlaybackOnly: true
@@ -4648,6 +4657,7 @@ app.post("/api/admin/media/parse", async (req, res) => {
     candidate,
     providerStatus: {
       tmdbConfigured: Boolean(settings.tmdbApiKey || runtimeConfig.tmdbApiKey),
+      tmdbApiBase: settings.tmdbApiBase,
       bangumiApiBase: settings.bangumiApiBase,
       bangumiImageBase: settings.bangumiImageBase,
       redirectPlaybackOnly: true
