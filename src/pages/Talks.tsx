@@ -15,6 +15,8 @@ type TalkCard = {
   date: string;
   day: string;
   cat: string;
+  category?: TalkItem["category"];
+  episodeNo?: number;
   isLiked: boolean;
   title: string;
   desc: string;
@@ -30,7 +32,11 @@ type TalkCard = {
   summaryBullets: string[];
   transcript: Array<{ time: string; speaker: string; text: string }>;
   animes: string[];
+  tags: string[];
   highlights: Array<{ time: string; desc: string }>;
+  reviewPoints: string[];
+  quotes: Array<{ time?: string; speaker?: string; text: string }>;
+  watchAdvice: string;
   comments: string[];
   biliUrl?: string;
   videoUrl?: string;
@@ -103,7 +109,7 @@ function normalizeTalksContent(value: TalksContent): TalksContent {
   };
 }
 
-function talkToCard(talk: TalkItem, index = 0): TalkCard {
+function talkToCard(talk: TalkItem, index = 0, defaultCoverUrl = ""): TalkCard {
   const parsed = parseTalkDate(talk.date);
   const meta = categoryMeta(talk.category, talk.tags);
   const mentions = Array.isArray(talk.mentions) ? talk.mentions : [];
@@ -113,22 +119,28 @@ function talkToCard(talk: TalkItem, index = 0): TalkCard {
     date: formatTalkDate(talk.date),
     day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][parsed.getDay()],
     cat: meta.label,
+    category: talk.category,
+    episodeNo: talk.episodeNo,
     isLiked: Boolean(talk.isLiked),
-    title: talk.episodeNo ? `第 ${talk.episodeNo} 期 · ${talk.title}` : talk.title,
+    title: talk.title,
     desc: talk.subtitle || talk.summary,
     min: durationToMinutes(talk.duration),
     color: meta.color,
-    cover: talk.coverUrl || fallbackCover,
+    cover: talk.coverUrl || defaultCoverUrl || fallbackCover,
     imgs: avatarImages.slice(0, Math.max(1, Math.min(3, (talk.guests?.length || 1) + 1))),
     hasAiSummary: Boolean(talk.summary || talk.summaryBullets?.length || talk.highlights?.length),
     viewers: Number(talk.viewers || 0),
     danmaku: Number(talk.danmaku || 0),
-    animeMentions: Number(talk.animeMentions || mentions.length || talk.tags?.length || 0),
+    animeMentions: Number(talk.animeMentions || mentions.length || 0),
     summaryText: talk.summary || "",
     summaryBullets: talk.summaryBullets || [],
     transcript: talk.transcript || [],
-    animes: mentions.length ? mentions.map((item) => item.title) : talk.tags || [],
+    animes: mentions.map((item) => item.title),
+    tags: talk.tags || [],
     highlights: talk.highlights || [],
+    reviewPoints: talk.reviewPoints || [],
+    quotes: talk.quotes || [],
+    watchAdvice: talk.watchAdvice || "",
     comments: (talk.comments || []).map((comment) => typeof comment === "string" ? comment : comment.content),
     biliUrl: talk.videoUrl || talk.sourceUrl,
     videoUrl: talk.videoUrl || talk.sourceUrl,
@@ -145,6 +157,7 @@ function scheduleToCard(item: TalkScheduleItem, index: number): TalkCard {
     date: formatTalkDate(item.date),
     day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()],
     cat: meta.label,
+    category: "notice",
     isLiked: false,
     title: item.title,
     desc: item.topic,
@@ -159,10 +172,33 @@ function scheduleToCard(item: TalkScheduleItem, index: number): TalkCard {
     summaryText: item.topic,
     summaryBullets: item.tags,
     transcript: [],
-    animes: item.tags,
+    animes: [],
+    tags: item.tags,
     highlights: [],
+    reviewPoints: [],
+    quotes: [],
+    watchAdvice: "",
     comments: []
   };
+}
+
+function searchableTalkText(item: TalkCard) {
+  return [
+    item.title,
+    item.desc,
+    item.date,
+    item.cat,
+    item.summaryText,
+    item.watchAdvice,
+    ...item.tags,
+    ...item.animes,
+    ...item.summaryBullets,
+    ...item.reviewPoints,
+    ...item.highlights.map((highlight) => `${highlight.time} ${highlight.desc}`),
+    ...item.quotes.map((quote) => `${quote.time || ""} ${quote.speaker || ""} ${quote.text}`),
+    ...item.transcript.map((line) => `${line.time} ${line.speaker} ${line.text}`),
+    ...item.comments
+  ].join(" ").toLowerCase();
 }
 
 function WaveScrollbar({ scrollRef, schedules }: { scrollRef: React.RefObject<HTMLDivElement>, schedules?: any[] }) {
@@ -292,6 +328,7 @@ export function Talks() {
   const [activeTopicId, setActiveTopicId] = useState<string | undefined>(undefined);
   const [archiveSortBy, setArchiveSortBy] = useState<'dateDesc' | 'dateAsc' | 'mentions' | 'viewers' | 'danmaku'>('dateDesc');
   const [archiveFilter, setArchiveFilter] = useState<string>('全部');
+  const [archiveSearchQuery, setArchiveSearchQuery] = useState("");
 
   useEffect(() => {
     if (showAllArchive) {
@@ -303,9 +340,9 @@ export function Talks() {
 
   const archiveData = useMemo(() => (
     (talksContent.archive.length ? talksContent.archive : defaultTalksContent.archive)
-      .map((talk, index) => talkToCard(talk, index))
+      .map((talk, index) => talkToCard(talk, index, talksContent.defaultCoverUrl))
       .sort((a, b) => b.timestamp - a.timestamp)
-  ), [talksContent.archive]);
+  ), [talksContent.archive, talksContent.defaultCoverUrl]);
 
   const archiveYears = useMemo<number[]>(() => {
     const years = archiveData.map((item) => archiveYearFromDate(item.date)).filter((year): year is number => year > 0);
@@ -325,6 +362,9 @@ export function Talks() {
       else list = list.filter(item => item.date.startsWith(archiveFilter));
     }
 
+    const keyword = archiveSearchQuery.trim().toLowerCase();
+    if (keyword) list = list.filter((item) => searchableTalkText(item).includes(keyword));
+
     return [...list].sort((a, b) => {
       if (archiveSortBy === 'dateDesc') return b.timestamp - a.timestamp;
       if (archiveSortBy === 'dateAsc') return a.timestamp - b.timestamp;
@@ -333,7 +373,7 @@ export function Talks() {
       if (archiveSortBy === 'danmaku') return b.danmaku - a.danmaku;
       return 0;
     });
-  }, [archiveData, archiveFilter, archiveSortBy, previousArchiveYear]);
+  }, [archiveData, archiveFilter, archiveSearchQuery, archiveSortBy, previousArchiveYear]);
 
   const latestYearTalks = useMemo(() => {
     return [...archiveData]
@@ -349,7 +389,7 @@ export function Talks() {
     || talksContent.live
     || talksContent.archive[0]
     || defaultTalksContent.live;
-  const liveTalkData = talkToCard(liveTalkSource);
+  const liveTalkData = talkToCard(liveTalkSource, 0, talksContent.defaultCoverUrl);
   const schedules = talksContent.upcoming.length
     ? talksContent.upcoming.map(scheduleToCard)
     : latestYearTalks.slice(1);
@@ -386,6 +426,15 @@ export function Talks() {
                  </button>
                ))}
              </div>
+             <label className="relative block min-w-[260px] max-w-xl">
+               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+               <input
+                 value={archiveSearchQuery}
+                 onChange={(event) => setArchiveSearchQuery(event.target.value)}
+                 placeholder="搜索标题、标签、摘要、逐字稿..."
+                 className="h-10 w-full rounded-full border border-[#f5eade] bg-[#fcf8f3] pl-9 pr-3 text-sm font-medium outline-none transition-colors focus:border-pink-300 focus:ring-2 focus:ring-pink-500/15 dark:border-[#3a332a] dark:bg-[#2d2822]"
+               />
+             </label>
              <div className="flex items-center gap-2 text-xs md:text-sm">
                <span className="text-muted-foreground font-semibold flex items-center gap-1"><ArrowDownUp className="size-3.5" /> 排序方式:</span>
                {[
@@ -458,6 +507,11 @@ export function Talks() {
             </div>
           ))}
         </div>
+        {filteredArchiveData.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-[#f5eade] bg-[#fcf8f3] p-10 text-center text-sm font-bold text-muted-foreground dark:border-[#3a332a] dark:bg-[#2d2822]">
+            没有匹配杂谈录像
+          </div>
+        ) : null}
         
         <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />
       </div>
@@ -661,12 +715,23 @@ export function Talks() {
                 </div>
                 <h3 className="text-lg md:text-xl font-bold">{t("talks.archive" as any)}</h3>
               </div>
-              <button 
-                onClick={() => setShowAllArchive(true)}
-                className="text-[12px] md:text-[13px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-1"
-              >
-                 {t("talks.showall")} <ArrowUpRight className="size-3" />
-              </button>
+              <div className="flex items-center gap-2">
+                <label className="relative hidden sm:block">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={archiveSearchQuery}
+                    onChange={(event) => setArchiveSearchQuery(event.target.value)}
+                    placeholder="搜索归档"
+                    className="h-8 w-40 rounded-full border border-[#f5eade] bg-[#fcf8f3] pl-8 pr-3 text-xs font-medium outline-none focus:border-pink-300 dark:border-[#3a332a] dark:bg-[#2d2822]"
+                  />
+                </label>
+                <button
+                  onClick={() => setShowAllArchive(true)}
+                  className="text-[12px] md:text-[13px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-1"
+                >
+                   {t("talks.showall")} <ArrowUpRight className="size-3" />
+                </button>
+              </div>
             </div>
             
             <div className="flex overflow-x-auto pb-4 pt-1 -mx-4 px-4 snap-x snap-mandatory gap-2.5 md:gap-3 md:grid md:grid-cols-4 lg:grid-cols-5 md:overflow-visible md:p-0 md:mx-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -698,6 +763,30 @@ export function Talks() {
                  </div>
               ))}
             </div>
+            {archiveSearchQuery.trim() ? (
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {filteredArchiveData.slice(0, 4).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedTalk(item)}
+                    className="flex items-center gap-3 rounded-2xl border border-[#f5eade] bg-[#fcf8f3] p-3 text-left transition-colors hover:bg-[#f0ece5] dark:border-[#3a332a] dark:bg-[#2d2822] dark:hover:bg-[#282725]"
+                  >
+                    <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-muted">
+                      <img src={item.cover} alt={item.title} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="line-clamp-1 text-sm font-bold">{item.title}</div>
+                      <div className="mt-1 text-xs font-semibold text-muted-foreground">{item.date} · {item.cat}</div>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.desc || item.summaryText}</p>
+                    </div>
+                  </button>
+                ))}
+                {filteredArchiveData.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-[#f5eade] bg-[#fcf8f3] p-4 text-center text-xs font-bold text-muted-foreground dark:border-[#3a332a] dark:bg-[#2d2822] sm:col-span-2">没有匹配杂谈录像</div>
+                ) : null}
+              </div>
+            ) : null}
           </section>
 
         </div>

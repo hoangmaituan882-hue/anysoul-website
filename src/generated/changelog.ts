@@ -31,6 +31,29 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "8bccb12",
+    "hash": "8bccb12912d0db10b4a5edf347f0b268767e950f",
+    "date": "2026-06-10",
+    "title": "Fix plaza weekly image upload trigger",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。",
+    "files": [
+      "src/generated/changelog.ts",
+      "src/workspace/PlazaAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "Fix plaza weekly image upload trigger",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "工作台 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "0a23431",
     "hash": "0a234319d8d4bee10de73084fef8aea5ddae9e2f",
     "date": "2026-06-10",
@@ -1048,32 +1071,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "a63a900",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "feat: 图片系统优化 - 懒加载、错误兜底、缩略图生成、PicFlow 风格图片 API",
-        "description": "- 新增 OptimizedImage 组件 (lazy loading / error fallback / fade-in)\n- SoulImageCard 接入 OptimizedImage，支持 srcset 响应式图片\n- ImageUploadField 预览使用 OptimizedImage\n- 新增 server/image-store.ts: sharp 缩略图生成 (150w/400w/800w WebP)\n- 修改上传流程: 上传后自动生成缩略图，best-effort 不阻塞\n- 新增 GET /api/public/images/:id?w=&format=&return= 图片服务端点\n- 新增 client.getImageUrl/getImageSrcSet/extractAssetIdFromUrl"
-      },
-      {
-        "type": "影响范围",
-        "title": "组件 3、内容数据 1、后端 2、脚本配置 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "26b9f71",
     "subtitle": "修复",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1093,7 +1096,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -1113,7 +1116,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1133,7 +1136,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1153,7 +1156,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1173,7 +1176,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1193,7 +1196,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -1203,6 +1206,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "后端 5",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "8bccb12",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "Fix plaza weekly image upload trigger",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "工作台 1",
         "description": ""
       }
     ]

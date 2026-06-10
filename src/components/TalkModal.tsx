@@ -10,6 +10,8 @@ type TalkCard = {
   date: string;
   day: string;
   cat: string;
+  category?: TalkItem["category"];
+  episodeNo?: number;
   isLiked: boolean;
   title: string;
   desc: string;
@@ -25,7 +27,11 @@ type TalkCard = {
   summaryBullets: string[];
   transcript: Array<{ time: string; speaker: string; text: string }>;
   animes: string[];
+  tags: string[];
   highlights: Array<{ time: string; desc: string }>;
+  reviewPoints: string[];
+  quotes: Array<{ time?: string; speaker?: string; text: string }>;
+  watchAdvice: string;
   comments: string[];
   biliUrl?: string;
   videoUrl?: string;
@@ -67,6 +73,18 @@ function AccordionSection({ title, icon, defaultOpen = true, children, colorClas
       </AnimatePresence>
     </div>
   )
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function EmptyBlock({ text = "暂无内容，等待后台补充。" }: { text?: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-background/60 px-4 py-5 text-center text-xs font-bold text-muted-foreground">
+      {text}
+    </div>
+  );
 }
 
 function TranscriptWaveScrollbar({
@@ -222,13 +240,24 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
     }
   }, [talk]);
 
-  const transcriptData = talk?.transcript || [
-    { time: "00:00", speaker: "主持人：", text: "大家晚上好，欢迎来到本周的杂谈回，今天我们也是请到了两边非常重量级的嘉宾..." },
-    { time: "02:15", speaker: "嘉宾1：", text: "哈哈，其实也没有那么夸张啦，不过这季的新番确实有很多值得吐槽的地方。" },
-    { time: "05:30", speaker: "主持人：", text: "对，尤其是那部话题作，前几集的制作和后几集简直就像是换了个团队，大家觉得呢？" }
-  ];
-
-  const matchedIndices = transcriptData.map((d, i) => (searchQuery && d.text.toLowerCase().includes(searchQuery.toLowerCase())) ? i : -1).filter(i => i !== -1);
+  const transcriptData = talk?.transcript?.length ? talk.transcript : [];
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const matchedIndices = transcriptData
+    .map((d, i) => (normalizedSearch && `${d.time} ${d.speaker} ${d.text}`.toLowerCase().includes(normalizedSearch)) ? i : -1)
+    .filter(i => i !== -1);
+  const highlightText = (value: string) => {
+    if (!normalizedSearch) return value;
+    const regex = new RegExp(`(${escapeRegExp(searchQuery.trim())})`, "gi");
+    return value.split(regex).map((part, i) =>
+      part.toLowerCase() === normalizedSearch ? <mark key={i} className="bg-orange-500/40 text-foreground">{part}</mark> : part
+    );
+  };
+  const sideBadges = [
+    talk.videoUrl || talk.biliUrl ? "直播回放" : "",
+    talk.cat,
+    talk.episodeNo ? `第 ${talk.episodeNo} 期` : "",
+    ...(talk.tags || []).slice(0, 4)
+  ].filter(Boolean);
   
   useEffect(() => {
     if (matchedIndices.length > 0 && transcriptRef.current) {
@@ -521,7 +550,14 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                      </div>
                      
                      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 leading-tight">{talk.title}</h2>
-                     
+                    <div className="mb-4 flex flex-wrap gap-1.5">
+                      {sideBadges.map((badge) => (
+                        <span key={badge} className="rounded-full border border-[#f5eade] bg-background/80 px-2.5 py-1 text-[10px] font-black text-muted-foreground dark:border-[#3a332a]">
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+
                      <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4 md:mb-6">
                        {talk.desc}
                      </p>
@@ -532,21 +568,21 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                            <Eye className="size-4 md:size-5" />
                          </div>
                          <span className="text-[10px] md:text-xs text-muted-foreground font-medium mb-0.5">观看人数</span>
-                         <span className="text-xs md:text-sm font-bold font-mono">{talk.viewers?.toLocaleString() || '1,245'}</span>
+                        <span className="text-xs md:text-sm font-bold font-mono">{Number(talk.viewers || 0).toLocaleString()}</span>
                        </div>
                        <div className="flex flex-col items-center justify-center text-center">
                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex items-center justify-center mb-1.5 md:mb-2">
                            <MessageCircle className="size-4 md:size-5" />
                          </div>
                          <span className="text-[10px] md:text-xs text-muted-foreground font-medium mb-0.5">互动弹幕</span>
-                         <span className="text-xs md:text-sm font-bold font-mono">{talk.danmaku?.toLocaleString() || '856'}</span>
+                        <span className="text-xs md:text-sm font-bold font-mono">{Number(talk.danmaku || 0).toLocaleString()}</span>
                        </div>
                        <div className="flex flex-col items-center justify-center text-center">
                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-1.5 md:mb-2">
                            <Tag className="size-4 md:size-5" />
                          </div>
                          <span className="text-[10px] md:text-xs text-muted-foreground font-medium mb-0.5">动画提及</span>
-                         <span className="text-xs md:text-sm font-bold font-mono">{talk.animeMentions || '5'}部</span>
+                         <span className="text-xs md:text-sm font-bold font-mono">{Number(talk.animeMentions || 0)}部</span>
                        </div>
                      </div>
                      
@@ -668,16 +704,19 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                >
                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/10 dark:bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
                  <div className="space-y-2.5 md:space-y-3 relative">
-                   <p className="text-xs md:text-sm leading-relaxed text-indigo-950/80 dark:text-indigo-200/80">
-                     {talk.summaryText || "本次直播深入探讨了当季热门动画的表现，并结合弹幕互动分享了许多幕后趣闻和主观评测。"}
-                   </p>
-                   {talk.summaryBullets && talk.summaryBullets.length > 0 && (
+                   {talk.summaryText ? (
+                     <p className="text-xs md:text-sm leading-relaxed text-indigo-950/80 dark:text-indigo-200/80">
+                       {talk.summaryText}
+                     </p>
+                   ) : null}
+                   {talk.summaryBullets && talk.summaryBullets.length > 0 ? (
                      <ul className="text-xs md:text-sm space-y-1.5 md:space-y-2 text-indigo-950/80 dark:text-indigo-200/80 list-disc pl-4">
                        {talk.summaryBullets.map((bullet: string, i: number) => (
                          <li key={i}>{bullet}</li>
                        ))}
                      </ul>
-                   )}
+                   ) : null}
+                   {!talk.summaryText && !talk.summaryBullets?.length ? <EmptyBlock text="暂无直播概要，后台补充后会显示在这里。" /> : null}
                  </div>
                </AccordionSection>
 
@@ -690,20 +729,16 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                    bgClass="bg-muted/30"
                    defaultOpen={true}
                  >
-                   <ul className="space-y-3 text-xs md:text-sm text-muted-foreground">
-                     <li className="flex gap-2.5 items-start cursor-pointer hover:text-foreground transition-colors group">
-                       <span className="text-orange-500 font-mono font-bold bg-orange-500/10 px-1.5 py-0.5 rounded text-[10px] mt-0.5 group-hover:bg-orange-500/20">15:20</span> 
-                       <span className="leading-relaxed">主播激情吐槽作画崩坏瞬间</span>
-                     </li>
-                     <li className="flex gap-2.5 items-start cursor-pointer hover:text-foreground transition-colors group">
-                       <span className="text-orange-500 font-mono font-bold bg-orange-500/10 px-1.5 py-0.5 rounded text-[10px] mt-0.5 group-hover:bg-orange-500/20">42:10</span> 
-                       <span className="leading-relaxed">神仙弹幕引发全场爆笑</span>
-                     </li>
-                     <li className="flex gap-2.5 items-start cursor-pointer hover:text-foreground transition-colors group">
-                       <span className="text-orange-500 font-mono font-bold bg-orange-500/10 px-1.5 py-0.5 rounded text-[10px] mt-0.5 group-hover:bg-orange-500/20">01:15:30</span> 
-                       <span className="leading-relaxed">深度解析隐藏剧情线索与伏笔</span>
-                     </li>
-                   </ul>
+                   {talk.highlights?.length ? (
+                     <ul className="space-y-3 text-xs md:text-sm text-muted-foreground">
+                       {talk.highlights.slice(0, 5).map((highlight, index) => (
+                         <li key={`${highlight.time}-${index}`} className="flex gap-2.5 items-start cursor-pointer hover:text-foreground transition-colors group">
+                           <span className="text-orange-500 font-mono font-bold bg-orange-500/10 px-1.5 py-0.5 rounded text-[10px] mt-0.5 group-hover:bg-orange-500/20">{highlight.time || "--:--"}</span>
+                           <span className="leading-relaxed">{highlight.desc}</span>
+                         </li>
+                       ))}
+                     </ul>
+                   ) : <EmptyBlock text="暂无高光时刻，后台补充后会显示在这里。" />}
                  </AccordionSection>
 
                  {/* 详细内容回顾 */}
@@ -714,13 +749,11 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                    bgClass="bg-muted/30"
                    defaultOpen={true}
                  >
-                   <ul className="space-y-2 text-xs md:text-sm text-muted-foreground list-disc pl-4 marker:text-blue-500">
-                     <li>开场闲聊与近期观影状态分享</li>
-                     <li>热门新番前三集观感及评分盲猜</li>
-                     <li>老番回顾：那些被埋没的冷门神作</li>
-                     <li>观众提问环节解答</li>
-                     <li>下期杂谈主题投票与预告</li>
-                   </ul>
+                   {talk.reviewPoints?.length ? (
+                     <ul className="space-y-2 text-xs md:text-sm text-muted-foreground list-disc pl-4 marker:text-blue-500">
+                       {talk.reviewPoints.map((point, index) => <li key={index}>{point}</li>)}
+                     </ul>
+                   ) : <EmptyBlock text="暂无详细内容回顾，后台补充后会显示在这里。" />}
                  </AccordionSection>
 
                  {/* 精彩语录 */}
@@ -731,12 +764,17 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                    bgClass="bg-rose-50/50 dark:bg-rose-950/10 border-rose-100 dark:border-rose-900/50"
                    defaultOpen={true}
                  >
-                   <div className="space-y-4">
-                     <p className="text-xs md:text-sm text-rose-700/80 dark:text-rose-300 italic leading-relaxed relative">
-                       <span className="text-2xl text-rose-300 dark:text-rose-700 absolute -top-1.5 -left-1 opacity-50 font-serif">"</span>
-                       &nbsp;&nbsp;&nbsp;真正打动人心的从来不是华丽的特效，而是角色在那一瞬间闪耀的人性光辉啊。这才是本作最大的魅力所在！
-                     </p>
-                   </div>
+                   {talk.quotes?.length ? (
+                     <div className="space-y-4">
+                       {talk.quotes.map((quote, index) => (
+                         <blockquote key={index} className="text-xs md:text-sm text-rose-700/80 dark:text-rose-300 italic leading-relaxed relative">
+                           <span className="text-2xl text-rose-300 dark:text-rose-700 absolute -top-1.5 -left-1 opacity-50 font-serif">"</span>
+                           <span className="pl-5 block">{quote.text}</span>
+                           {(quote.speaker || quote.time) && <footer className="mt-2 pl-5 text-[11px] font-bold not-italic text-rose-500/80">{[quote.time, quote.speaker].filter(Boolean).join(" · ")}</footer>}
+                         </blockquote>
+                       ))}
+                     </div>
+                   ) : <EmptyBlock text="暂无精彩语录，后台补充后会显示在这里。" />}
                  </AccordionSection>
                </div>
 
@@ -748,9 +786,9 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                  bgClass="bg-[#fcf8f3] dark:bg-[#2d2822] border-[#f5eade] dark:border-[#3a332a]"
                  defaultOpen={true}
                >
-                 <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-                   本次杂谈部分内容包含严重剧透，建议先补完相关作品全集后再来观看本期回放。此外，由于后半段包含隐晦的神展开讨论，建议佩戴耳机获得最佳食用体验。祝大家观影愉快！
-                 </p>
+                 {talk.watchAdvice ? (
+                   <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{talk.watchAdvice}</p>
+                 ) : <EmptyBlock text="暂无观看建议，后台补充后会显示在这里。" />}
                </AccordionSection>
 
                {/* Video Transcript */}
@@ -775,21 +813,15 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                >
                  <div className="relative">
                    <div ref={transcriptRef} className="bg-background/80 border border-border p-3 md:p-4 rounded-2xl md:rounded-3xl max-h-[300px] md:max-h-[400px] overflow-y-auto text-xs md:text-sm text-muted-foreground leading-relaxed space-y-2 md:space-y-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {transcriptData.map((item, idx) => {
+                      {transcriptData.length ? transcriptData.map((item, idx) => {
                         const isMatch = matchedIndices.includes(idx);
                         return (
                           <p key={idx} className={cn("transcript-item transition-colors", isMatch && "bg-orange-500/20 text-foreground p-1 rounded")}>
                             <span className="font-bold text-foreground mr-1.5">{item.time} {item.speaker}</span>
-                            {searchQuery && isMatch ? (
-                              <span>
-                                {item.text.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, i) => 
-                                  part.toLowerCase() === searchQuery.toLowerCase() ? <mark key={i} className="bg-orange-500/40 text-foreground">{part}</mark> : part
-                                )}
-                              </span>
-                            ) : item.text}
+                            <span>{isMatch ? highlightText(item.text) : item.text}</span>
                           </p>
                         );
-                      })}
+                      }) : <EmptyBlock text="暂无逐字稿，后台补充后可在这里搜索时间、发言人和正文。" />}
                    </div>
                    <TranscriptWaveScrollbar scrollRef={transcriptRef} matchedIndices={matchedIndices} totalItems={transcriptData.length} />
                  </div>
@@ -804,8 +836,9 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                    bgClass="bg-[#fcf8f3] dark:bg-[#2d2822] border-[#f5eade] dark:border-[#3a332a]"
                    defaultOpen={true}
                  >
+                   {talk.animes?.length ? (
                    <div className="flex flex-wrap gap-1.5 md:gap-2 mt-2">
-                     {(talk.animes || ["暂无话题"]).map((anime: string, i: number) => (
+                     {talk.animes.map((anime: string, i: number) => (
                        <div 
                          key={i} 
                          onClick={() => anime !== "暂无话题" && setSelectedAnime(anime)}
@@ -816,6 +849,7 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                        </div>
                      ))}
                    </div>
+                   ) : <EmptyBlock text="暂无提到的话题 / 作品，后台补充 mentions 后会显示在这里。" />}
                  </AccordionSection>
 
                  {/* Segment Highlights */}
@@ -827,7 +861,7 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                    defaultOpen={true}
                  >
                    <div className="space-y-2 md:space-y-4 mt-2 max-h-[146px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border">
-                     {(talk.highlights || []).map((highlight: any, i: number) => (
+                     {talk.highlights?.length ? talk.highlights.map((highlight: any, i: number) => (
                        <div key={i} className="flex gap-2.5 md:gap-4 group cursor-pointer">
                          <div className="w-12 md:w-16 shrink-0 py-0.5 md:py-1 font-mono text-xs md:text-sm font-bold text-blue-600 dark:text-blue-400">
                            {highlight.time}
@@ -836,7 +870,7 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                            <p className="text-xs md:text-sm font-medium">{highlight.desc}</p>
                          </div>
                        </div>
-                     ))}
+                     )) : <EmptyBlock text="暂无时间轴高光点。" />}
                    </div>
                  </AccordionSection>
                </div>

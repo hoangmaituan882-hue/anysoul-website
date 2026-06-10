@@ -65,6 +65,12 @@ export type TalkHighlightItem = {
   desc: string;
 };
 
+export type TalkQuoteItem = {
+  time?: string;
+  speaker?: string;
+  text: string;
+};
+
 export type TalkItem = {
   id: string;
   episodeNo?: number;
@@ -82,6 +88,9 @@ export type TalkItem = {
   summary: string;
   summaryBullets?: string[];
   highlights?: TalkHighlightItem[];
+  reviewPoints?: string[];
+  quotes?: TalkQuoteItem[];
+  watchAdvice?: string;
   viewers: number;
   danmaku: number;
   likes: number;
@@ -120,6 +129,7 @@ export type TalksContent = {
     subtitle: string;
     eyebrow: string;
   };
+  defaultCoverUrl?: string;
   liveTalkId?: string;
   live: TalkItem;
   upcoming: TalkScheduleItem[];

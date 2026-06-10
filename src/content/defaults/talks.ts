@@ -57,6 +57,15 @@ function createTalk(overrides: Partial<TalkItem>): TalkItem {
       { time: "12:40", desc: "确认每期保留摘要、高光和逐字稿" },
       { time: "43:05", desc: "说明 AI 只生成可编辑草稿" }
     ],
+    reviewPoints: [
+      "开场说明本期杂谈主题和录像归档目标",
+      "讨论站点内容如何从临时记录沉淀成长期索引",
+      "复盘工作台发布流程、图片上传和内容补全"
+    ],
+    quotes: [
+      { time: "04:18", speaker: "嘉宾 A", text: "把杂谈内容沉淀成可检索的录像库，比只放一个外链更方便后续回看。" }
+    ],
+    watchAdvice: "建议先查看摘要和高光定位重点，再用逐字稿搜索具体话题；如果只想快速回顾，可以从时间轴高光开始。",
     viewers: 1280,
     danmaku: 342,
     likes: 96,
@@ -79,6 +88,7 @@ export const defaultTalksContent: TalksContent = {
     title: "杂谈回",
     subtitle: "把每周讨论、站点更新和内容线索整理成可以检索、回看和继续补充的长期记录。"
   },
+  defaultCoverUrl: "",
   liveTalkId: "talk-2026-06-02",
   live: createTalk({
     id: "talk-live-2026-06-09",
