@@ -17,6 +17,7 @@ import { Changelog } from "./pages/Changelog";
 import { Plaza } from "./pages/Plaza";
 import { Screenings } from "./pages/Screenings";
 import { Workspace } from "./pages/Workspace";
+import { SiteWorkspace } from "./pages/SiteWorkspace";
 import { About } from "./pages/About";
 import { Gaming } from "./pages/Gaming";
 import { GameLibrary } from "./pages/GameLibrary";
@@ -24,6 +25,7 @@ import { Posts } from "./pages/Posts";
 import { Talks } from "./pages/Talks";
 import { ThemeLanguageProvider } from "./contexts/ThemeLanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { useAuth } from "./contexts/AuthContext";
 import { CONTENT_API_BASE } from "./content/client";
 
 const routeTitles: Record<string, string> = {
@@ -33,7 +35,8 @@ const routeTitles: Record<string, string> = {
   "#screenings": "放映会",
   "#talks": "杂谈回",
   "#posts": "文章记录",
-  "#workspace": "工作台",
+  "#site-workspace": "站点工作台",
+  "#workspace": "管理后台",
   "#games": "游戏回",
   "#game-library": "游戏库",
   "#about": "关于"
@@ -59,6 +62,19 @@ function StandardPage({ children, mainClassName = "flex-1 flex flex-col pt-24 pb
       <Footer />
     </AppShell>
   );
+}
+
+function WorkspaceRoute() {
+  const { canEditWorkspace, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!canEditWorkspace) window.location.hash = "#site-workspace";
+  }, [canEditWorkspace, isLoading]);
+
+  if (isLoading) return null;
+  if (!canEditWorkspace) return null;
+  return <Workspace />;
 }
 
 export default function App() {
@@ -130,12 +146,23 @@ export default function App() {
     );
   }
 
+  if (routeKey === "#site-workspace") {
+    return (
+      <AppShell className="relative h-screen bg-[#fbfaf8] dark:bg-zinc-950 text-foreground antialiased selection:bg-primary/30 font-sans flex flex-col overflow-hidden transition-colors duration-300">
+        <Header isWorkspace={true} />
+        <main className="absolute inset-0 z-0 flex h-screen w-full flex-1 flex-col overflow-hidden">
+          <SiteWorkspace />
+        </main>
+      </AppShell>
+    );
+  }
+
   if (routeKey === "#workspace") {
     return (
       <AppShell className="relative h-screen bg-[#fbfaf8] dark:bg-zinc-950 text-foreground antialiased selection:bg-primary/30 font-sans flex flex-col overflow-hidden transition-colors duration-300">
         <Header isWorkspace={true} />
         <main className="absolute inset-0 z-0 flex h-screen w-full flex-1 flex-col overflow-hidden">
-          <Workspace />
+          <WorkspaceRoute />
         </main>
       </AppShell>
     );

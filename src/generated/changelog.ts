@@ -31,6 +31,31 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "21ebf6b",
+    "hash": "21ebf6bddfd46e4b711bfd11dc8668b0a5c72b90",
+    "date": "2026-06-10",
+    "title": "Fix image upload format detection",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、后端 2。",
+    "files": [
+      "server/index.ts",
+      "server/schema.sql",
+      "src/components/ImageUploadField.tsx",
+      "src/generated/changelog.ts"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "Fix image upload format detection",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 1、后端 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "170d2bd",
     "hash": "170d2bdd807e6a7b4e02652d1f7541f1a5bed05c",
     "date": "2026-06-10",
@@ -1098,32 +1123,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "34b7810",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "feat: 杂谈录像 JSON 批量导入脚本",
-        "description": "- 新增 scripts/import-talks.mjs 一键导入脚本\n- 支持 --dry-run 预览模式\n- 自动去重 (sourceUrl)、清理占位数据、日期排序编号\n- 写入前自动备份、处理 liveTalkId 悬空\n- 新增 npm run talks:import 脚本入口"
-      },
-      {
-        "type": "影响范围",
-        "title": "脚本配置 2",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "66600ba",
     "subtitle": "修复",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1143,7 +1148,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1163,7 +1168,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1183,7 +1188,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1203,7 +1208,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -1223,7 +1228,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1243,7 +1248,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -1253,6 +1258,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、组件 1、工作台 1、内容数据 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "21ebf6b",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "Fix image upload format detection",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、后端 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "组件 1、后端 2",
         "description": ""
       }
     ]

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Check, Database, FileText, HelpCircle, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2 } from "lucide-react";
+import { Activity, Bell, Check, Database, FileText, HelpCircle, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2 } from "lucide-react";
 import { CONTENT_API_BASE } from "../content/client";
 import { defaultHomeFaq, defaultHomeHero } from "../content/defaults/home";
+import { defaultSiteAnnouncements } from "../content/defaults/siteAnnouncements";
 import { defaultTalksContent } from "../content/defaults/talks";
-import type { AdminContentEntry, FaqContent, HomeHeroContent, TalksContent } from "../content/types";
+import type { AdminContentEntry, FaqContent, HomeHeroContent, SiteAnnouncementsContent, TalksContent } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 
@@ -27,6 +28,11 @@ const editableLabels: Record<string, { title: string; description: string; icon:
     title: "杂谈回内容",
     description: "管理杂谈回直播、近期计划、归档列表、侧边栏动态和话题入口。",
     icon: FileText
+  },
+  "site.announcements": {
+    title: "站点公告",
+    description: "管理公开站点工作台里的置顶公告、提醒等级、有效时间和跳转入口。",
+    icon: Bell
   }
 };
 
@@ -94,6 +100,23 @@ function normalizeTalks(value: unknown): TalksContent {
     topArticles: Array.isArray(talks?.topArticles) ? talks.topArticles : defaultTalksContent.topArticles,
     newUploads: Array.isArray(talks?.newUploads) ? talks.newUploads : defaultTalksContent.newUploads,
     topics: Array.isArray(talks?.topics) ? talks.topics : defaultTalksContent.topics
+  };
+}
+
+function normalizeAnnouncements(value: unknown): SiteAnnouncementsContent {
+  const content = value as Partial<SiteAnnouncementsContent> | null;
+  return {
+    items: Array.isArray(content?.items) ? content.items.map((item, index) => ({
+      id: typeof item?.id === "string" && item.id ? item.id : `announcement-${Date.now()}-${index}`,
+      title: typeof item?.title === "string" ? item.title : "新的公告",
+      body: typeof item?.body === "string" ? item.body : "",
+      level: ["info", "success", "warning", "urgent"].includes(String(item?.level)) ? item.level as SiteAnnouncementsContent["items"][number]["level"] : "info",
+      startsAt: typeof item?.startsAt === "string" ? item.startsAt : "",
+      endsAt: typeof item?.endsAt === "string" ? item.endsAt : "",
+      href: typeof item?.href === "string" ? item.href : "",
+      tags: Array.isArray(item?.tags) ? item.tags.map(String).filter(Boolean) : [],
+      pinned: Boolean(item?.pinned)
+    })) : defaultSiteAnnouncements.items
   };
 }
 
@@ -237,6 +260,10 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
     setDraft((current) => updater(normalizeFaq(current)));
   };
 
+  const updateAnnouncements = (updater: (current: SiteAnnouncementsContent) => SiteAnnouncementsContent) => {
+    setDraft((current) => updater(normalizeAnnouncements(current)));
+  };
+
   const updateJsonDraft = (value: string) => {
     try {
       setDraft(JSON.parse(value));
@@ -318,6 +345,134 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
             className="inline-flex items-center gap-2 rounded-lg border border-dashed border-border bg-background px-4 py-2 text-sm font-bold text-muted-foreground hover:border-primary/50 hover:text-primary"
           >
             <Plus className="size-4" /> 添加问题
+          </button>
+        </div>
+      );
+    }
+
+    if (selectedKey === "site.announcements") {
+      const announcements = normalizeAnnouncements(draft);
+
+      return (
+        <div className="space-y-5">
+          {announcements.items.map((item, index) => (
+            <div key={item.id} className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold">公告 {index + 1}</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{item.pinned ? "置顶展示" : "普通公告"} · {item.level}</p>
+                </div>
+                <button
+                  onClick={() => updateAnnouncements((current) => ({ ...current, items: current.items.filter((_, itemIndex) => itemIndex !== index) }))}
+                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-500/10"
+                >
+                  <Trash2 className="size-3.5" /> 删除
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <TextField
+                  label="标题"
+                  value={item.title}
+                  onChange={(value) => updateAnnouncements((current) => ({
+                    ...current,
+                    items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, title: value } : ann)
+                  }))}
+                />
+                <TextField
+                  label="跳转地址"
+                  value={item.href || ""}
+                  placeholder="#talks"
+                  onChange={(value) => updateAnnouncements((current) => ({
+                    ...current,
+                    items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, href: value } : ann)
+                  }))}
+                />
+                <TextField
+                  label="开始时间"
+                  value={item.startsAt || ""}
+                  placeholder="2026-06-10T00:00:00+08:00"
+                  onChange={(value) => updateAnnouncements((current) => ({
+                    ...current,
+                    items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, startsAt: value } : ann)
+                  }))}
+                />
+                <TextField
+                  label="结束时间"
+                  value={item.endsAt || ""}
+                  placeholder="留空表示长期有效"
+                  onChange={(value) => updateAnnouncements((current) => ({
+                    ...current,
+                    items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, endsAt: value } : ann)
+                  }))}
+                />
+              </div>
+              <TextAreaField
+                label="正文"
+                value={item.body}
+                rows={3}
+                onChange={(value) => updateAnnouncements((current) => ({
+                  ...current,
+                  items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, body: value } : ann)
+                }))}
+              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto]">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[12px] font-bold text-muted-foreground">等级</span>
+                  <select
+                    value={item.level}
+                    onChange={(event) => updateAnnouncements((current) => ({
+                      ...current,
+                      items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, level: event.target.value as SiteAnnouncementsContent["items"][number]["level"] } : ann)
+                    }))}
+                    className="h-10 rounded-lg border border-border bg-card px-3 text-sm font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+                  >
+                    <option value="info">信息</option>
+                    <option value="success">正常</option>
+                    <option value="warning">提醒</option>
+                    <option value="urgent">紧急</option>
+                  </select>
+                </label>
+                <TextField
+                  label="标签"
+                  value={item.tags.join("、")}
+                  placeholder="工作台、公告"
+                  onChange={(value) => updateAnnouncements((current) => ({
+                    ...current,
+                    items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, tags: value.split(/[、,\n]/).map((tag) => tag.trim()).filter(Boolean) } : ann)
+                  }))}
+                />
+                <label className="flex items-end gap-2 pb-2 text-sm font-bold text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(item.pinned)}
+                    onChange={(event) => updateAnnouncements((current) => ({
+                      ...current,
+                      items: current.items.map((ann, itemIndex) => itemIndex === index ? { ...ann, pinned: event.target.checked } : ann)
+                    }))}
+                    className="size-4 accent-primary"
+                  />
+                  置顶
+                </label>
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={() => updateAnnouncements((current) => ({
+              ...current,
+              items: [{
+                id: `announcement-${Date.now()}`,
+                title: "新的公告",
+                body: "",
+                level: "info",
+                href: "#site-workspace",
+                tags: [],
+                pinned: false
+              }, ...current.items]
+            }))}
+            className="inline-flex items-center gap-2 rounded-lg border border-dashed border-border bg-background px-4 py-2 text-sm font-bold text-muted-foreground hover:border-primary/50 hover:text-primary"
+          >
+            <Plus className="size-4" /> 添加公告
           </button>
         </div>
       );

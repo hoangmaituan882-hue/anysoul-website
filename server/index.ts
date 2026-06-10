@@ -16,6 +16,7 @@ import { defaultHomeFaq, defaultHomeHero } from "../src/content/defaults/home";
 import { defaultGamingMain } from "../src/content/defaults/gaming";
 import { defaultTalksContent } from "../src/content/defaults/talks";
 import { defaultPlazaContent } from "../src/content/defaults/plaza";
+import { defaultSiteAnnouncements } from "../src/content/defaults/siteAnnouncements";
 import { defaultFeedbackSubmissions } from "../src/content/defaults/feedback";
 import { defaultSiteAnalytics } from "../src/content/defaults/analytics";
 import { defaultScreeningLibrary } from "../src/content/defaults/screeningLibrary";
@@ -237,6 +238,16 @@ const defaultStore: ContentStore = {
       publishedAt: new Date().toISOString(),
       draft: defaultTalksContent,
       published: defaultTalksContent
+    },
+    "site.announcements": {
+      key: "site.announcements",
+      type: "site.announcements",
+      status: "published",
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      publishedAt: new Date().toISOString(),
+      draft: defaultSiteAnnouncements,
+      published: defaultSiteAnnouncements
     },
     "screenings.next": {
       key: "screenings.next",

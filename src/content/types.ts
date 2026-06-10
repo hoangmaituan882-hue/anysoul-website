@@ -40,6 +40,40 @@ export type FaqContent = {
   }>;
 };
 
+export type SiteAnnouncementItem = {
+  id: string;
+  title: string;
+  body: string;
+  level: "info" | "success" | "warning" | "urgent";
+  startsAt?: string;
+  endsAt?: string;
+  href?: string;
+  tags: string[];
+  pinned?: boolean;
+};
+
+export type SiteAnnouncementsContent = {
+  items: SiteAnnouncementItem[];
+};
+
+export type SiteWorkspaceEvent = {
+  id: string;
+  type: "announcement" | "talk" | "screening" | "game" | "plaza" | "post";
+  title: string;
+  description: string;
+  date?: string;
+  href: string;
+  tags: string[];
+  pinned?: boolean;
+};
+
+export type SiteWorkspaceScheduleDay = {
+  date: string;
+  weekday: string;
+  items: SiteWorkspaceEvent[];
+  emptyLabel: "无消息" | "休息";
+};
+
 export type TalkTranscriptItem = {
   time: string;
   speaker: string;

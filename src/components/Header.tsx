@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronDown, CircleUserRound, Compass, Gamepad2, Home, Info, Languages, Mic, Moon, Newspaper, Sun } from "lucide-react";
+import { ChevronDown, CircleUserRound, Compass, Gamepad2, Home, Info, Languages, Mic, Moon, Newspaper, ShieldCheck, Sun } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,7 +10,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { theme, toggleTheme, language, toggleLanguage, t } = useThemeLanguage();
-  const { user, logout } = useAuth();
+  const { user, logout, canEditWorkspace } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -19,6 +19,11 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
   }, []);
 
   const handleWorkspaceClick = (event: MouseEvent) => {
+    event.preventDefault();
+    window.location.hash = "#site-workspace";
+  };
+
+  const handleAdminWorkspaceClick = (event: MouseEvent) => {
     event.preventDefault();
     window.location.hash = "#workspace";
   };
@@ -104,6 +109,11 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
           <button onClick={handleWorkspaceClick} className="ml-1 inline-flex h-[36px] cursor-pointer items-center justify-center rounded-full bg-[#abc378] px-5 text-sm font-bold tracking-wide text-[#1a1a1a] shadow-sm transition-all hover:bg-[#a0b86e] hover:shadow-md">
             {t("header.workspace")}
           </button>
+          {canEditWorkspace ? (
+            <button onClick={handleAdminWorkspaceClick} className="ml-1 inline-flex h-[36px] cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-bold tracking-wide text-foreground shadow-sm transition-all hover:bg-muted">
+              <ShieldCheck className="size-4" /> 管理后台
+            </button>
+          ) : null}
           {user ? (
             <button onClick={logout} className="ml-1 inline-flex size-[36px] items-center justify-center rounded-full border border-border bg-card text-sm font-black text-foreground shadow-sm transition-all hover:bg-muted" title={`${user.name} · ${roleLabel} / 退出`} aria-label="退出登录">
               {accountInitial}
@@ -153,6 +163,11 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
           <button onClick={handleWorkspaceClick} className="inline-flex h-8 shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-full bg-[#abc378] px-3 text-xs font-bold tracking-wide text-[#1a1a1a] shadow-sm transition-all hover:bg-[#a0b86e] hover:shadow-md">
             {t("header.workspace")}
           </button>
+          {canEditWorkspace ? (
+            <button onClick={handleAdminWorkspaceClick} className="inline-flex h-8 shrink-0 cursor-pointer select-none items-center gap-1 rounded-full border border-border bg-background px-3 text-xs font-bold tracking-wide text-foreground shadow-sm transition-all hover:bg-muted">
+              <ShieldCheck className="size-3.5" /> 管理后台
+            </button>
+          ) : null}
           <button onClick={() => user ? logout() : setIsAuthModalOpen(true)} className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xs font-black text-foreground shadow-sm" title={user ? `${user.name} · ${roleLabel} / 退出` : t("header.login")} aria-label={user ? "退出登录" : t("header.login")}>
             {user ? accountInitial : <CircleUserRound className="size-4" />}
           </button>
