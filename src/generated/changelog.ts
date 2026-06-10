@@ -31,6 +31,29 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "57d8d50",
+    "hash": "57d8d50d8ea7db2377ce7ebfcda5a63dc2a1f904",
+    "date": "2026-06-10",
+    "title": "submission审核时广播content.published使SSE实时刷新",
+    "description": "- source submission review (approved/rejected) 后同步广播 content.published\n- 使 ContentProvider SSE 能感知片源库和片源补充的实时更新",
+    "files": [
+      "server/index.ts",
+      "src/generated/changelog.ts"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "fix: submission审核时广播content.published使SSE实时刷新",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "3439c0a",
     "hash": "3439c0a44c563b2fcde35cc409ca807e077b0b8f",
     "date": "2026-06-10",
@@ -997,32 +1020,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "0a738de",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add TMDB diagnostics for screening scraper",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "800bd12",
     "subtitle": "修复",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1042,7 +1045,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1062,7 +1065,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1082,7 +1085,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -1102,7 +1105,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1122,7 +1125,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1142,7 +1145,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1152,6 +1155,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、工作台 1、内容数据 1、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "57d8d50",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "fix: submission审核时广播content.published使SSE实时刷新",
+        "description": "- source submission review (approved/rejected) 后同步广播 content.published\n- 使 ContentProvider SSE 能感知片源库和片源补充的实时更新"
+      },
+      {
+        "type": "影响范围",
+        "title": "后端 1",
         "description": ""
       }
     ]
