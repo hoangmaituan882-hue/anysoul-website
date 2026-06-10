@@ -31,6 +31,34 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "0a23431",
+    "hash": "0a234319d8d4bee10de73084fef8aea5ddae9e2f",
+    "date": "2026-06-10",
+    "title": "refactor(server): extract config/store/routes from index.ts (Phase 1)",
+    "description": "- server/config/runtime.ts: env parsing + RuntimeConfig type\n- server/store/content-events.ts: SSE clients/broadcast\n- server/routes/content.ts: content CRUD routes (bootstrap/content/batch/publish)\n- server/routes/realtime.ts: SSE EventSource endpoint\n- server/index.ts: imports from new modules, removes duplicated config+broadcast+realtime code\n- Smoke test: health check passes, PostgreSQL connected",
+    "files": [
+      ".kilo/plans/refactor-server-and-large-panels.md",
+      "server/config/runtime.ts",
+      "server/index.ts",
+      "server/routes/content.ts",
+      "server/routes/realtime.ts",
+      "server/store/content-events.ts",
+      "src/generated/changelog.ts"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "refactor(server): extract config/store/routes from index.ts (Phase 1)",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "后端 5",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "57d8d50",
     "hash": "57d8d50d8ea7db2377ce7ebfcda5a63dc2a1f904",
     "date": "2026-06-10",
@@ -1020,32 +1048,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "800bd12",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "Allow configuring TMDB API base URL",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1、脚本配置 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1、后端 1、脚本配置 2",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "a63a900",
     "subtitle": "修复",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1065,7 +1073,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1085,7 +1093,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1105,7 +1113,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1125,7 +1133,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1145,7 +1153,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -1165,7 +1173,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1175,6 +1183,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "0a23431",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "refactor(server): extract config/store/routes from index.ts (Phase 1)",
+        "description": "- server/config/runtime.ts: env parsing + RuntimeConfig type\n- server/store/content-events.ts: SSE clients/broadcast\n- server/routes/content.ts: content CRUD routes (bootstrap/content/batch/publish)\n- server/routes/realtime.ts: SSE EventSource endpoint\n- server/index.ts: imports from new modules, removes duplicated config+broadcast+realtime code\n- Smoke test: health check passes, PostgreSQL connected"
+      },
+      {
+        "type": "影响范围",
+        "title": "后端 5",
         "description": ""
       }
     ]

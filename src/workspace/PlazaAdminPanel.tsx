@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Eye, EyeOff, Image, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { ImageUploadField } from "../components/ImageUploadField";
 import { CONTENT_API_BASE, uploadImageAsset } from "../content/client";
@@ -144,6 +144,7 @@ async function readContentError(response: Response, fallback: string) {
 
 export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const { authFetch } = useAuth();
+  const weeklyUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [plaza, setPlaza] = useState<PlazaContent>(defaultPlazaContent);
   const [selectedId, setSelectedId] = useState(defaultPlazaContent.souls[0]?.id || "");
   const [status, setStatus] = useState("正在加载图库内容...");
@@ -386,14 +387,16 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     void publishWeeklyUrls(uniqueLines(weeklyImportText));
   };
 
-  const uploadWeeklyImages = async (files?: FileList | null) => {
-    if (!files?.length) return;
+  const uploadWeeklyImages = async (files?: FileList | File[] | null) => {
+    const selectedFiles = Array.from(files || []);
+    if (selectedFiles.length === 0) {
+      setStatus("没有选择图片，请重新点击上传并发布");
+      return;
+    }
     if (readOnly) {
       setStatus("只读模式无法上传图库图片");
       return;
     }
-
-    const selectedFiles = Array.from(files);
 
     const invalid = selectedFiles.filter((f) => !supportedImageTypes.has(f.type));
     if (invalid.length) {
@@ -423,6 +426,12 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     } finally {
       setIsUploadingWeekly(false);
     }
+  };
+
+  const handleWeeklyUploadInputChange = (files?: FileList | null) => {
+    const selectedFiles = Array.from(files || []);
+    if (weeklyUploadInputRef.current) weeklyUploadInputRef.current.value = "";
+    void uploadWeeklyImages(selectedFiles);
   };
 
   const updateWeeklyImportDate = (value: string) => {
@@ -475,10 +484,25 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
           <Field label="默认作者" value={weeklyImportAuthor} onChange={setWeeklyImportAuthor} />
           <DateTimePicker label="导入日期" mode="date" value={weeklyImportDate} onChange={updateWeeklyImportDate} />
           <Field label="第几周杂谈" type="number" value={weeklyImportWeek} onChange={(value) => setWeeklyImportWeek(value)} />
-          <label className={cn("relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border border-border bg-card px-4 text-sm font-black text-foreground shadow-sm transition-colors hover:bg-muted", (readOnly || isUploadingWeekly || isSaving) && "pointer-events-none opacity-50")}>
-            <Upload className="size-4" /> {isUploadingWeekly ? "上传发布中..." : "上传并发布"}
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" multiple disabled={readOnly || isUploadingWeekly || isSaving} className="absolute inset-0 cursor-pointer opacity-0" onChange={(event) => { void uploadWeeklyImages(event.currentTarget.files); event.currentTarget.value = ""; }} />
-          </label>
+          <div>
+            <button
+              type="button"
+              disabled={readOnly || isUploadingWeekly || isSaving}
+              onClick={() => weeklyUploadInputRef.current?.click()}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-black text-foreground shadow-sm transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              <Upload className="size-4" /> {isUploadingWeekly ? "上传发布中..." : "上传并发布"}
+            </button>
+            <input
+              ref={weeklyUploadInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+              multiple
+              disabled={readOnly || isUploadingWeekly || isSaving}
+              className="hidden"
+              onChange={(event) => handleWeeklyUploadInputChange(event.currentTarget.files)}
+            />
+          </div>
           <div className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold text-muted-foreground">
             <CalendarDays className="size-4 text-primary" /> {weeklyMeta.seriesName} / 第 {weeklyMeta.week} 周
           </div>
