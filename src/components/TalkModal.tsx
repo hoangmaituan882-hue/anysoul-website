@@ -175,6 +175,14 @@ export function TalkModal({ talk, onClose, t }: { talk: any, onClose: () => void
   const [isFavorited, setIsFavorited] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const isDragging = useRef(false);
+  const providerLabels: Record<string, string> = {
+    bilibili: "前往 Bilibili 观看录播",
+    youtube: "前往 YouTube 观看录播",
+    web: "前往网页观看录播",
+    cloud: "前往网盘观看录播",
+    other: "前往外部链接观看录播"
+  };
+  const watchLabel = providerLabels[talk?.videoProvider || "bilibili"] || providerLabels.other;
 
   useEffect(() => {
     if (talk) {
@@ -538,7 +546,7 @@ export function TalkModal({ talk, onClose, t }: { talk: any, onClose: () => void
                          rel="noopener noreferrer"
                          className="flex-1 bg-[#fb7299] hover:bg-[#fc8bab] text-white py-2.5 md:py-3 rounded-xl font-bold text-xs sm:text-sm md:text-base flex items-center justify-center gap-1.5 md:gap-2 transition-colors shadow-sm"
                        >
-                         <Play className="size-4 md:size-5" fill="currentColor" /> 前往 Bilibili 观看录播
+                          <Play className="size-4 md:size-5" fill="currentColor" /> {watchLabel}
                        </a>
                        <button 
                           onClick={() => {

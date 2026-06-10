@@ -5,10 +5,12 @@ import { CONTENT_API_BASE, uploadImageAsset } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultPlazaContent } from "../content/defaults/plaza";
 import type { AdminContentEntry, PlazaContent, PlazaSoulItem, PlazaVisibility } from "../content/types";
+import { OptimizedImage } from "../components/OptimizedImage";
 import { cn } from "../lib/utils";
 import { DateTimePicker } from "../components/DateTimePicker";
 
 type AdminContentResponse = { entries: AdminContentEntry[] };
+type ContentEntryMeta = Pick<AdminContentEntry, "version" | "updatedAt">;
 
 const PLAZA_KEY = "plaza.main";
 const WEEKLY_IMPORT_YEAR = 2026;
@@ -21,6 +23,9 @@ const weeklyImportGradients = [
   "from-amber-500/20 to-orange-500/20",
   "from-emerald-500/20 to-teal-500/20"
 ];
+
+const supportedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+const uploadMaxBytes = 15 * 1024 * 1024;
 
 const visibilityOptions: Array<{ value: PlazaVisibility; label: string }> = [
   { value: "visible", label: "前台显示" },
@@ -85,14 +90,46 @@ function uniqueLines(value: string) {
   return Array.from(new Set(value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)));
 }
 
+function normalizePlazaSoulItem(item: unknown, index: number): PlazaSoulItem {
+  const s = item as Partial<PlazaSoulItem> | null;
+  const id = String(s?.id || `soul-${index}`);
+  return {
+    id,
+    name: String(s?.name || "未命名作品"),
+    author: String(s?.author || ""),
+    tags: Array.isArray(s?.tags) ? Array.from(new Set(s.tags.map((t) => String(t).trim()).filter(Boolean))) : [],
+    likes: typeof s?.likes === "number" && !Number.isNaN(s.likes) ? Math.max(0, s.likes) : 0,
+    createdAt: String(s?.createdAt || s?.importDate || ""),
+    views: typeof s?.views === "number" && !Number.isNaN(s.views) ? Math.max(0, s.views) : 0,
+    activeDaysAgo: typeof s?.activeDaysAgo === "number" && !Number.isNaN(s.activeDaysAgo) ? s.activeDaysAgo : null,
+    avatarSrc: typeof s?.avatarSrc === "string" ? s.avatarSrc : "",
+    avatarInitials: typeof s?.avatarInitials === "string" ? s.avatarInitials : (s?.name || "").slice(0, 1),
+    bannerColor: typeof s?.bannerColor === "string" ? s.bannerColor : "from-primary/20 to-primary/10",
+    featured: Boolean(s?.featured),
+    visibility: ["visible", "hidden", "pending", "rejected"].includes(String(s?.visibility)) ? (s!.visibility as PlazaVisibility) : "visible",
+    desc: String(s?.desc || ""),
+    importBatchId: typeof s?.importBatchId === "string" ? s.importBatchId : undefined,
+    importYear: typeof s?.importYear === "number" ? s.importYear : undefined,
+    importWeek: typeof s?.importWeek === "number" ? s.importWeek : undefined,
+    importDate: typeof s?.importDate === "string" ? s.importDate : undefined,
+    seriesName: typeof s?.seriesName === "string" ? s.seriesName : undefined,
+    seriesIndex: typeof s?.seriesIndex === "number" ? s.seriesIndex : undefined,
+    itemIndex: typeof s?.itemIndex === "number" ? s.itemIndex : undefined
+  };
+}
+
 function normalizePlaza(value: unknown): PlazaContent {
   const plaza = value as Partial<PlazaContent> | null;
 
+  const souls = Array.isArray(plaza?.souls)
+    ? plaza.souls.map((s, i) => normalizePlazaSoulItem(s, i))
+    : defaultPlazaContent.souls;
+
   return {
-    souls: Array.isArray(plaza?.souls) ? plaza.souls : defaultPlazaContent.souls,
+    souls,
     moments: Array.isArray(plaza?.moments) ? plaza.moments : defaultPlazaContent.moments,
     groups: Array.isArray(plaza?.groups) ? plaza.groups : defaultPlazaContent.groups,
-    tags: Array.isArray(plaza?.tags) ? plaza.tags : defaultPlazaContent.tags
+    tags: Array.isArray(plaza?.tags) ? Array.from(new Set(plaza.tags.map((t) => String(t).trim()).filter(Boolean))) : defaultPlazaContent.tags
   };
 }
 
@@ -117,6 +154,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [weeklyImportDate, setWeeklyImportDate] = useState(() => formatDateKey(new Date()));
   const [weeklyImportWeek, setWeeklyImportWeek] = useState(() => String(calculateWeeklyImportWeek(new Date())));
   const [isSoulEditorOpen, setIsSoulEditorOpen] = useState(false);
+  const [entryMeta, setEntryMeta] = useState<ContentEntryMeta | null>(null);
   const weeklyMeta = useMemo(() => getWeeklyImportMeta(parseDateKey(weeklyImportDate), Number(weeklyImportWeek)), [weeklyImportDate, weeklyImportWeek]);
 
   const selectedSoul = plaza.souls.find((soul) => soul.id === selectedId) || plaza.souls[0];
@@ -124,7 +162,9 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const stats = useMemo(() => ({
     total: plaza.souls.length,
     visible: plaza.souls.filter((soul) => soul.visibility === "visible").length,
+    hidden: plaza.souls.filter((soul) => soul.visibility === "hidden").length,
     pending: plaza.souls.filter((soul) => soul.visibility === "pending").length,
+    rejected: plaza.souls.filter((soul) => soul.visibility === "rejected").length,
     featured: plaza.souls.filter((soul) => soul.featured).length
   }), [plaza.souls]);
 
@@ -135,9 +175,11 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     if (!res.ok) throw new Error(await readContentError(res, "加载图库失败"));
 
     const data = await res.json() as AdminContentResponse;
-    const draft = normalizePlaza(data.entries.find((entry) => entry.key === PLAZA_KEY)?.draft);
+    const entry = data.entries.find((item) => item.key === PLAZA_KEY);
+    const draft = normalizePlaza(entry?.draft);
     setPlaza(draft);
     setSelectedId(draft.souls[0]?.id || "");
+    setEntryMeta(entry ? { version: entry.version, updatedAt: entry.updatedAt } : null);
     setStatus("图库内容已同步");
   };
 
@@ -149,17 +191,30 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     const draftRes = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${PLAZA_KEY}/draft`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ payload })
+      body: JSON.stringify({
+        payload,
+        expectedVersion: entryMeta?.version,
+        expectedUpdatedAt: entryMeta?.updatedAt
+      })
     });
     if (!draftRes.ok) throw new Error(await readContentError(draftRes, "保存草稿失败"));
+    const draftData = await draftRes.json() as { entry?: AdminContentEntry };
+    const nextMeta = draftData.entry ? { version: draftData.entry.version, updatedAt: draftData.entry.updatedAt } : entryMeta;
+    if (nextMeta) setEntryMeta(nextMeta);
 
     if (publish) {
       const publishRes = await authFetch(`${CONTENT_API_BASE}/api/admin/content/${PLAZA_KEY}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({
+          message,
+          expectedVersion: nextMeta?.version,
+          expectedUpdatedAt: nextMeta?.updatedAt
+        })
       });
       if (!publishRes.ok) throw new Error(await readContentError(publishRes, "发布失败"));
+      const publishData = await publishRes.json() as { entry?: AdminContentEntry };
+      if (publishData.entry) setEntryMeta({ version: publishData.entry.version, updatedAt: publishData.entry.updatedAt });
     }
   };
 
@@ -339,6 +394,19 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     }
 
     const selectedFiles = Array.from(files);
+
+    const invalid = selectedFiles.filter((f) => !supportedImageTypes.has(f.type));
+    if (invalid.length) {
+      setStatus(`不支持的文件格式: ${invalid.map((f) => f.name).join("、")}。仅支持 JPG、PNG、WebP、GIF、AVIF。`);
+      return;
+    }
+
+    const oversized = selectedFiles.filter((f) => f.size > uploadMaxBytes);
+    if (oversized.length) {
+      setStatus(`文件过大: ${oversized.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`).join("、")}。单文件限制 15MB。`);
+      return;
+    }
+
     setIsUploadingWeekly(true);
     setStatus(`正在上传 ${selectedFiles.length} 张图片，完成后会自动发布到图库...`);
 
@@ -378,10 +446,12 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <div className="rounded-2xl border border-border bg-background p-4 shadow-sm"><div className="text-xs font-bold text-muted-foreground">图库总数</div><div className="mt-1 text-3xl font-black">{stats.total}</div></div>
         <div className="rounded-2xl border border-border bg-background p-4 shadow-sm"><div className="text-xs font-bold text-muted-foreground">前台显示</div><div className="mt-1 text-3xl font-black text-emerald-500">{stats.visible}</div></div>
+        <div className="rounded-2xl border border-border bg-background p-4 shadow-sm"><div className="text-xs font-bold text-muted-foreground">后台隐藏</div><div className="mt-1 text-3xl font-black text-slate-500">{stats.hidden}</div></div>
         <div className="rounded-2xl border border-border bg-background p-4 shadow-sm"><div className="text-xs font-bold text-muted-foreground">待审核</div><div className="mt-1 text-3xl font-black text-amber-500">{stats.pending}</div></div>
+        <div className="rounded-2xl border border-border bg-background p-4 shadow-sm"><div className="text-xs font-bold text-muted-foreground">已打回</div><div className="mt-1 text-3xl font-black text-red-500">{stats.rejected}</div></div>
         <div className="rounded-2xl border border-border bg-background p-4 shadow-sm"><div className="text-xs font-bold text-muted-foreground">精选</div><div className="mt-1 text-3xl font-black text-primary">{stats.featured}</div></div>
       </div>
 
@@ -450,7 +520,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
               className={cn("group overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md", selectedId === soul.id ? "border-primary/40 ring-2 ring-primary/10" : "border-border")}
             >
               <div className="relative aspect-[4/5] bg-muted">
-                {soul.avatarSrc ? <img src={soul.avatarSrc} alt={soul.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center text-4xl font-black text-primary">{soul.avatarInitials || soul.name.slice(0, 1)}</div>}
+                {soul.avatarSrc ? <OptimizedImage src={soul.avatarSrc} alt={soul.name} className="h-full w-full" /> : <div className="flex h-full items-center justify-center text-4xl font-black text-primary">{soul.avatarInitials || soul.name.slice(0, 1)}</div>}
                 <span className={cn("absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-black shadow-sm", soul.visibility === "visible" ? "bg-emerald-500 text-white" : "bg-background/90 text-foreground")}>{soul.visibility === "visible" ? "可见" : soul.visibility}</span>
                 {soul.featured && <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-black text-primary-foreground shadow-sm">精选</span>}
               </div>
@@ -519,10 +589,10 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <Field label="作者" value={selectedSoul.author} onChange={(value) => updateSoul(selectedSoul.id, { author: value })} />
                   <ImageUploadField label="图片地址" value={selectedSoul.avatarSrc || ""} onChange={(value) => updateSoul(selectedSoul.id, { avatarSrc: value })} admin readOnly={readOnly} scope="plaza-item" compact />
                   <Field label="渐变背景 class" value={selectedSoul.bannerColor} onChange={(value) => updateSoul(selectedSoul.id, { bannerColor: value })} />
-                  <Field label="点赞数" type="number" value={selectedSoul.likes} onChange={(value) => updateSoul(selectedSoul.id, { likes: Number(value) })} />
-                  <Field label="浏览量" type="number" value={selectedSoul.views} onChange={(value) => updateSoul(selectedSoul.id, { views: Number(value) })} />
+                  <Field label="点赞数" type="number" value={selectedSoul.likes} onChange={(value) => updateSoul(selectedSoul.id, { likes: Number(value) || 0 })} />
+                  <Field label="浏览量" type="number" value={selectedSoul.views} onChange={(value) => updateSoul(selectedSoul.id, { views: Number(value) || 0 })} />
                   <DateTimePicker label="创建日期" mode="date" value={selectedSoul.createdAt} onChange={(value) => updateSoul(selectedSoul.id, { createdAt: value })} />
-                  <Field label="标签，逗号分隔" value={selectedSoul.tags.join(", ")} onChange={(value) => updateSoul(selectedSoul.id, { tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })} />
+                  <Field label="标签，逗号分隔" value={selectedSoul.tags.join(", ")} onChange={(value) => updateSoul(selectedSoul.id, { tags: Array.from(new Set(value.split(",").map((tag) => tag.trim()).filter(Boolean))) })} />
                 </div>
 
                 <label className="flex flex-col gap-1.5">
@@ -571,7 +641,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
               <div className="space-y-3">
                 <div className="overflow-hidden rounded-3xl border border-border bg-card">
                   <div className={cn("relative min-h-[320px] bg-gradient-radial", selectedSoul.bannerColor)}>
-                    {selectedSoul.avatarSrc ? <img src={selectedSoul.avatarSrc} alt={selectedSoul.name} className="w-full object-cover" /> : <div className="flex aspect-square items-center justify-center text-5xl font-black text-primary">{selectedSoul.avatarInitials || selectedSoul.name.slice(0, 1)}</div>}
+                    {selectedSoul.avatarSrc ? <OptimizedImage src={selectedSoul.avatarSrc} alt={selectedSoul.name} className="w-full" /> : <div className="flex aspect-square items-center justify-center text-5xl font-black text-primary">{selectedSoul.avatarInitials || selectedSoul.name.slice(0, 1)}</div>}
                     {selectedSoul.featured && <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground"><Sparkles className="size-3" /> 精选</span>}
                   </div>
                 </div>
@@ -584,10 +654,10 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <Field label="作者" value={selectedSoul.author} onChange={(value) => updateSoul(selectedSoul.id, { author: value })} />
                   <Field label="渐变背景 class" value={selectedSoul.bannerColor} onChange={(value) => updateSoul(selectedSoul.id, { bannerColor: value })} />
                   <DateTimePicker label="创建日期" mode="date" value={selectedSoul.createdAt} onChange={(value) => updateSoul(selectedSoul.id, { createdAt: value })} />
-                  <Field label="点赞数" type="number" value={selectedSoul.likes} onChange={(value) => updateSoul(selectedSoul.id, { likes: Number(value) })} />
-                  <Field label="浏览量" type="number" value={selectedSoul.views} onChange={(value) => updateSoul(selectedSoul.id, { views: Number(value) })} />
-                  <Field label="标签，逗号分隔" value={selectedSoul.tags.join(", ")} onChange={(value) => updateSoul(selectedSoul.id, { tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })} />
-                  <Field label="第几周杂谈" type="number" value={selectedSoul.importWeek || ""} onChange={(value) => updateSoul(selectedSoul.id, { importWeek: Number(value) || undefined })} />
+                  <Field label="点赞数" type="number" value={selectedSoul.likes} onChange={(value) => updateSoul(selectedSoul.id, { likes: Number(value) || 0 })} />
+                  <Field label="浏览量" type="number" value={selectedSoul.views} onChange={(value) => updateSoul(selectedSoul.id, { views: Number(value) || 0 })} />
+                  <Field label="标签，逗号分隔" value={selectedSoul.tags.join(", ")} onChange={(value) => updateSoul(selectedSoul.id, { tags: Array.from(new Set(value.split(",").map((tag) => tag.trim()).filter(Boolean))) })} />
+                  <Field label="第几周杂谈" type="number" value={selectedSoul.importWeek || ""} onChange={(value) => updateSoul(selectedSoul.id, { importWeek: value === "" ? undefined : (Number(value) || undefined) })} />
                   <DateTimePicker label="导入日期" mode="date" value={selectedSoul.importDate || selectedSoul.createdAt || weeklyImportDate} onChange={(value) => updateSoul(selectedSoul.id, { importDate: value, createdAt: value })} />
                   <Field label="系列名称" value={selectedSoul.seriesName || ""} onChange={(value) => updateSoul(selectedSoul.id, { seriesName: value })} />
                 </div>

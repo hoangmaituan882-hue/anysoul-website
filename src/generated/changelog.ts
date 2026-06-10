@@ -31,6 +31,93 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "34b7810",
+    "hash": "34b78109cdcd323b77a0da0ad57b5a4ab88940cb",
+    "date": "2026-06-10",
+    "title": "杂谈录像 JSON 批量导入脚本",
+    "description": "- 新增 scripts/import-talks.mjs 一键导入脚本\n- 支持 --dry-run 预览模式\n- 自动去重 (sourceUrl)、清理占位数据、日期排序编号\n- 写入前自动备份、处理 liveTalkId 悬空\n- 新增 npm run talks:import 脚本入口",
+    "files": [
+      "package.json",
+      "scripts/import-talks.mjs",
+      "\"\\347\\233\\264\\346\\222\\255\\345\\233\\236\\346\\224\\276_\\350\\247\\206\\351\\242\\221\\345\\210\\227\\350\\241\\250.json\""
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "feat: 杂谈录像 JSON 批量导入脚本",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "脚本配置 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "26b9f71",
+    "hash": "26b9f71bba8f954ddf2d9d39227ff8c4c6c6def2",
+    "date": "2026-06-10",
+    "title": "refactor: 优化移动端导航、清理VHS磁带播放器",
+    "description": "- 手机端 Header 标签改为横向可滑动胶囊，补充放映会/文章/杂谈/游戏/图库/关于/工作台入口\n- 登录/退出按钮改为头像图标/首字母图标\n- 删除磁带播放器入口和 VHSModal 接入\n- 工作台左侧导航移除无作用占位图标，新增文章和关于跳转\n- 手机端工作台胶囊导航保持横向滚动\n- 优化首页手写字手机端尺寸\n- 删除放映会'从夯到拉'板块\n- 清理所有 VHS 磁带组件和数据文件",
+    "files": [
+      "src/components/Header.tsx",
+      "src/components/Hero.tsx",
+      "src/components/vhs/BlackCassette.tsx",
+      "src/components/vhs/CRTPlayer.tsx",
+      "src/components/vhs/HorizontalCassette.tsx",
+      "src/components/vhs/ScreenEffects.tsx",
+      "src/components/vhs/TapeCard.tsx",
+      "src/components/vhs/TapeShelf.tsx",
+      "src/components/vhs/VHSModal.tsx",
+      "src/data/tapes.ts",
+      "src/generated/changelog.ts",
+      "src/pages/Screenings.tsx",
+      "src/pages/Workspace.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "refactor: 优化移动端导航、清理VHS磁带播放器",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 2、组件 9、内容数据 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "a63a900",
+    "hash": "a63a90025fa42533f500988244b58088a9261c68",
+    "date": "2026-06-10",
+    "title": "图片系统优化 - 懒加载、错误兜底、缩略图生成、PicFlow 风格图片 API",
+    "description": "- 新增 OptimizedImage 组件 (lazy loading / error fallback / fade-in)\n- SoulImageCard 接入 OptimizedImage，支持 srcset 响应式图片\n- ImageUploadField 预览使用 OptimizedImage\n- 新增 server/image-store.ts: sharp 缩略图生成 (150w/400w/800w WebP)\n- 修改上传流程: 上传后自动生成缩略图，best-effort 不阻塞\n- 新增 GET /api/public/images/:id?w=&format=&return= 图片服务端点\n- 新增 client.getImageUrl/getImageSrcSet/extractAssetIdFromUrl",
+    "files": [
+      "package-lock.json",
+      "package.json",
+      "server/image-store.ts",
+      "server/index.ts",
+      "src/components/ImageUploadField.tsx",
+      "src/components/OptimizedImage.tsx",
+      "src/components/SoulImageCard.tsx",
+      "src/content/client.ts"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "feat: 图片系统优化 - 懒加载、错误兜底、缩略图生成、PicFlow 风格图片 API",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 3、内容数据 1、后端 2、脚本配置 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "800bd12",
     "hash": "800bd123d46c315504b9566c03ffb61ce5d14d4c",
     "date": "2026-06-10",
@@ -825,72 +912,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "f000dc1",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Show gaming workspace tab label",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "0571df1",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Refine gaming page as viewer record library",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1、内容数据 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、工作台 1、内容数据 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "8d3a86c",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add standalone game library page",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 1、内容数据 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、工作台 1、内容数据 2",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "4349726",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -910,7 +937,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -930,7 +957,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -950,7 +977,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -970,7 +997,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -980,6 +1007,66 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "工作台 1、后端 1、脚本配置 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "a63a900",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "feat: 图片系统优化 - 懒加载、错误兜底、缩略图生成、PicFlow 风格图片 API",
+        "description": "- 新增 OptimizedImage 组件 (lazy loading / error fallback / fade-in)\n- SoulImageCard 接入 OptimizedImage，支持 srcset 响应式图片\n- ImageUploadField 预览使用 OptimizedImage\n- 新增 server/image-store.ts: sharp 缩略图生成 (150w/400w/800w WebP)\n- 修改上传流程: 上传后自动生成缩略图，best-effort 不阻塞\n- 新增 GET /api/public/images/:id?w=&format=&return= 图片服务端点\n- 新增 client.getImageUrl/getImageSrcSet/extractAssetIdFromUrl"
+      },
+      {
+        "type": "影响范围",
+        "title": "组件 3、内容数据 1、后端 2、脚本配置 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "26b9f71",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "refactor: 优化移动端导航、清理VHS磁带播放器",
+        "description": "- 手机端 Header 标签改为横向可滑动胶囊，补充放映会/文章/杂谈/游戏/图库/关于/工作台入口\n- 登录/退出按钮改为头像图标/首字母图标\n- 删除磁带播放器入口和 VHSModal 接入\n- 工作台左侧导航移除无作用占位图标，新增文章和关于跳转\n- 手机端工作台胶囊导航保持横向滚动\n- 优化首页手写字手机端尺寸\n- 删除放映会'从夯到拉'板块\n- 清理所有 VHS 磁带组件和数据文件"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 2、组件 9、内容数据 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "34b7810",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "feat: 杂谈录像 JSON 批量导入脚本",
+        "description": "- 新增 scripts/import-talks.mjs 一键导入脚本\n- 支持 --dry-run 预览模式\n- 自动去重 (sourceUrl)、清理占位数据、日期排序编号\n- 写入前自动备份、处理 liveTalkId 悬空\n- 新增 npm run talks:import 脚本入口"
+      },
+      {
+        "type": "影响范围",
+        "title": "脚本配置 2",
         "description": ""
       }
     ]

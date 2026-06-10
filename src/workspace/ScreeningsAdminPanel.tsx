@@ -297,15 +297,17 @@ function timeWithSeconds(value: string) {
 }
 
 function scheduleDateTime(dateKey: string, schedule: ScreeningScheduleContent) {
-  return `${dateKey}T${timeWithSeconds(schedule.cycle.defaultTime)}${schedule.cycle.timezone || "+08:00"}`;
+  const timezone = schedule.cycle.timezone === "Asia/Shanghai" ? "+08:00" : schedule.cycle.timezone || "+08:00";
+  return `${dateKey}T${timeWithSeconds(schedule.cycle.defaultTime)}${timezone}`;
 }
 
-function nextSundayDateTime(schedule: ScreeningScheduleContent) {
+function nextCycleDateTime(schedule: ScreeningScheduleContent) {
   const now = new Date();
-  const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
-  const nextSunday = new Date(now);
-  nextSunday.setDate(now.getDate() + daysUntilSunday);
-  return scheduleDateTime(dateKeyFromDate(nextSunday), schedule);
+  const targetDay = Number.isInteger(schedule.cycle.dayOfWeek) ? schedule.cycle.dayOfWeek : 6;
+  const daysUntilTarget = (targetDay - now.getDay() + 7) % 7 || 7;
+  const nextDate = new Date(now);
+  nextDate.setDate(now.getDate() + daysUntilTarget);
+  return scheduleDateTime(dateKeyFromDate(nextDate), schedule);
 }
 
 function sourceStatusPatch(status: ScreeningSourceItem["status"], item: ScreeningSourceItem): Partial<ScreeningSourceItem> {
@@ -404,7 +406,7 @@ function buildPendingNext(current: ScreeningNextContent, schedule: ScreeningSche
     theme: "待补充",
     status: "preview",
     statusText: "待补充",
-    startsAt: current.startsAt || nextSundayDateTime(schedule),
+    startsAt: current.startsAt || nextCycleDateTime(schedule),
     movies: []
   };
 }
@@ -465,7 +467,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const [candidateDraft, setCandidateDraft] = useState<ScreeningSourceItem | null>(null);
   const [editingLibraryId, setEditingLibraryId] = useState<string | null>(null);
   const [archiveDate, setArchiveDate] = useState(dateKeyFromDate(new Date()));
-  const [nextStartsAtDraft, setNextStartsAtDraft] = useState(() => nextSundayDateTime(defaultScreeningsSchedule));
+  const [nextStartsAtDraft, setNextStartsAtDraft] = useState(() => nextCycleDateTime(defaultScreeningsSchedule));
 
   const hasNextMovies = next.movies.length > 0;
   const movieSummary = useMemo(
@@ -911,7 +913,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     setSelectedCandidate(candidate);
     setCandidateDraft(normalizeSourceItem(item));
     setArchiveDate(dateKeyFromDate(new Date()));
-    setNextStartsAtDraft(nextSundayDateTime(schedule));
+    setNextStartsAtDraft(nextCycleDateTime(schedule));
     setStatus(`正在确认《${candidate.title}》的片源信息`);
   };
 
@@ -1021,7 +1023,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       ...sourceLibrary,
       items: sourceLibrary.items.map((item) => item.id === source.id && item.status === "available" ? { ...item, status: "planned" } : item)
     };
-    const nextContent = buildNextWithMovie(next, source, nextStartsAtDraft || nextSundayDateTime(schedule));
+    const nextContent = buildNextWithMovie(next, source, nextStartsAtDraft || nextCycleDateTime(schedule));
 
     setIsSaving(true);
     setStatus(`正在把《${source.title}》加入下周放映并发布...`);
@@ -1081,7 +1083,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       items: library.items.map((source) => source.id === item.id && source.status === "available" ? { ...source, status: "planned" } : source)
     };
     const plannedSource = plannedLibrary.items.find((source) => source.id === item.id) || item;
-    const nextContent = buildNextWithMovie(next, plannedSource, next.startsAt || nextSundayDateTime(schedule));
+    const nextContent = buildNextWithMovie(next, plannedSource, next.startsAt || nextCycleDateTime(schedule));
 
     setIsSaving(true);
     setStatus(`正在把《${item.title}》加入下周放映并发布...`);

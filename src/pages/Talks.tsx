@@ -34,6 +34,7 @@ type TalkCard = {
   comments: string[];
   biliUrl?: string;
   videoUrl?: string;
+  videoProvider?: TalkItem["videoProvider"];
 };
 
 const fallbackCover = "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=900&q=70";
@@ -54,8 +55,26 @@ function formatTalkDate(date: string) {
 }
 
 function durationToMinutes(duration: string) {
-  const match = String(duration || "").match(/\d+/);
+  const value = String(duration || "").trim();
+  const colonMatch = value.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (colonMatch) {
+    const first = Number(colonMatch[1]);
+    const second = Number(colonMatch[2]);
+    const third = colonMatch[3] ? Number(colonMatch[3]) : 0;
+    return Math.max(1, colonMatch[3] ? first * 60 + second + Math.round(third / 60) : first + Math.round(second / 60));
+  }
+
+  const hours = value.match(/(\d+(?:\.\d+)?)\s*(?:小时|时|h|hour)/i);
+  const minutes = value.match(/(\d+)\s*(?:分钟|分|min|m)/i);
+  if (hours || minutes) return Math.max(1, Math.round(Number(hours?.[1] || 0) * 60 + Number(minutes?.[1] || 0)));
+
+  const match = value.match(/\d+/);
   return match ? Number(match[0]) : 60;
+}
+
+function archiveYearFromDate(date: string) {
+  const year = Number(date.slice(0, 4));
+  return Number.isFinite(year) ? year : 0;
 }
 
 function categoryMeta(category?: TalkItem["category"], tags: string[] = []) {
@@ -112,7 +131,8 @@ function talkToCard(talk: TalkItem, index = 0): TalkCard {
     highlights: talk.highlights || [],
     comments: (talk.comments || []).map((comment) => typeof comment === "string" ? comment : comment.content),
     biliUrl: talk.videoUrl || talk.sourceUrl,
-    videoUrl: talk.videoUrl || talk.sourceUrl
+    videoUrl: talk.videoUrl || talk.sourceUrl,
+    videoProvider: talk.videoProvider
   };
 }
 
@@ -128,7 +148,7 @@ function scheduleToCard(item: TalkScheduleItem, index: number): TalkCard {
     isLiked: false,
     title: item.title,
     desc: item.topic,
-    min: durationToMinutes(item.time),
+    min: 0,
     color: meta.color,
     cover: "",
     imgs: avatarImages.slice(0, 2),
@@ -287,6 +307,13 @@ export function Talks() {
       .sort((a, b) => b.timestamp - a.timestamp)
   ), [talksContent.archive]);
 
+  const archiveYears = useMemo<number[]>(() => {
+    const years = archiveData.map((item) => archiveYearFromDate(item.date)).filter((year): year is number => year > 0);
+    return Array.from(new Set<number>(years)).sort((a, b) => b - a);
+  }, [archiveData]);
+  const currentArchiveYear = archiveYears[0];
+  const previousArchiveYear = archiveYears[1];
+
   const filteredArchiveData = useMemo(() => {
     let list = archiveData;
     if (archiveFilter !== '全部') {
@@ -294,7 +321,7 @@ export function Talks() {
       else if (archiveFilter === '精选系列') list = list.filter(item => item.cat === '精选系列');
       else if (archiveFilter === '特别回') list = list.filter(item => item.cat === '特别回');
       else if (archiveFilter === 'liked') list = list.filter(item => item.isLiked);
-      else if (archiveFilter === 'history') list = list.filter(item => parseInt(item.date.substring(0, 4)) <= 2024);
+      else if (archiveFilter === 'history') list = list.filter(item => previousArchiveYear ? archiveYearFromDate(item.date) < previousArchiveYear : false);
       else list = list.filter(item => item.date.startsWith(archiveFilter));
     }
 
@@ -306,13 +333,13 @@ export function Talks() {
       if (archiveSortBy === 'danmaku') return b.danmaku - a.danmaku;
       return 0;
     });
-  }, [archiveData, archiveFilter, archiveSortBy]);
+  }, [archiveData, archiveFilter, archiveSortBy, previousArchiveYear]);
 
   const latestYearTalks = useMemo(() => {
     return [...archiveData]
-      .filter(item => item.date.startsWith('2026'))
+      .filter(item => !currentArchiveYear || archiveYearFromDate(item.date) === currentArchiveYear)
       .sort((a, b) => b.timestamp - a.timestamp);
-  }, [archiveData]);
+  }, [archiveData, currentArchiveYear]);
 
   const topTalks = useMemo(() => {
     return [...latestYearTalks].sort((a, b) => b.viewers - a.viewers).slice(0, 3);
@@ -346,7 +373,14 @@ export function Talks() {
                <button onClick={() => setArchiveFilter('全部')} className={cn("flex items-center gap-1.5 px-4 py-2 font-bold text-sm rounded-full shrink-0 transition-colors", archiveFilter === '全部' ? "bg-foreground text-background shadow-sm" : "bg-[#fcf8f3] dark:bg-[#2d2822] border border-[#f5eade] dark:border-[#3a332a] text-muted-foreground hover:text-foreground")}>
                  <Filter className="size-4" /> 全部 {archiveData.length}
                </button>
-               {[{label: "2026", filterValue: "2026"}, {label: "2025", filterValue: "2025"}, {label: "我喜欢的", filterValue: "liked"}, {label: "历史", filterValue: "history"}, {label: "精选系列", filterValue: "精选系列"}, {label: "特别回", filterValue: "特别回"}, {label: "AI总结", filterValue: "AI总结"}].map(f => (
+                {[
+                  ...archiveYears.slice(0, 2).map((year) => ({ label: String(year), filterValue: String(year) })),
+                  {label: "我喜欢的", filterValue: "liked"},
+                  {label: "历史", filterValue: "history"},
+                  {label: "精选系列", filterValue: "精选系列"},
+                  {label: "特别回", filterValue: "特别回"},
+                  {label: "AI总结", filterValue: "AI总结"}
+                ].map(f => (
                  <button key={f.filterValue} onClick={() => setArchiveFilter(f.filterValue)} className={cn("px-4 py-2 hover:bg-muted font-semibold text-[13px] md:text-sm rounded-full transition-colors shrink-0", archiveFilter === f.filterValue ? "bg-pink-100 text-pink-700 dark:bg-pink-900/60 dark:text-pink-300 shadow-sm" : "bg-[#fcf8f3] dark:bg-[#2d2822] border border-[#f5eade] dark:border-[#3a332a] text-muted-foreground")}>
                    {f.label}
                  </button>
@@ -540,7 +574,7 @@ export function Talks() {
                        </p>
                      </div>
                      <div className={cn("text-xs font-semibold text-muted-foreground mt-auto pt-4 relative z-10", sch.cover ? "pb-[80px]" : "mb-8")}>
-                       {sch.min} {t("talks.min")}
+                        {sch.min > 0 ? `${sch.min} ${t("talks.min")}` : sch.date}
                      </div>
                      
                      {sch.cover ? (
@@ -637,10 +671,10 @@ export function Talks() {
             
             <div className="flex overflow-x-auto pb-4 pt-1 -mx-4 px-4 snap-x snap-mandatory gap-2.5 md:gap-3 md:grid md:grid-cols-4 lg:grid-cols-5 md:overflow-visible md:p-0 md:mx-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {[
-                { title: "2026", label: "2026年杂谈回", filterValue: "2026", count: archiveData.filter(item => item.date.startsWith("2026")).length, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-500/10" },
-                { title: "2025", label: "2025年杂谈回", filterValue: "2025", count: archiveData.filter(item => item.date.startsWith("2025")).length, color: "text-cyan-500", bg: "bg-cyan-50 dark:bg-cyan-500/10" },
+                { title: String(currentArchiveYear || "最新"), label: currentArchiveYear ? `${currentArchiveYear}年杂谈回` : "最新杂谈回", filterValue: String(currentArchiveYear || "全部"), count: currentArchiveYear ? archiveData.filter(item => archiveYearFromDate(item.date) === currentArchiveYear).length : archiveData.length, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-500/10" },
+                { title: String(previousArchiveYear || "往期"), label: previousArchiveYear ? `${previousArchiveYear}年杂谈回` : "往期杂谈回", filterValue: previousArchiveYear ? String(previousArchiveYear) : "history", count: previousArchiveYear ? archiveData.filter(item => archiveYearFromDate(item.date) === previousArchiveYear).length : archiveData.length, color: "text-cyan-500", bg: "bg-cyan-50 dark:bg-cyan-500/10" },
                 { title: "喜欢", label: "我喜欢的", filterValue: "liked", count: archiveData.filter(item => item.isLiked).length, color: "text-red-500", bg: "bg-red-50 dark:bg-red-500/10" },
-                { title: "历史", label: "2024年及以前", filterValue: "history", count: archiveData.filter(item => parseInt(item.date.substring(0, 4)) <= 2024).length, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-500/10" },
+                { title: "历史", label: previousArchiveYear ? `${previousArchiveYear - 1}年及以前` : "更早杂谈", filterValue: "history", count: archiveData.filter(item => previousArchiveYear ? archiveYearFromDate(item.date) < previousArchiveYear : false).length, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-500/10" },
                 { title: "精选", label: "历史精选杂谈", filterValue: "精选系列", count: archiveData.filter(item => item.cat === '精选系列').length, color: "text-pink-500", bg: "bg-pink-50 dark:bg-pink-500/10" },
               ].map((folder, idx) => (
                  <div 

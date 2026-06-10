@@ -1889,9 +1889,6 @@ async function writeStoreDatabase(store: ContentStore) {
       [store.siteVersion]
     );
 
-    const keys = Object.keys(store.entries);
-    if (keys.length > 0) await client.query("delete from content_entries where not (key = any($1::text[]))", [keys]);
-
     for (const entry of Object.values(store.entries)) {
       await client.query(
         `insert into content_entries (key, type, status, draft, published, version, updated_at, published_at)
@@ -4826,6 +4823,197 @@ app.post("/api/admin/talks/ai/summarize", async (req, res) => {
   } catch (error) {
     res.status(502).json({ error: error instanceof Error ? error.message : "Talk AI summarize failed" });
   }
+});
+
+const uploadJsonFile = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }).single("file");
+
+app.post("/api/admin/talks/import-json", uploadJsonFile, async (req, res) => {
+  const auth = await requireWorkspaceAdmin(req, res);
+  if (!auth) return;
+
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "JSON file is required" });
+    return;
+  }
+
+  if (file.mimetype !== "application/json" && !file.originalname.endsWith(".json")) {
+    res.status(400).json({ error: "Only JSON files are supported" });
+    return;
+  }
+
+  let data: { videos?: Array<{ title?: string; url?: string; date?: string; duration?: string; playCount?: string; danmakuCount?: string }>; total?: number };
+  try {
+    const text = file.buffer.toString("utf-8");
+    data = JSON.parse(text);
+  } catch {
+    res.status(400).json({ error: "Invalid JSON format" });
+    return;
+  }
+
+  const videos = Array.isArray(data.videos) ? data.videos : [];
+  if (!videos.length) {
+    res.status(400).json({ error: "JSON must contain a videos array" });
+    return;
+  }
+
+  const result = await mutateStore((store) => {
+    const entry = store.entries["talks.main"];
+    if (!entry) return { status: 404, error: "Talks content not found" };
+
+    const talksContent = (entry.published || entry.draft || {}) as Record<string, unknown>;
+    const archive: Array<Record<string, unknown>> = Array.isArray(talksContent.archive) ? [...talksContent.archive] : [];
+
+    // dedup set from existing non-placeholder items
+    const existingUrls = new Set(
+      archive
+        .filter((t) => {
+          const u = String(t.sourceUrl || "").trim();
+          return u && u !== "https://www.bilibili.com/" && !u.includes("example.com");
+        })
+        .map((t) => String(t.sourceUrl || "").trim())
+    );
+
+    // remove placeholders
+    const cleaned = archive.filter((t) => {
+      const u = String(t.sourceUrl || "").trim();
+      return !(!u || u === "https://www.bilibili.com/" || u.includes("example.com") || u.includes("placeholder"));
+    });
+    const removedCount = archive.length - cleaned.length;
+
+    let addedCount = 0;
+    let skippedCount = 0;
+
+    for (const video of videos) {
+      const sourceUrl = String(video.url || "").trim();
+      if (!sourceUrl || existingUrls.has(sourceUrl)) {
+        skippedCount += 1;
+        continue;
+      }
+
+      const rawTitle = String(video.title || "");
+      const bvid = (sourceUrl.match(/BV[a-zA-Z0-9]+/) || [])[0] || "";
+      const title = rawTitle.replace(/^\s*【[^】]*】\s*/g, "").replace(/\s+/g, " ").trim();
+
+      let viewers = 0;
+      const pc = String(video.playCount || "").trim();
+      if (pc.includes("万")) viewers = Math.round(parseFloat(pc) * 10000);
+      else viewers = parseInt(pc, 10) || 0;
+
+      let danmaku = 0;
+      const dc = String(video.danmakuCount || "").trim();
+      if (dc !== "-" && dc !== "--") {
+        if (dc.includes("万")) danmaku = Math.round(parseFloat(dc) * 10000);
+        else danmaku = parseInt(dc, 10) || 0;
+      }
+
+      let duration = "";
+      const rawDur = String(video.duration || "");
+      const parts = rawDur.split(":").map(Number);
+      if (parts.length === 3) {
+        const [h, m, s] = parts;
+        if (h > 0 && m > 0) duration = `${h}时${m}分`;
+        else if (h > 0) duration = `${h}时`;
+        else if (m > 0 && s > 0) duration = `${m}分${s}秒`;
+        else if (m > 0) duration = `${m}分`;
+        else duration = `${s}秒`;
+      } else if (parts.length === 2) {
+        const [m, s] = parts;
+        if (m > 0 && s > 0) duration = `${m}分${s}秒`;
+        else duration = `${m}分`;
+      }
+
+      const t = (title + rawTitle).toLowerCase();
+      let category = "other";
+      if (t.includes("杂谈")) category = "talk";
+      else if (t.includes("鉴赏") || t.includes("op/ed") || t.includes("oped") || t.includes("新番") || t.includes("联动") || t.includes("茶话会") || t.includes("一起看") || t.includes("狼人杀") || t.includes("谁是卧底") || t.includes("发布会") || t.includes("入坑")) category = "special";
+
+      const talk: Record<string, unknown> = {
+        id: `talk-${bvid || Date.now()}`,
+        title,
+        subtitle: rawTitle.replace(/^\s*【[^】]*】\s*/g, "").trim(),
+        date: String(video.date || "").trim(),
+        time: "",
+        duration,
+        coverUrl: "",
+        status: "archived",
+        category,
+        host: "泛式",
+        guests: [],
+        tags: category === "talk" ? ["直播回放", "杂谈回"] : ["直播回放", "特别回"],
+        summary: "",
+        summaryBullets: [],
+        highlights: [],
+        viewers,
+        danmaku,
+        likes: 0,
+        sourceUrl,
+        videoUrl: sourceUrl,
+        videoProvider: "bilibili",
+        transcript: [],
+        comments: [],
+        mentions: []
+      };
+
+      cleaned.push(talk);
+      existingUrls.add(sourceUrl);
+      addedCount += 1;
+    }
+
+    // sort by date desc
+    cleaned.sort((a, b) => {
+      return String(b.date || "").localeCompare(String(a.date || ""));
+    });
+
+    // number episodes ascending
+    const reversed = [...cleaned].reverse();
+    reversed.forEach((t, idx) => { t.episodeNo = idx + 1; });
+
+    // fix dangling liveTalkId
+    const archiveIds = new Set(cleaned.map((t) => String(t.id)));
+    let liveTalkId = String(talksContent.liveTalkId || "");
+    if (liveTalkId && !archiveIds.has(liveTalkId)) liveTalkId = "";
+
+    const nextContent = { ...talksContent, archive: cleaned, liveTalkId };
+
+    entry.draft = nextContent;
+    entry.published = nextContent;
+    entry.status = "published";
+    entry.version = (entry.version || 0) + 1;
+    entry.updatedAt = new Date().toISOString();
+    entry.publishedAt = new Date().toISOString();
+
+    store.siteVersion += 1;
+
+    store.events.push({
+      id: `event-talks-import-${Date.now()}`,
+      type: "talks.imported",
+      keys: ["talks.main"],
+      version: store.siteVersion,
+      message: `导入杂谈录像: ${addedCount} 新增, ${skippedCount} 跳过, ${removedCount} 清理`,
+      actorId: auth.user.id,
+      actorName: auth.user.name,
+      actorRole: auth.user.role,
+      createdAt: new Date().toISOString()
+    });
+
+    broadcast("talks.imported", {
+      key: "talks.main",
+      imported: addedCount,
+      skipped: skippedCount,
+      removed: removedCount,
+      total: cleaned.length
+    });
+
+    return { data: { imported: addedCount, skipped: skippedCount, removed: removedCount, total: cleaned.length } };
+  });
+
+  if (result && "status" in result && result.status === 404) {
+    res.status(404).json({ error: result.error });
+    return;
+  }
+
+  res.json(result.data);
 });
 
 app.post("/api/admin/content/batch", async (req, res) => {

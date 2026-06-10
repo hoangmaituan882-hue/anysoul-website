@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Calendar, FileText, Link, Plus, RefreshCw, Rocket, Save, Search, Sparkles, Trash2, Video, X } from "lucide-react";
+import { Bot, Calendar, Check, FileText, Link, Loader2, Plus, RefreshCw, Rocket, Save, Search, Sparkles, Trash2, Upload, Video, X } from "lucide-react";
 import { ImageUploadField } from "../components/ImageUploadField";
-import { CONTENT_API_BASE } from "../content/client";
+import { CONTENT_API_BASE, importTalksJson } from "../content/client";
 import { defaultTalksContent } from "../content/defaults/talks";
 import type { AdminContentEntry, TalkHighlightItem, TalkItem, TalkScheduleItem, TalkSidebarItem, TalkTranscriptItem, TalksContent } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";
@@ -188,6 +188,9 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [isTalkEditorOpen, setIsTalkEditorOpen] = useState(false);
   const [showAllTalksArchive, setShowAllTalksArchive] = useState(false);
   const [liveTalkSearch, setLiveTalkSearch] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; removed: number } | null>(null);
+  const [importError, setImportError] = useState("");
 
   const selectedTalk = useMemo(
     () => draft.archive.find((item) => item.id === selectedId) || draft.archive[0],
@@ -341,6 +344,21 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     void publish(nextDraft, "Set live talk source");
   };
 
+  const handleImportJson = async (file: File) => {
+    setImportError("");
+    setImportResult(null);
+    setIsImporting(true);
+    try {
+      const result = await importTalksJson(authFetch, file);
+      setImportResult(result);
+      await load();
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "导入失败");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <fieldset disabled={readOnly} className={cn("mx-auto max-w-6xl space-y-5", readOnly && "opacity-75")}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -354,11 +372,55 @@ export function TalksAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
           <button onClick={load} type="button" className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-bold hover:bg-muted">
             <RefreshCw className="size-4" /> 刷新
           </button>
+          <label className={cn(
+            "inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-bold hover:bg-muted cursor-pointer",
+            (readOnly || isImporting) && "opacity-50 pointer-events-none"
+          )}>
+            {isImporting ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+            {isImporting ? "导入中..." : "导入 JSON"}
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              disabled={readOnly || isImporting}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImportJson(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
           <button onClick={() => publish(draft)} type="button" disabled={isSaving} className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
             <Rocket className="size-4" /> 保存并发布
           </button>
         </div>
       </div>
+
+      {(importResult || importError) && (
+        <div className={cn(
+          "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold",
+          importError ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"
+        )}>
+          {importError ? (
+            <X className="size-5 shrink-0" />
+          ) : (
+            <Check className="size-5 shrink-0" />
+          )}
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {importError ? (
+              <span>{importError}</span>
+            ) : (
+              <>
+                <span>导入完成</span>
+                <span>新增 {importResult?.imported ?? 0} 条</span>
+                {importResult?.skipped ? <span>跳过重复 {importResult.skipped} 条</span> : null}
+                {importResult?.removed ? <span>清理占位 {importResult.removed} 条</span> : null}
+              </>
+            )}
+          </div>
+          <button onClick={() => { setImportResult(null); setImportError(""); }} className="ml-auto shrink-0 rounded-full p-1 hover:bg-black/10"><X className="size-3.5" /></button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-xl border border-border bg-background p-4"><div className="text-xs font-bold text-muted-foreground">录像归档</div><div className="mt-1 text-3xl font-black">{draft.archive.length}</div></div>

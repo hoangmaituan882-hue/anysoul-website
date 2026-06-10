@@ -4,7 +4,7 @@ import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { motion, AnimatePresence } from "motion/react";
-import { SoulImageCard, Soul } from "../components/SoulImageCard";
+import { SoulImageCard } from "../components/SoulImageCard";
 import { useContent } from "../content/useContent";
 import { defaultPlazaContent } from "../content/defaults/plaza";
 import type { PlazaContent, PlazaSoulItem } from "../content/types";
@@ -33,8 +33,8 @@ export function Plaza() {
   ];
 
   const INFO_OPTIONS = [
-    { id: "all", label: "全部" },
-    { id: "hidden", label: "隐藏" }
+    { id: "all", label: "显示信息" },
+    { id: "hidden", label: "隐藏信息" }
   ];
 
   const sortedSouls = useMemo(() => {
@@ -43,24 +43,26 @@ export function Plaza() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(s => 
-        s.name.toLowerCase().includes(q) || 
-        s.author.toLowerCase().includes(q) ||
-        s.tags.some((t: string) => t.toLowerCase().includes(q))
+        (s.name || "").toLowerCase().includes(q) || 
+        (s.author || "").toLowerCase().includes(q) ||
+        (Array.isArray(s.tags) ? s.tags : []).some((t: string) => t.toLowerCase().includes(q))
       );
     }
 
     if (activeTag !== "all") {
-      result = result.filter(s => s.tags.includes(activeTag));
+      result = result.filter(s => (Array.isArray(s.tags) ? s.tags : []).includes(activeTag));
     }
 
     if (activeSort === "default") {
-      result.sort((a, b) => Number(b.featured) - Number(a.featured) || b.views - a.views || a.name.localeCompare(b.name));
+      result.sort((a, b) => Number(b.featured) - Number(a.featured) || (b.views || 0) - (a.views || 0) || (a.name || "").localeCompare(b.name || ""));
     } else if (activeSort === "hot") {
-      result.sort((a, b) => b.likes - a.likes);
+      result.sort((a, b) => (b.likes || 0) - (a.likes || 0));
     } else if (activeSort === "new") {
       result.sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (Number.isNaN(timeA)) return 1;
+        if (Number.isNaN(timeB)) return -1;
         return timeB - timeA;
       });
     }
@@ -68,7 +70,30 @@ export function Plaza() {
     return result;
   }, [activeSort, activeTag, plaza.souls, searchQuery]);
 
-  const tags = plaza.tags.length > 0 ? plaza.tags : Array.from(new Set(plaza.souls.flatMap((s) => s.tags)));
+  const visibleSouls = useMemo(() => plaza.souls.filter(visibleSoul), [plaza.souls]);
+  const visibleTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const soul of visibleSouls) {
+      for (const tag of (Array.isArray(soul.tags) ? soul.tags : [])) {
+        const trimmed = String(tag).trim();
+        if (trimmed) tagSet.add(trimmed);
+      }
+    }
+    return Array.from(tagSet).sort();
+  }, [visibleSouls]);
+
+  const tags = useMemo(() => {
+    if (plaza.tags.length > 0) {
+      const unified = Array.from(new Set(plaza.tags.map((t: string) => String(t).trim()).filter(Boolean)));
+      return unified.length > 0 ? unified : visibleTags;
+    }
+    return visibleTags;
+  }, [plaza.tags, visibleTags]);
+
+  // reset activeTag if it's no longer in the current tags list
+  if (activeTag !== "all" && !tags.includes(activeTag)) {
+    setActiveTag("all");
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 md:py-16">
@@ -181,7 +206,7 @@ export function Plaza() {
 
             <div className="columns-1 sm:columns-2 md:columns-3 xl:columns-4 gap-4 space-y-4">
               {sortedSouls.map(soul => (
-                <SoulImageCard key={soul.id} soul={soul as Soul} infoFilter={infoFilter} />
+                <SoulImageCard key={soul.id} soul={soul} infoFilter={infoFilter} />
               ))}
             </div>
           </div>

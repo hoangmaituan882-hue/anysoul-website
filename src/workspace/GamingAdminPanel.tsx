@@ -11,6 +11,7 @@ import { cn } from "../lib/utils";
 type AdminContentResponse = {
   entries: AdminContentEntry[];
 };
+type ContentEntryMeta = Pick<AdminContentEntry, "version" | "updatedAt">;
 
 function Field({ label, value, onChange, type = "text", placeholder }: { label: string; value: string | number; onChange: (value: string) => void; type?: string; placeholder?: string }) {
   return (
@@ -134,6 +135,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [query, setQuery] = useState("");
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [streamSearch, setStreamSearch] = useState("");
+  const [entryMeta, setEntryMeta] = useState<ContentEntryMeta | null>(null);
 
   const library = draft.library || [];
   const selectedGame = library.find((game) => game.id === selectedGameId) || null;
@@ -156,6 +158,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     const data = await response.json() as AdminContentResponse;
     const entry = data.entries.find((item) => item.key === "gaming.main");
     setDraft(normalizeGamingDraft((entry?.draft as GamingMainContent | undefined) || defaultGamingMain));
+    setEntryMeta(entry ? { version: entry.version, updatedAt: entry.updatedAt } : null);
     setStatus("游戏回内容已同步");
   };
 
@@ -172,10 +175,20 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          operations: [{ key: "gaming.main", payload, publish: true, message: "Publish gaming page controls" }]
+          operations: [{
+            key: "gaming.main",
+            payload,
+            publish: true,
+            message: "Publish gaming page controls",
+            expectedVersion: entryMeta?.version,
+            expectedUpdatedAt: entryMeta?.updatedAt
+          }]
         })
       });
       if (!response.ok) throw new Error(await readAdminError(response, "游戏回发布失败"));
+      const data = await response.json() as { entries?: AdminContentEntry[] };
+      const entry = data.entries?.find((item) => item.key === "gaming.main");
+      if (entry) setEntryMeta({ version: entry.version, updatedAt: entry.updatedAt });
       setDraft(normalizeGamingDraft(payload));
       setStatus("已保存并发布，游戏回页面会自动同步更新");
     } catch (error) {
