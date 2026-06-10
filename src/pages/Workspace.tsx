@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "motion/react";
 import {
-  Plus, LayoutDashboard, MessageCircle, ScanEye, Activity, PanelLeftOpen,
+  Plus, MessageCircle, Activity,
   Inbox, ArrowUpDown, ListTodo, ChevronDown, List, Calendar, Clock,
   Circle, Bell, Brain, Pause, Settings, X, Search, Database,
   Navigation, Sparkles, XCircle, Volume2, Film, Gamepad2, Image,
   ChevronLeft, ChevronRight, Home, Languages, Moon, Sun,
   Palette, Smartphone, Key, BarChart2, Gift, Trophy, GraduationCap, Monitor,
   Play, FastForward, Rewind, Users, Tv, Airplay, Video, VolumeX, Maximize, Share2,
-  Heart, Pencil, CheckCircle2, RefreshCw
+  Heart, Pencil, CheckCircle2, RefreshCw, Info
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
@@ -715,25 +715,6 @@ export function Workspace() {
               </div>
 
               <div className="flex shrink-0 items-center gap-2 border-l border-border/70 pl-3 lg:mt-auto lg:mb-2 lg:flex-col lg:border-l-0 lg:border-t lg:pl-0 lg:pt-3">
-                <button className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted/70 hover:text-foreground border border-dashed border-border/70 bg-transparent transition-colors">
-                  <Plus className="size-5" />
-                </button>
-                <div className="h-6 w-px bg-border/70 mx-1 lg:my-1 lg:h-px lg:w-6" />
-                <button className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors shadow-sm">
-                  <LayoutDashboard className="size-5" />
-                </button>
-                <button className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors">
-                  <MessageCircle className="size-5" />
-                </button>
-                <button className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors">
-                  <ScanEye className="size-5" />
-                </button>
-                <button className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors">
-                  <Activity className="size-5" />
-                </button>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 border-l border-border/70 pl-3 lg:flex-col lg:border-l-0 lg:border-t lg:pl-0 lg:pt-3">
                 <a href="#" className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors" title="Home">
                   <Home className="size-4" />
                 </a>
@@ -745,6 +726,12 @@ export function Workspace() {
                 </a>
                 <a href="#plaza" className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors" title="Plaza">
                   <Image className="size-4" />
+                </a>
+                <a href="#posts" className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors" title="Posts">
+                  <Pencil className="size-4" />
+                </a>
+                <a href="#about" className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors" title="About">
+                  <Info className="size-4" />
                 </a>
 
                 <div className="h-6 w-px bg-border/70 mx-1 lg:my-1 lg:h-px lg:w-6" />
@@ -761,9 +748,6 @@ export function Workspace() {
                 <button onClick={() => setIsSettingsOpen(true)} className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors relative overflow-hidden">
                   <img src="https://api.dicebear.com/7.x/shapes/svg?seed=setting1" className="size-8 rounded-full border border-border" />
                   <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-amber-500" />
-                </button>
-                <button className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors">
-                  <PanelLeftOpen className="size-5" />
                 </button>
               </div>
 

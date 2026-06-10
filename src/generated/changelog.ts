@@ -31,6 +31,32 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "800bd12",
+    "hash": "800bd123d46c315504b9566c03ffb61ce5d14d4c",
+    "date": "2026-06-10",
+    "title": "Allow configuring TMDB API base URL",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1、脚本配置 2。",
+    "files": [
+      ".env.example",
+      ".env.production.example",
+      "server/index.ts",
+      "src/generated/changelog.ts",
+      "src/workspace/ScreeningsAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "Allow configuring TMDB API base URL",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "工作台 1、后端 1、脚本配置 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "0a738de",
     "hash": "0a738de969beacd9f0654f29207c329053ca4d9a",
     "date": "2026-06-10",
@@ -799,32 +825,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "a8d916f",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Make gaming page content-driven",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 1、内容数据 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、工作台 1、内容数据 2",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "f000dc1",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -844,7 +850,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -864,7 +870,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -884,7 +890,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -904,7 +910,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -924,7 +930,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -944,7 +950,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -954,6 +960,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "工作台 1、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "800bd12",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "Allow configuring TMDB API base URL",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1、脚本配置 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "工作台 1、后端 1、脚本配置 2",
         "description": ""
       }
     ]

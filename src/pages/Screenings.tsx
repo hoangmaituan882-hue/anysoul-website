@@ -17,7 +17,6 @@ import {
   defaultScreeningsTodo
 } from "../content/defaults/screenings";
 import type {
-  AnimeTier,
   ClassicMovie,
   ClassicScreening,
   ScreeningLibraryContent,
@@ -298,22 +297,6 @@ function buildDynamicAnimeHistory(records: ScreeningRecord[]): ClassicMovie[] {
     }));
 }
 
-function buildDynamicTierList(records: ScreeningRecord[], library: ScreeningLibraryContent): AnimeTier[] {
-  const watchedItems = records
-    .map(({ movie, source }) => ({ ...source, ...movie, posterUrl: source?.posterUrl || movie.posterUrl, category: source?.category || movie.type, status: source?.status || "watched" }))
-    .filter((item) => item.posterUrl);
-  const fallbackItems = library.items.filter((item) => item.posterUrl);
-  const allItems = [...watchedItems, ...fallbackItems].filter((item, index, list) => list.findIndex((candidate) => (candidate.id || candidate.title) === (item.id || item.title)) === index);
-  const postersFor = (filter: (item: typeof allItems[number]) => boolean) => allItems.filter(filter).map((item) => item.posterUrl || "").filter(Boolean).slice(0, 8);
-
-  return [
-    { tier: "神作", color: "bg-[#ff7eb6] dark:bg-[#ff7eb6] text-white", posters: postersFor((item) => (item.rating || 0) >= 9 || item.category === "good") },
-    { tier: "佳作", color: "bg-[#ffb07c] dark:bg-[#ffb07c] text-white", posters: postersFor((item) => (item.rating || 0) >= 7.5 && (item.rating || 0) < 9 && item.category !== "bad") },
-    { tier: "怪片", color: "bg-[#ffdf76] dark:bg-[#ffdf76] text-[#6d4c00]", posters: postersFor((item) => item.category === "topic" || item.category === "other") },
-    { tier: "拉片", color: "bg-[#a5b4fc] dark:bg-[#818cf8] text-white", posters: postersFor((item) => item.category === "bad" || ((item.rating || 10) < 6.5 && item.status === "watched")) }
-  ];
-}
-
 function categoryBadgeClass(category?: string) {
   if (category === "bad") return "border-rose-500/20 bg-rose-500/10 text-rose-600";
   if (category === "anime") return "border-sky-500/20 bg-sky-500/10 text-sky-600";
@@ -361,7 +344,6 @@ export function Screenings() {
   const [watchedStatus, setWatchedStatus] = useState("");
   const [localWatchedSourceIds, setLocalWatchedSourceIds] = useLocalStorage<string[]>("screenings-local-watched-source-ids", []);
   const [syncedWatchedSourceIds, setSyncedWatchedSourceIds] = useState<string[]>([]);
-  const [showTierList, setShowTierList] = useLocalStorage('screenings-showTierList', true);
   const [showTimeline, setShowTimeline] = useLocalStorage('screenings-showTimeline', true);
   const [showHistory, setShowHistory] = useLocalStorage('screenings-showHistory', true);
   const nextScreening = useContent<ScreeningNextContent>("screenings.next", defaultScreeningsNext);
@@ -384,7 +366,6 @@ export function Screenings() {
   );
   const historyScreenings = useMemo(() => buildDynamicClassicTimeline(archivedWeeks, libraryContent), [archivedWeeks, libraryContent]);
   const historyMovies = useMemo(() => buildDynamicAnimeHistory(screeningRecords), [screeningRecords]);
-  const tierListData = useMemo(() => buildDynamicTierList(screeningRecords, libraryContent), [screeningRecords, libraryContent]);
   const lastScreening = archivedWeeks[archivedWeeks.length - 1];
   const monthlyActivity = useMemo(() => buildMonthlyActivity(scheduleContent.weeks), [scheduleContent.weeks]);
   const currentMonthActivity = useMemo(() => buildCurrentMonthActivity(scheduleContent.weeks), [scheduleContent.weeks]);
@@ -1825,71 +1806,6 @@ export function Screenings() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Tier List Section */}
-        <div className="w-full max-w-7xl mx-auto mb-32 group/tierlist relative z-20">
-          <div className="mb-12 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                放映会电影从夯到拉
-              </h2>
-            </div>
-            <div className="flex bg-muted p-1 rounded-full border border-border">
-              <button
-                onClick={() => setShowTierList(true)}
-                className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all", showTierList ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
-              >
-                显示
-              </button>
-              <button
-                onClick={() => setShowTierList(false)}
-                className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all", !showTierList ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
-              >
-                隐藏
-              </button>
-            </div>
-          </div>
-
-          <AnimatePresence>
-            {showTierList && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex flex-col gap-3 p-2 sm:p-4 overflow-hidden"
-              >
-                {tierListData.map((row, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ delay: i * 0.1, duration: 0.5 }}
-                    className="flex flex-col sm:flex-row bg-background border border-border/80 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className={cn("w-full sm:w-32 lg:w-40 shrink-0 flex flex-col justify-center items-center py-6 sm:py-8 px-2 shadow-[inset_-4px_0_12px_rgba(0,0,0,0.05)]", row.color)}>
-                      <span className="text-3xl lg:text-4xl font-black tracking-tighter sm:[writing-mode:vertical-rl] text-center">{row.tier}</span>
-                    </div>
-                    <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-wrap gap-4 items-center content-start min-h-[140px] bg-muted/10">
-                      {row.posters.length > 0 ? row.posters.map((url, j) => (
-                        <motion.div
-                          key={j}
-                          whileHover={{ scale: 1.05, y: -4 }}
-                          className="w-20 sm:w-24 lg:w-32 aspect-[2/3] rounded-lg overflow-hidden shadow-sm hover:shadow-xl border border-border/30 transition-all cursor-pointer relative group/poster"
-                        >
-                          <img src={url} alt="poster" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/0 group-hover/poster:bg-black/10 transition-colors pointer-events-none" />
-                        </motion.div>
-                      )) : (
-                        <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-3 text-sm font-bold text-muted-foreground">暂无真实海报数据</div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
         {/* Classic Memory (Vertical Timeline) */}
         <div className="mt-32 mb-16">

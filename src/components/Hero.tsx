@@ -110,7 +110,7 @@ export function Hero() {
         <div className="relative flex justify-center items-center py-4 w-full h-[120px] md:h-[160px]">
           {/* Cursive Background Text */}
           <motion.div 
-            className="absolute -z-10 w-[900px] h-full flex items-center justify-center pointer-events-none opacity-80 mix-blend-multiply dark:mix-blend-screen"
+            className="absolute -z-10 h-full w-[min(92vw,620px)] flex items-center justify-center pointer-events-none opacity-80 mix-blend-multiply dark:mix-blend-screen md:w-[900px]"
             style={{ transform: 'rotate(-4deg)' }}
             initial="hidden"
             animate="visible"
@@ -126,7 +126,7 @@ export function Hero() {
               }
             }}
           >
-            <svg viewBox="0 0 900 400" className="w-[140%] max-w-none md:w-[110%] h-auto" strokeLinecap="round" strokeLinejoin="round" fill="none">
+            <svg viewBox="0 0 900 400" className="w-full max-w-none md:w-[110%] h-auto" strokeLinecap="round" strokeLinejoin="round" fill="none">
               {paths.map((p, i) => (
                 <motion.path 
                   key={`path-${i}`} 

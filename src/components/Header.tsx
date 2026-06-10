@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronDown, Compass, Gamepad2, Languages, Mic, Moon, Newspaper, Sun, Video } from "lucide-react";
+import { ChevronDown, CircleUserRound, Compass, Gamepad2, Home, Info, Languages, Mic, Moon, Newspaper, Sun } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { AuthModal } from "./AuthModal";
-import { VHSModal } from "./vhs/VHSModal";
 
 export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGames?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isVHSModalOpen, setIsVHSModalOpen] = useState(false);
   const { theme, toggleTheme, language, toggleLanguage, t } = useThemeLanguage();
   const { user, logout } = useAuth();
 
@@ -26,6 +24,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
   };
 
   const roleLabel = user?.role === "owner" ? "站主" : user?.role === "admin" ? "管理员" : "普通用户";
+  const accountInitial = (user?.name || "登录").trim().slice(0, 1).toUpperCase();
 
   if (isWorkspace) return null;
 
@@ -44,7 +43,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
     >
       <div
         className={cn(
-          "pointer-events-auto flex h-[60px] w-full items-center justify-between border transition-all duration-500 ease-out",
+          "pointer-events-auto flex h-[60px] w-full items-center justify-between gap-2 overflow-hidden border transition-all duration-500 ease-out",
           isScrolled
             ? "max-w-4xl rounded-full border-border bg-card/95 px-5 shadow-sm backdrop-blur-md md:px-8"
             : (isGames
@@ -52,7 +51,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
               : "max-w-6xl rounded-full border-transparent bg-transparent px-5 shadow-none md:px-8")
         )}
       >
-        <a href="#" className="group flex shrink items-center gap-2 whitespace-nowrap text-xl md:text-2xl">
+        <a href="#" className="group flex min-w-0 shrink items-center gap-2 whitespace-nowrap text-xl md:text-2xl">
           <svg className="size-5 shrink-0 md:size-6" viewBox="0 0 24 24" fill="none">
             <rect x="3" y="4" width="16" height="16" rx="4" fill="#a4c639" transform="rotate(-10 12 12)" className="transition-transform duration-300 group-hover:rotate-0" />
             <circle cx="11.5" cy="11.5" r="3.5" fill="#1a1a1a" />
@@ -84,9 +83,6 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
                   <button onClick={toggleLanguage} className={cn("flex h-[28px] w-[28px] items-center justify-center rounded-full text-foreground/80 transition-colors", isScrolled ? "hover:bg-muted" : "hover:bg-black/10 dark:hover:bg-white/10")} title="Switch Language">
                     <Languages className="size-3.5" />
                   </button>
-                  <button onClick={() => setIsVHSModalOpen(true)} className={cn("flex h-[28px] w-[28px] items-center justify-center rounded-full text-foreground/80 transition-colors", isScrolled ? "hover:bg-muted" : "hover:bg-black/10 dark:hover:bg-white/10")} title="Player">
-                    <Video className="size-3.5" />
-                  </button>
                 </div>
               </div>
             </div>
@@ -109,42 +105,60 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
             {t("header.workspace")}
           </button>
           {user ? (
-            <button onClick={logout} className="ml-1 inline-flex h-[36px] items-center justify-center rounded-full border border-border bg-card px-4 text-sm font-bold text-foreground shadow-sm transition-all hover:bg-muted">
-              {user.name} · {roleLabel} / 退出
+            <button onClick={logout} className="ml-1 inline-flex size-[36px] items-center justify-center rounded-full border border-border bg-card text-sm font-black text-foreground shadow-sm transition-all hover:bg-muted" title={`${user.name} · ${roleLabel} / 退出`} aria-label="退出登录">
+              {accountInitial}
             </button>
           ) : (
-            <button onClick={() => setIsAuthModalOpen(true)} className="ml-1 inline-flex h-[36px] items-center justify-center rounded-full border border-border bg-card px-4 text-sm font-bold text-foreground shadow-sm transition-all hover:bg-muted">
-              {t("header.login")}
+            <button onClick={() => setIsAuthModalOpen(true)} className="ml-1 inline-flex size-[36px] items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition-all hover:bg-muted" title={t("header.login")} aria-label={t("header.login")}>
+              <CircleUserRound className="size-4" />
             </button>
           )}
         </nav>
 
-        <nav className="flex shrink-0 items-center gap-0.5 sm:gap-1 md:hidden">
-          <button onClick={toggleTheme} className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:size-9">
+        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain rounded-full border border-border/70 bg-card/80 px-1 py-1 shadow-sm no-scrollbar md:hidden">
+          <a href="#" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="首页">
+            <Home className="size-4" strokeWidth={2} />
+            <span>首页</span>
+          </a>
+          <a href="#screenings" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="放映会">
+            <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+            <span>放映会</span>
+          </a>
+          <a href="#posts" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="文章">
+            <Newspaper className="size-4" strokeWidth={2} />
+            <span>文章</span>
+          </a>
+          <a href="#talks" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="杂谈回">
+            <Mic className="size-4" strokeWidth={2} />
+            <span>杂谈</span>
+          </a>
+          <a href="#games" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="游戏回">
+            <Gamepad2 className="size-4" strokeWidth={2} />
+            <span>游戏</span>
+          </a>
+          <a href="#plaza" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="图库">
+            <Compass className="size-4" strokeWidth={2} />
+            <span>图库</span>
+          </a>
+          <a href="#about" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="关于">
+            <Info className="size-4" strokeWidth={2} />
+            <span>关于</span>
+          </a>
+          <button onClick={toggleTheme} className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="切换主题">
             {theme === "light" ? <Moon className="size-4" strokeWidth={2} /> : <Sun className="size-4" strokeWidth={2} />}
           </button>
-          <button onClick={toggleLanguage} className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:size-9", language === "ja" && "bg-primary/20 text-primary")}>
+          <button onClick={toggleLanguage} className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5", language === "ja" && "bg-primary/20 text-primary")} title="切换语言">
             <Languages className="size-4" strokeWidth={2} />
           </button>
-          <button onClick={() => setIsVHSModalOpen(true)} className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:size-9">
-            <Video className="size-4" strokeWidth={2} />
-          </button>
-          <a href="#posts" className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:size-9" title="文章">
-            <Newspaper className="size-4" strokeWidth={2} />
-          </a>
-          <a href="#talks" className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:size-9" title="杂谈回">
-            <Mic className="size-4" strokeWidth={2} />
-          </a>
-          <button onClick={handleWorkspaceClick} className="ml-0.5 inline-flex h-[32px] shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-full bg-[#abc378] px-2.5 text-xs font-bold tracking-wide text-[#1a1a1a] shadow-sm transition-all hover:bg-[#a0b86e] hover:shadow-md sm:ml-1 sm:h-[36px] sm:px-4 sm:text-sm">
+          <button onClick={handleWorkspaceClick} className="inline-flex h-8 shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-full bg-[#abc378] px-3 text-xs font-bold tracking-wide text-[#1a1a1a] shadow-sm transition-all hover:bg-[#a0b86e] hover:shadow-md">
             {t("header.workspace")}
           </button>
-          <button onClick={() => user ? logout() : setIsAuthModalOpen(true)} className="inline-flex h-[32px] shrink-0 items-center justify-center rounded-full border border-border bg-card px-2.5 text-[11px] font-bold text-foreground sm:h-[36px]">
-            {user ? "退出" : t("header.login")}
+          <button onClick={() => user ? logout() : setIsAuthModalOpen(true)} className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xs font-black text-foreground shadow-sm" title={user ? `${user.name} · ${roleLabel} / 退出` : t("header.login")} aria-label={user ? "退出登录" : t("header.login")}>
+            {user ? accountInitial : <CircleUserRound className="size-4" />}
           </button>
         </nav>
       </div>
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-      <VHSModal isOpen={isVHSModalOpen} onClose={() => setIsVHSModalOpen(false)} />
     </header>
   );
 }
