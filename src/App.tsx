@@ -19,6 +19,7 @@ import { Screenings } from "./pages/Screenings";
 import { Workspace } from "./pages/Workspace";
 import { About } from "./pages/About";
 import { Gaming } from "./pages/Gaming";
+import { GameLibrary } from "./pages/GameLibrary";
 import { Posts } from "./pages/Posts";
 import { Talks } from "./pages/Talks";
 import { ThemeLanguageProvider } from "./contexts/ThemeLanguageContext";
@@ -34,6 +35,7 @@ const routeTitles: Record<string, string> = {
   "#posts": "文章记录",
   "#workspace": "工作台",
   "#games": "游戏回",
+  "#game-library": "游戏库",
   "#about": "关于"
 };
 
@@ -61,6 +63,7 @@ function StandardPage({ children, mainClassName = "flex-1 flex flex-col pt-24 pb
 
 export default function App() {
   const [route, setRoute] = useState(window.location.hash);
+  const routeKey = route.includes("?") ? route.slice(0, route.indexOf("?")) : route;
 
   useEffect(() => {
     const handleHashChange = () => setRoute(window.location.hash);
@@ -73,20 +76,21 @@ export default function App() {
     const visitorId = localStorage.getItem(visitorKey) || `visitor-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     localStorage.setItem(visitorKey, visitorId);
     const path = route || "#home";
+    const analyticsRouteKey = path.includes("?") ? path.slice(0, path.indexOf("?")) : path;
 
     fetch(`${CONTENT_API_BASE}/api/public/analytics/visit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         path,
-        title: routeTitles[route] || route.replace("#", "") || "首页",
+        title: routeTitles[analyticsRouteKey] || route.replace("#", "") || "首页",
         visitorId,
         referrer: document.referrer || ""
       })
     }).catch(() => undefined);
   }, [route]);
 
-  if (route === "#changelog") {
+  if (routeKey === "#changelog") {
     return (
       <StandardPage mainClassName="flex-1 flex flex-col pt-16">
         <Changelog />
@@ -94,7 +98,7 @@ export default function App() {
     );
   }
 
-  if (route === "#plaza") {
+  if (routeKey === "#plaza") {
     return (
       <StandardPage>
         <Plaza />
@@ -102,7 +106,7 @@ export default function App() {
     );
   }
 
-  if (route === "#screenings") {
+  if (routeKey === "#screenings") {
     return (
       <StandardPage mainClassName="flex-1 flex flex-col pt-16">
         <Screenings />
@@ -110,7 +114,7 @@ export default function App() {
     );
   }
 
-  if (route === "#talks") {
+  if (routeKey === "#talks") {
     return (
       <StandardPage>
         <Talks />
@@ -118,7 +122,7 @@ export default function App() {
     );
   }
 
-  if (route === "#posts" || route.startsWith("#posts/")) {
+  if (routeKey === "#posts" || routeKey.startsWith("#posts/")) {
     return (
       <StandardPage>
         <Posts route={route} />
@@ -126,7 +130,7 @@ export default function App() {
     );
   }
 
-  if (route === "#workspace") {
+  if (routeKey === "#workspace") {
     return (
       <AppShell className="relative h-screen bg-[#fbfaf8] dark:bg-zinc-950 text-foreground antialiased selection:bg-primary/30 font-sans flex flex-col overflow-hidden transition-colors duration-300">
         <Header isWorkspace={true} />
@@ -137,7 +141,7 @@ export default function App() {
     );
   }
 
-  if (route === "#games") {
+  if (routeKey === "#games") {
     return (
       <AppShell className={pageShellClass}>
         <Header isGames />
@@ -149,7 +153,19 @@ export default function App() {
     );
   }
 
-  if (route === "#about") {
+  if (routeKey === "#game-library") {
+    return (
+      <AppShell className={pageShellClass}>
+        <Header isGames />
+        <main className="flex-1 flex flex-col pt-24 pb-8">
+          <GameLibrary route={route} />
+        </main>
+        <Footer />
+      </AppShell>
+    );
+  }
+
+  if (routeKey === "#about") {
     return (
       <StandardPage>
         <About />

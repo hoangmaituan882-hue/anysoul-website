@@ -42,7 +42,7 @@ export const defaultGamingMain: GamingMainContent = {
       genre: "动作 RPG",
       mode: "单人 / 联机",
       status: "playing",
-      tags: ["开放世界", "动作", "抽卡", "记录中"],
+      tags: ["开放世界", "动作", "抽卡", "记录中", "联动游戏"],
       coverUrl: covers.waves,
       heroImage: covers.waves,
       rating: "8.8 / 10",
@@ -52,7 +52,7 @@ export const defaultGamingMain: GamingMainContent = {
       description: "当前主要记录的开放世界动作游戏，适合沉淀探索、角色培养和版本活动。",
       review: "战斗反馈轻快，地图探索适合做连续直播记录。",
       playRecords: [
-        { date: "2026-06-09", durationHours: 3, note: "主线推进与材料收集" },
+        { date: "2026-06-09", durationHours: 3, note: "主线推进与材料收集", href: "https://www.bilibili.com" },
         { date: "2026-06-08", durationHours: 2, note: "角色培养" },
         { date: "2026-06-06", durationHours: 4, note: "地图探索" }
       ]
@@ -107,7 +107,7 @@ export const defaultGamingMain: GamingMainContent = {
       genre: "冒险",
       mode: "单人",
       status: "planned",
-      tags: ["冒险", "解谜", "待玩"],
+      tags: ["冒险", "解谜", "待玩", "联动游戏"],
       coverUrl: covers.zelda,
       heroImage: covers.zelda,
       rating: "9.6 / 10",
@@ -119,9 +119,9 @@ export const defaultGamingMain: GamingMainContent = {
     }
   ],
   exploreItems: [
-    { id: "explore-waves", gameId: "wuthering-waves", title: "本周主记录：鸣潮", author: "AnySoul", description: "整理当前版本活动、角色养成和直播记录。", coverUrl: covers.waves, tags: ["记录中", "开放世界"], stars: 5, views: 158, badge: "精选" },
+    { id: "explore-waves", gameId: "wuthering-waves", title: "本周主记录：鸣潮", author: "AnySoul", description: "整理当前版本活动、角色养成和直播记录。", coverUrl: covers.waves, tags: ["记录中", "开放世界", "联动游戏"], stars: 5, views: 158, badge: "精选" },
     { id: "explore-elden", gameId: "elden-ring", title: "艾尔登法环复健记录", author: "AnySoul", description: "DLC 前重新熟悉地图、Boss 和配装。", coverUrl: covers.elden, tags: ["魂系", "复健"], stars: 4, views: 92 },
     { id: "explore-cyberpunk", gameId: "cyberpunk-2077", title: "夜之城截图与剧情", author: "AnySoul", description: "把剧情回顾、截图和支线感想归档。", coverUrl: covers.cyberpunk, tags: ["剧情", "截图"], stars: 4, views: 76 },
-    { id: "explore-zelda", gameId: "zelda-tears", title: "待玩清单：王国之泪", author: "AnySoul", description: "后续准备记录建造、解谜和探索路线。", coverUrl: covers.zelda, tags: ["待玩", "冒险"], stars: 3, views: 45, badge: "待玩" }
+    { id: "explore-zelda", gameId: "zelda-tears", title: "待玩清单：王国之泪", author: "AnySoul", description: "后续准备记录建造、解谜和探索路线。", coverUrl: covers.zelda, tags: ["待玩", "冒险", "联动游戏"], stars: 3, views: 45, badge: "待玩" }
   ]
 };

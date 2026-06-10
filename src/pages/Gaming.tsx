@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Bell, ChevronDown, Play, ArrowRight, Flame, ChevronLeft, ChevronRight, Clock, User, X, BookOpen, Star, Eye, Crown, Users, LayoutGrid, Heart, MessageSquare } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Bell, ChevronDown, Play, ArrowRight, Flame, ChevronLeft, ChevronRight, Clock, User, X, BookOpen, Star, Eye, Crown, Users, LayoutGrid, Heart, MessageSquare, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useContent } from "../content/useContent";
 import { defaultGamingMain } from "../content/defaults/gaming";
@@ -120,6 +120,15 @@ function getGameStatusLabel(status?: GamingLibraryItem["status"]) {
   return status ? labels[status] || status : "待记录";
 }
 
+function isLinkedGame(game: GamingLibraryItem) {
+  const text = [game.genre, game.mode, ...(game.tags || [])].filter(Boolean).join(" ");
+  return (game.tags || []).includes("联动游戏") || text.includes("联动") || text.includes("联机") || text.includes("合作");
+}
+
+function sortPlayRecords(records: GamingPlayRecord[]) {
+  return [...records].sort((a, b) => b.date.localeCompare(a.date));
+}
+
 function buildHeatmap(records: GamingPlayRecord[]) {
   const map = new Map(records.map((record) => [record.date, Math.min(4, Math.max(1, Math.ceil(Number(record.durationHours || 0))))]));
   const today = new Date();
@@ -136,7 +145,6 @@ export function Gaming() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const exploreSectionRef = useRef<HTMLDivElement | null>(null);
 
   const library = content.library || [];
   const currentGame = library.find((game) => game.id === content.currentGameId) || library[0];
@@ -162,10 +170,11 @@ export function Gaming() {
 
   const exploreItems = useMemo(() => {
     const keyword = query.trim().toLowerCase();
-    const items = content.exploreItems || [];
+    const linkedGames = library.filter(isLinkedGame);
+    const items = linkedGames.map((game, index) => libraryToExplore(game, index));
     if (!keyword) return items;
     return items.filter((item) => [item.title, item.author, item.description, ...(item.tags || [])].filter(Boolean).join(" ").toLowerCase().includes(keyword));
-  }, [content.exploreItems, query]);
+  }, [library, query]);
 
   useEffect(() => {
     if (!heroGames.length) return;
@@ -184,8 +193,7 @@ export function Gaming() {
   const plannedGames = library.filter((game) => game.status === "planned").length;
   const playingGames = library.filter((game) => game.status === "playing").length;
   const openGameLibrary = () => {
-    setQuery("");
-    exploreSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.location.hash = "#game-library";
   };
 
   return (
@@ -286,7 +294,7 @@ export function Gaming() {
            <h3 className="text-xl font-bold flex items-center gap-2">游戏分类 <Flame className="size-5 text-orange-500 fill-orange-500" /></h3>
            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                {content.categories.slice(0, 3).map((category) => (
-                 <div key={`${category.title}-${category.subtitle}`} className="flex flex-col gap-2 group cursor-pointer">
+                 <button key={`${category.title}-${category.subtitle}`} onClick={() => { window.location.hash = `#game-library?category=${encodeURIComponent(category.title)}`; }} className="flex flex-col gap-2 group cursor-pointer text-left">
                     <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-card border border-border relative">
                        <img src={category.img} alt={category.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     </div>
@@ -294,7 +302,7 @@ export function Gaming() {
                       <div className="font-bold text-foreground group-hover:text-primary transition-colors">{category.title}</div>
                       <div className="text-xs text-muted-foreground font-medium">{category.subtitle}</div>
                     </div>
-                 </div>
+                 </button>
                ))}
            </div>
         </div>
@@ -432,18 +440,23 @@ export function Gaming() {
 
 
       {/* Explore Section */}
-      <div ref={exploreSectionRef} className="mt-8 scroll-mt-24 bg-[#f5f5f5] dark:bg-card rounded-[28px] border-[3px] border-[#e5e5e5] dark:border-border p-6 md:p-8 shadow-sm flex flex-col gap-6">
+      <div className="mt-8 scroll-mt-24 bg-[#f5f5f5] dark:bg-card rounded-[28px] border-[3px] border-[#e5e5e5] dark:border-border p-6 md:p-8 shadow-sm flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-black flex items-center gap-2 tracking-tight">探索联动游戏回里的游戏 <BookOpen className="size-6 text-[#b4c053]" /></h2>
             <p className="text-muted-foreground mt-2 text-[14px]">从游戏库读取主播记录、待玩清单和联动回顾。</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-full hover:bg-muted transition-colors font-bold text-sm shadow-sm bg-background">
+          <button onClick={() => { window.location.hash = "#game-library?tag=%E8%81%94%E5%8A%A8%E6%B8%B8%E6%88%8F"; }} className="flex items-center gap-2 px-4 py-2 border border-border rounded-full hover:bg-muted transition-colors font-bold text-sm shadow-sm bg-background">
             <LayoutGrid className="size-4" /> 浏览全部
           </button>
         </div>
 
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+          {!exploreItems.length && (
+            <div className="w-full rounded-[24px] border border-dashed border-border bg-card p-6 text-center text-sm font-bold text-muted-foreground">
+              暂无联动游戏，给游戏库条目添加“联动游戏”标签后会自动出现在这里。
+            </div>
+          )}
           {exploreItems.map((item) => {
             const linkedGame = item.gameId ? library.find((game) => game.id === item.gameId) : undefined;
             return (
@@ -587,6 +600,33 @@ export function Gaming() {
                          </div>
                          <span>More</span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <h3 className="font-bold text-lg">主播游玩时间轴</h3>
+                    <div className="space-y-4 rounded-2xl border border-border bg-muted/20 p-5">
+                      {sortPlayRecords(selectedGame.playRecords || []).length ? sortPlayRecords(selectedGame.playRecords || []).map((record, index, records) => (
+                        <div key={`${record.date}-${index}`} className="relative pl-6">
+                          <div className="absolute left-1 top-1.5 size-3 rounded-full border-2 border-[#b4c053] bg-card" />
+                          {index < records.length - 1 && <div className="absolute bottom-[-18px] left-[9px] top-5 w-px bg-border" />}
+                          <div className="rounded-2xl border border-border bg-card p-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <div className="text-sm font-black">{record.date}</div>
+                                <div className="text-xs font-bold text-muted-foreground">{record.durationHours || 0}h · {record.note || "暂无备注"}</div>
+                              </div>
+                              {record.href && (
+                                <a href={record.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-[#b4c053]/15 px-3 py-1.5 text-xs font-black text-[#6f7d1f] transition hover:bg-[#b4c053]/25 dark:text-[#d7e675]">
+                                  查看记录 <ExternalLink className="size-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm font-bold text-muted-foreground">暂无游玩记录</div>
+                      )}
                     </div>
                   </div>
 

@@ -441,6 +441,7 @@ export type GamingPlayRecord = {
   date: string;
   durationHours: number;
   note?: string;
+  href?: string;
 };
 
 export type GamingLibraryItem = {

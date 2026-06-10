@@ -31,6 +31,31 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "0571df1",
+    "hash": "0571df14447241ed9f61548006a5326d4391bb3d",
+    "date": "2026-06-10",
+    "title": "Refine gaming page as viewer record library",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1、内容数据 1。",
+    "files": [
+      "src/content/defaults/gaming.ts",
+      "src/generated/changelog.ts",
+      "src/pages/Gaming.tsx",
+      "src/workspace/GamingAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Refine gaming page as viewer record library",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、工作台 1、内容数据 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "f000dc1",
     "hash": "f000dc1cb91ec3220df38df7ffff6845fd87dbab",
     "date": "2026-06-10",
@@ -645,32 +670,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "0500f63",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-09",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "Restore original talks UI",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、组件 2",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "637755e",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -690,7 +695,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -710,7 +715,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -730,7 +735,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -750,7 +755,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "维护",
@@ -770,7 +775,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -790,7 +795,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -800,6 +805,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "0571df1",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "Refine gaming page as viewer record library",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1、内容数据 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、工作台 1、内容数据 1",
         "description": ""
       }
     ]

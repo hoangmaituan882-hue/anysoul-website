@@ -374,10 +374,10 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                 <Area label="站主评价" value={selectedGame.review || ""} onChange={(value) => updateGame(selectedGame.id, { review: value })} rows={3} />
                 <Area
                   label="游玩记录，每行 日期|小时|备注"
-                  value={(selectedGame.playRecords || []).map((record) => `${record.date}|${record.durationHours}|${record.note || ""}`).join("\n")}
+                  value={(selectedGame.playRecords || []).map((record) => `${record.date}|${record.durationHours}|${record.note || ""}|${record.href || ""}`).join("\n")}
                   onChange={(value) => updateGame(selectedGame.id, { playRecords: value.split("\n").map((line) => {
-                    const [date, hours, note] = line.split("|");
-                    return { date: (date || "").trim(), durationHours: Number(hours) || 1, note: (note || "").trim() };
+                    const [date, hours, note, href] = line.split("|");
+                    return { date: (date || "").trim(), durationHours: Number(hours) || 1, note: (note || "").trim(), href: (href || "").trim() || undefined };
                   }).filter((record) => record.date) })}
                   rows={4}
                 />
