@@ -31,6 +31,30 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "2b75986",
+    "hash": "2b759864778b7ef8193535b8dda2bfc928876552",
+    "date": "2026-06-10",
+    "title": "Add TMDB metadata completion for screenings",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/generated/changelog.ts",
+      "src/workspace/ScreeningsAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add TMDB metadata completion for screenings",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "工作台 1、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "4349726",
     "hash": "43497266755130f79bb505c77cb5174c0db9074d",
     "date": "2026-06-10",
@@ -727,32 +751,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "a742abb",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-09",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Improve talks archive selection controls",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "ae0152f",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -772,7 +776,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "维护",
@@ -792,7 +796,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -812,7 +816,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -832,7 +836,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -852,7 +856,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -872,7 +876,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -882,6 +886,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 3、组件 1、内容数据 2、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "2b75986",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add TMDB metadata completion for screenings",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "工作台 1、后端 1",
         "description": ""
       }
     ]

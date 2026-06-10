@@ -58,6 +58,7 @@ type MediaScrapeRequest = {
   query?: string;
   sourceUrl?: string;
   mediaType?: ScreeningSourceItem["type"] | "auto";
+  providers?: MediaScrapeProvider[];
 };
 
 type MediaScraperSettings = {
@@ -66,9 +67,13 @@ type MediaScraperSettings = {
   bangumiImageBase: string;
 };
 
+type MediaScrapeProvider = "tmdb" | "bilibili" | "bangumi" | "douban" | "jikan" | "wiki" | "local";
+
 type MediaScrapeCandidate = ScreeningSourceItem & {
-  provider: "tmdb" | "bilibili" | "bangumi" | "jikan" | "wiki" | "local";
+  provider: MediaScrapeProvider;
   confidence: number;
+  providerId?: string;
+  aliases?: string[];
 };
 
 type MediaAiCompleteRequest = {
@@ -80,6 +85,8 @@ type MediaAiCompleteRequest = {
 
 type MediaMetadataCompleteRequest = {
   item?: ScreeningSourceItem;
+  providers?: MediaScrapeProvider[];
+  overwrite?: boolean;
 };
 
 type AiCoreSettings = {
@@ -741,6 +748,55 @@ function tmdbFetchOptions(url: URL, token: string): RequestInit {
   return { headers };
 }
 
+const allMediaProviders: MediaScrapeProvider[] = ["tmdb", "bangumi", "douban", "bilibili", "jikan", "wiki", "local"];
+
+function normalizeMediaProviders(value: unknown, fallback: MediaScrapeProvider[] = allMediaProviders) {
+  if (!Array.isArray(value) || value.length === 0) return fallback;
+  const providers = value
+    .map((item) => String(item).trim().toLowerCase())
+    .filter((item): item is MediaScrapeProvider => allMediaProviders.includes(item as MediaScrapeProvider));
+  return providers.length ? Array.from(new Set(providers)) : fallback;
+}
+
+function providerEnabled(request: MediaScrapeRequest, provider: MediaScrapeProvider) {
+  return normalizeMediaProviders(request.providers).includes(provider);
+}
+
+async function fetchTmdbJson(pathname: string, settings: MediaScraperSettings, params: Record<string, string | undefined>) {
+  const token = settings.tmdbApiKey || runtimeConfig.tmdbApiKey;
+  if (!token) return undefined;
+
+  const url = new URL(`https://api.themoviedb.org/3/${pathname.replace(/^\/+/, "")}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value) url.searchParams.set(key, value);
+  }
+
+  const response = await fetch(url, tmdbFetchOptions(url, token));
+  if (!response.ok) return undefined;
+  return await response.json() as Record<string, unknown>;
+}
+
+function tmdbPosterUrl(value: unknown) {
+  return typeof value === "string" && value ? `https://image.tmdb.org/t/p/w500${value}` : undefined;
+}
+
+function tmdbRuntimeLabel(endpoint: "movie" | "tv", details: Record<string, unknown> | undefined) {
+  if (!details) return undefined;
+  if (endpoint === "movie" && typeof details.runtime === "number" && details.runtime > 0) return `${details.runtime} 分钟`;
+  const episodeRuntime = Array.isArray(details.episode_run_time) ? details.episode_run_time.find((value) => typeof value === "number" && value > 0) : undefined;
+  if (typeof episodeRuntime === "number") return `单集 ${episodeRuntime} 分钟`;
+  if (typeof details.number_of_episodes === "number" && details.number_of_episodes > 0) return `${details.number_of_episodes} 集`;
+  return undefined;
+}
+
+function tmdbGenreTags(details: Record<string, unknown> | undefined) {
+  const genres = Array.isArray(details?.genres) ? details?.genres : [];
+  return genres
+    .map((genre) => isRecord(genre) ? trimText(genre.name, 30) : "")
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
 async function searchTmdbCandidates(request: MediaScrapeRequest, settings: MediaScraperSettings): Promise<MediaScrapeCandidate[]> {
   const token = settings.tmdbApiKey || runtimeConfig.tmdbApiKey;
   const query = extractTitle(request.query || "");
@@ -789,6 +845,147 @@ async function searchTmdbCandidates(request: MediaScrapeRequest, settings: Media
       confidence: Math.max(0.62, 0.95 - index * 0.08)
     };
   });
+}
+
+async function suggestEnglishMovieQueries(query: string) {
+  const settings = await loadAiCoreSettings().catch(() => undefined);
+  if (!settings?.apiKey || !hasCjkText(query)) return [];
+
+  try {
+    const response = await fetch(`${settings.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${settings.apiKey}`
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: "Return JSON only. Translate a Chinese movie title/search query into 1-3 likely English or original movie titles. No explanations." },
+          { role: "user", content: JSON.stringify({ query, schema: { queries: ["English/original title"] } }) }
+        ]
+      })
+    });
+    if (!response.ok) return [];
+    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const content = data.choices?.[0]?.message?.content || "";
+    const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || "{}") as { queries?: unknown };
+    return Array.isArray(parsed.queries) ? parsed.queries.map((item) => trimText(item, 80)).filter(Boolean).slice(0, 3) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function searchTmdbEndpointCandidates(request: MediaScrapeRequest, settings: MediaScraperSettings, query: string, endpoint: "movie" | "tv", language: string): Promise<MediaScrapeCandidate[]> {
+  const data = await fetchTmdbJson(`search/${endpoint}`, settings, {
+    query,
+    language,
+    include_adult: "false"
+  }) as { results?: Array<Record<string, unknown>> } | undefined;
+  const sourceUrl = normalizeBilibiliUrl(request.sourceUrl || request.query);
+  const today = new Date().toISOString().slice(0, 10);
+
+  return (data?.results || []).slice(0, 6).map((item, index) => {
+    const title = String(item.title || item.name || query);
+    const originalTitle = String(item.original_title || item.original_name || "") || undefined;
+    const releaseDate = String(item.release_date || item.first_air_date || "");
+    const rating = typeof item.vote_average === "number" ? Number(item.vote_average.toFixed(1)) : undefined;
+    const type = endpoint === "tv" ? inferSourceType(title, "series") : inferSourceType(title, request.mediaType);
+    const category = endpoint === "tv" && type === "anime" ? "anime" : inferSourceCategory(title, rating);
+    const posterUrl = tmdbPosterUrl(item.poster_path);
+    const confidence = Math.max(
+      titleMatchConfidence(query, title, 0.66),
+      originalTitle ? titleMatchConfidence(query, originalTitle, 0.66) : 0.66,
+      0.94 - index * 0.07 - (endpoint === "tv" ? 0.03 : 0)
+    );
+
+    return {
+      id: slugifyTitle(`${title}-${releaseDate || item.id || index}`),
+      providerId: item.id ? `tmdb_${endpoint}_${item.id}` : undefined,
+      title,
+      originalTitle,
+      type,
+      category,
+      year: releaseDate ? releaseDate.slice(0, 4) : undefined,
+      rating,
+      posterUrl,
+      description: String(item.overview || "从 TMDB 搜索结果抓取的元数据，播放仍通过 Bilibili 链接外跳。"),
+      tags: Array.from(new Set([type === "anime" ? "动画" : endpoint === "tv" ? "剧集" : "电影", "TMDB", sourceUrl ? "Bilibili" : "待补链接"])),
+      sourceUrl,
+      sourceNote: sourceUrl ? "Bilibili 外跳播放链接，前台不内置播放器。" : "元数据来自 TMDB，播放链接待补。",
+      status: "available" as const,
+      priority: category === "classic" || category === "bad" ? "high" as const : "normal" as const,
+      timesWatched: 0,
+      addedAt: today,
+      provider: "tmdb" as const,
+      confidence,
+      aliases: [originalTitle, title].filter((value): value is string => Boolean(value))
+    };
+  });
+}
+
+async function enrichTmdbCandidate(candidate: MediaScrapeCandidate, settings: MediaScraperSettings) {
+  const match = candidate.providerId?.match(/^tmdb_(movie|tv)_(.+)$/);
+  if (!match) return candidate;
+  const endpoint = match[1] as "movie" | "tv";
+  const id = match[2];
+  const details = await fetchTmdbJson(`${endpoint}/${id}`, settings, { language: "zh-CN" }).catch(() => undefined);
+  if (!details) return candidate;
+
+  return {
+    ...candidate,
+    duration: candidate.duration || tmdbRuntimeLabel(endpoint, details),
+    posterUrl: candidate.posterUrl || tmdbPosterUrl(details.poster_path),
+    description: trimText(details.overview, 1400) || candidate.description,
+    tags: Array.from(new Set([...candidate.tags, ...tmdbGenreTags(details)]))
+  };
+}
+
+async function searchTmdbCandidatesEnhanced(request: MediaScrapeRequest, settings: MediaScraperSettings): Promise<MediaScrapeCandidate[]> {
+  if (!settings.tmdbApiKey && !runtimeConfig.tmdbApiKey) return [];
+  const query = extractTitle(request.query || "");
+  if (!query) return [];
+
+  const endpoints: Array<"movie" | "tv"> = request.mediaType === "movie"
+    ? ["movie"]
+    : request.mediaType === "anime" || request.mediaType === "ova" || request.mediaType === "series"
+      ? ["tv"]
+      : ["movie", "tv"];
+  const querySet = new Set([query]);
+
+  if (hasCjkText(query)) {
+    const doubanAliases = await searchDoubanCandidates({ ...request, providers: ["douban"] }).catch(() => []);
+    for (const candidate of doubanAliases.slice(0, 3)) {
+      for (const alias of [candidate.originalTitle, ...(candidate.aliases || [])]) {
+        if (alias) querySet.add(alias);
+      }
+    }
+    for (const translated of await suggestEnglishMovieQueries(query)) querySet.add(translated);
+  }
+
+  const collected: MediaScrapeCandidate[] = [];
+  for (const searchQuery of Array.from(querySet).slice(0, 6)) {
+    for (const endpoint of endpoints) {
+      for (const language of ["zh-CN", "en-US"]) {
+        collected.push(...await searchTmdbEndpointCandidates(request, settings, searchQuery, endpoint, language).catch(() => []));
+      }
+    }
+  }
+
+  const byKey = new Map<string, MediaScrapeCandidate>();
+  for (const candidate of collected) {
+    const key = candidate.providerId || `${candidate.title}-${candidate.year || ""}`.toLowerCase();
+    const existing = byKey.get(key);
+    if (!existing || candidate.confidence > existing.confidence || (!existing.posterUrl && candidate.posterUrl)) byKey.set(key, candidate);
+  }
+
+  const enriched: MediaScrapeCandidate[] = [];
+  for (const candidate of Array.from(byKey.values()).sort((a, b) => b.confidence - a.confidence).slice(0, 8)) {
+    enriched.push(await enrichTmdbCandidate(candidate, settings).catch(() => candidate));
+  }
+  return enriched;
 }
 
 function shouldSearchAnimeMetadata(query: string, mediaType?: MediaScrapeRequest["mediaType"]) {
@@ -980,25 +1177,145 @@ async function searchJikanCandidates(request: MediaScrapeRequest): Promise<Media
   });
 }
 
-async function scrapeMediaCandidates(request: MediaScrapeRequest) {
+function publicApiBaseUrl() {
+  return (runtimeConfig.objectStoragePublicBaseUrl || runtimeConfig.corsOrigins[0] || `http://localhost:${runtimeConfig.port}`).replace(/\/$/, "");
+}
+
+function proxiedDoubanImageUrl(value?: string) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value.replace(/^\/\//, "https://"));
+    if (!/doubanio\.com$/i.test(url.hostname) && !/douban\.com$/i.test(url.hostname)) return value;
+    return `${publicApiBaseUrl()}/api/public/image-proxy?url=${encodeURIComponent(url.toString())}`;
+  } catch {
+    return value;
+  }
+}
+
+function extractFirstMatch(value: string, pattern: RegExp) {
+  return decodeHtml(value.match(pattern)?.[1] || "").trim() || undefined;
+}
+
+function stripHtml(value = "") {
+  return decodeHtml(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")).trim();
+}
+
+function extractDoubanInfoValue(html: string, label: string) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return extractFirstMatch(html, new RegExp(`${escaped}:\\s*([^<\\n]+)`, "i"));
+}
+
+function doubanCandidateFromHtml(html: string, query: string, sourceUrl?: string): MediaScrapeCandidate | undefined {
+  const subjectUrl = extractFirstMatch(html, /href=["'](https:\/\/movie\.douban\.com\/subject\/\d+\/?)["']/i) || sourceUrl;
+  const subjectId = subjectUrl?.match(/subject\/(\d+)/)?.[1];
+  const title = extractFirstMatch(html, /property=["']v:itemreviewed["'][^>]*>([^<]+)/i)
+    || extractFirstMatch(html, /<title>([^<]+)/i)?.replace(/\(豆瓣\).*$/i, "").trim()
+    || query;
+  const originalTitle = extractDoubanInfoValue(html, "原名") || extractDoubanInfoValue(html, "又名")?.split("/")[0]?.trim();
+  const aliases = [
+    originalTitle,
+    ...(extractDoubanInfoValue(html, "又名") || "").split("/").map((item) => item.trim())
+  ].filter(Boolean);
+  const year = extractFirstMatch(html, /<span class=["']year["']>\((\d{4})\)<\/span>/i) || extractFirstMatch(html, /(\d{4})/);
+  const ratingRaw = extractFirstMatch(html, /rating_num[^>]*>([\d.]+)/i);
+  const rating = ratingRaw ? Number(ratingRaw) : undefined;
+  const poster = extractFirstMatch(html, /<img[^>]+src=["']([^"']+)["'][^>]*(?:rel=["']v:image["']|alt=)/i)
+    || extractFirstMatch(html, /rel=["']v:image["'][^>]+src=["']([^"']+)["']/i);
+  const summary = extractFirstMatch(html, /property=["']v:summary["'][^>]*>([\s\S]*?)<\/span>/i);
+  const sourceNote = subjectUrl ? `豆瓣条目：${subjectUrl}` : "豆瓣公开页面抓取的中文兜底元数据。";
+  const type = inferSourceType(title, "movie");
+  const category = inferSourceCategory(title, rating);
+  const today = new Date().toISOString().slice(0, 10);
+
+  return {
+    id: slugifyTitle(`${title}-${subjectId || year || Date.now()}`),
+    providerId: subjectId ? `douban_${subjectId}` : undefined,
+    title,
+    originalTitle,
+    type,
+    category,
+    year,
+    rating,
+    posterUrl: proxiedDoubanImageUrl(poster),
+    description: summary ? stripHtml(summary) : "从豆瓣公开页面抓取的中文电影资料。",
+    tags: Array.from(new Set(["电影", "豆瓣", "中文资料"])),
+    sourceUrl,
+    sourceNote,
+    status: "available" as const,
+    priority: rating !== undefined && rating >= 8 ? "high" as const : "normal" as const,
+    timesWatched: 0,
+    addedAt: today,
+    provider: "douban" as const,
+    confidence: Math.max(0.62, titleMatchConfidence(query, title, 0.72)),
+    aliases: aliases.slice(0, 8)
+  };
+}
+
+async function fetchDoubanSubjectCandidate(subjectUrl: string, query: string, sourceUrl?: string) {
+  const html = await fetchText(subjectUrl, 9000).catch(() => undefined);
+  return html ? doubanCandidateFromHtml(html, query, sourceUrl) : undefined;
+}
+
+async function searchDoubanCandidates(request: MediaScrapeRequest): Promise<MediaScrapeCandidate[]> {
+  const query = extractTitle(request.query || "");
+  if (!query || request.mediaType === "anime" || request.mediaType === "ova") return [];
+
+  const searchUrl = new URL("https://www.douban.com/search");
+  searchUrl.searchParams.set("cat", "1002");
+  searchUrl.searchParams.set("q", query);
+  const html = await fetchText(searchUrl.toString(), 9000).catch(() => undefined);
+  if (!html) return [];
+
+  const subjectUrls = Array.from(html.matchAll(/https:\/\/movie\.douban\.com\/subject\/\d+\/?/gi))
+    .map((match) => match[0])
+    .filter((value, index, array) => array.indexOf(value) === index)
+    .slice(0, 5);
+
+  const candidates: MediaScrapeCandidate[] = [];
+  for (const subjectUrl of subjectUrls) {
+    const candidate = await fetchDoubanSubjectCandidate(subjectUrl, query, normalizeBilibiliUrl(request.sourceUrl || request.query)).catch(() => undefined);
+    if (candidate) candidates.push(candidate);
+  }
+
+  return candidates.sort((a, b) => b.confidence - a.confidence);
+}
+
+async function scrapeMediaCandidatesDetailed(request: MediaScrapeRequest) {
   const settings = await loadMediaScraperSettings();
   const local = buildLocalCandidate(request);
-  const bilibili = await scrapeBilibiliCandidate(request).catch(() => undefined);
-  const tmdb = await searchTmdbCandidates(request, settings).catch(() => []);
-  const bangumi = await searchBangumiCandidates(request, settings).catch(() => []);
-  const jikan = await searchJikanCandidates(request).catch(() => []);
-  const wiki = await searchWikiCandidates(request).catch(() => []);
+  const providers = normalizeMediaProviders(request.providers);
+  const warnings: string[] = [];
+  const bilibili = providerEnabled(request, "bilibili") ? await scrapeBilibiliCandidate(request).catch(() => undefined) : undefined;
+  const tmdb = providerEnabled(request, "tmdb") ? await searchTmdbCandidatesEnhanced(request, settings).catch((error) => {
+    warnings.push(error instanceof Error ? `TMDB 搜索失败：${error.message}` : "TMDB 搜索失败");
+    return [];
+  }) : [];
+  const bangumi = providerEnabled(request, "bangumi") ? await searchBangumiCandidates(request, settings).catch((error) => {
+    warnings.push(error instanceof Error ? `Bangumi 搜索失败：${error.message}` : "Bangumi 搜索失败");
+    return [];
+  }) : [];
+  const douban = providerEnabled(request, "douban") ? await searchDoubanCandidates(request).catch((error) => {
+    warnings.push(error instanceof Error ? `豆瓣搜索失败：${error.message}` : "豆瓣搜索失败");
+    return [];
+  }) : [];
+  const jikan = providerEnabled(request, "jikan") ? await searchJikanCandidates(request).catch(() => []) : [];
+  const wiki = providerEnabled(request, "wiki") ? await searchWikiCandidates(request).catch(() => []) : [];
   const byTitle = new Map<string, MediaScrapeCandidate>();
 
-  for (const candidate of [...tmdb, ...bangumi, ...jikan, ...wiki, ...(bilibili ? [bilibili] : []), local]) {
-    const key = candidate.title.trim().toLowerCase();
+  const shouldAddLocal = providers.length === allMediaProviders.length || providers.includes("local");
+  for (const candidate of [...tmdb, ...bangumi, ...douban, ...jikan, ...wiki, ...(bilibili ? [bilibili] : []), ...(shouldAddLocal ? [local] : [])]) {
+    const key = candidate.providerId || candidate.title.trim().toLowerCase();
     const existing = byTitle.get(key);
     if (!existing || candidate.confidence > existing.confidence || (!existing.posterUrl && candidate.posterUrl)) {
       byTitle.set(key, candidate);
     }
   }
 
-  return Array.from(byTitle.values()).sort((a, b) => b.confidence - a.confidence);
+  return { candidates: Array.from(byTitle.values()).sort((a, b) => b.confidence - a.confidence), warnings };
+}
+
+async function scrapeMediaCandidates(request: MediaScrapeRequest) {
+  return (await scrapeMediaCandidatesDetailed(request)).candidates;
 }
 
 function needsAiCompletion(item: ScreeningSourceItem) {
@@ -1084,28 +1401,29 @@ function fallbackPatchFromCandidates(item: ScreeningSourceItem, candidates: Medi
   }, item, candidates);
 }
 
-function metadataPatchFromCandidates(item: ScreeningSourceItem, candidates: MediaScrapeCandidate[]) {
+function metadataPatchFromCandidates(item: ScreeningSourceItem, candidates: MediaScrapeCandidate[], overwrite = false) {
   const best = candidates.find((candidate) => candidate.provider !== "local") || candidates[0];
   if (!best) return {};
+  const placeholderDescription = !item.description || item.description.length < 18 || item.description.includes("填写简介") || item.description.includes("待补");
 
   return sanitizeAiPatch({
-    originalTitle: item.originalTitle || best.originalTitle,
+    originalTitle: overwrite ? best.originalTitle || item.originalTitle : item.originalTitle || best.originalTitle,
     type: best.type,
     category: best.category,
-    year: item.year || best.year,
-    duration: item.duration || best.duration,
-    rating: item.rating ?? best.rating,
-    posterUrl: item.posterUrl || best.posterUrl,
-    description: item.description && item.description !== "填写简介、推荐理由或吐槽点。" ? item.description : best.description,
+    year: overwrite ? best.year || item.year : item.year || best.year,
+    duration: overwrite ? best.duration || item.duration : item.duration || best.duration,
+    rating: overwrite ? best.rating ?? item.rating : item.rating ?? best.rating,
+    posterUrl: overwrite ? best.posterUrl || item.posterUrl : item.posterUrl || best.posterUrl,
+    description: overwrite || placeholderDescription ? best.description : item.description,
     tags: Array.from(new Set([...item.tags, ...best.tags])),
-    sourceNote: item.sourceNote || (item.sourceUrl ? "播放链接来自已配置的 Bilibili 外跳地址；元数据由 TMDB/Bangumi 等抓取源补全。" : best.sourceNote)
+    sourceNote: overwrite ? (item.sourceUrl ? `播放链接来自已配置的 Bilibili 外跳地址；元数据由 ${best.provider.toUpperCase()} 抓取源补全。` : best.sourceNote) : item.sourceNote || (item.sourceUrl ? "播放链接来自已配置的 Bilibili 外跳地址；元数据由 TMDB/Bangumi 等抓取源补全。" : best.sourceNote)
   }, item, candidates);
 }
 
-async function completeMediaMetadataItem(item: ScreeningSourceItem): Promise<MediaAiSuggestion> {
-  const candidates = await scrapeMediaCandidates({ query: item.title, sourceUrl: item.sourceUrl, mediaType: item.type });
+async function completeMediaMetadataItem(item: ScreeningSourceItem, providers?: MediaScrapeProvider[], overwrite = false): Promise<MediaAiSuggestion> {
+  const candidates = await scrapeMediaCandidates({ query: item.title, sourceUrl: item.sourceUrl, mediaType: item.type, providers });
   const sourceProviders = Array.from(new Set(candidates.map((candidate) => candidate.provider)));
-  const patch = metadataPatchFromCandidates(item, candidates);
+  const patch = metadataPatchFromCandidates(item, candidates, overwrite);
   const best = candidates.find((candidate) => candidate.provider !== "local") || candidates[0];
   const risks: string[] = [];
 
@@ -3210,6 +3528,42 @@ app.post("/api/me/media/upload", requireSignedInMiddleware, publicWriteLimit, up
   res.json({ asset, storage: asset.metadata.storage });
 });
 
+app.get("/api/public/image-proxy", async (req, res) => {
+  const rawUrl = trimText(req.query.url, 1000);
+  try {
+    const url = new URL(rawUrl);
+    const allowed = /(^|\.)doubanio\.com$/i.test(url.hostname) || /(^|\.)douban\.com$/i.test(url.hostname);
+    if (!allowed) {
+      res.status(400).json({ error: "Only Douban image URLs are allowed" });
+      return;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        Referer: "https://movie.douban.com/"
+      }
+    });
+    if (!response.ok) {
+      res.status(502).json({ error: "Image proxy fetch failed" });
+      return;
+    }
+
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    if (!contentType.startsWith("image/")) {
+      res.status(400).json({ error: "URL is not an image" });
+      return;
+    }
+
+    const bytes = Buffer.from(await response.arrayBuffer());
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(bytes);
+  } catch {
+    res.status(400).json({ error: "Invalid image URL" });
+  }
+});
+
 app.post("/api/public/media/upload", publicWriteLimit, uploadImageFile, async (req, res) => {
   const file = req.file;
   if (!file) {
@@ -4198,10 +4552,14 @@ app.post("/api/admin/media/search", async (req, res) => {
   }
 
   const settings = await loadMediaScraperSettings();
-  const candidates = await scrapeMediaCandidates(request);
+  const { candidates, warnings } = await scrapeMediaCandidatesDetailed({
+    ...request,
+    providers: normalizeMediaProviders(request.providers)
+  });
 
   res.json({
     candidates,
+    warnings,
     providerStatus: {
       tmdbConfigured: Boolean(settings.tmdbApiKey || runtimeConfig.tmdbApiKey),
       bangumiApiBase: settings.bangumiApiBase,
@@ -4248,7 +4606,7 @@ app.post("/api/admin/media/metadata/complete", async (req, res) => {
   }
 
   try {
-    const suggestion = await completeMediaMetadataItem(item);
+    const suggestion = await completeMediaMetadataItem(item, normalizeMediaProviders(request.providers), request.overwrite !== false);
     res.json({ suggestion, warnings: suggestion.risks });
   } catch (error) {
     res.status(502).json({

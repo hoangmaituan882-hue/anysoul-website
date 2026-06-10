@@ -10,12 +10,17 @@ import { DateTimePicker } from "../components/DateTimePicker";
 import { ImageUploadField } from "../components/ImageUploadField";
 
 type AdminContentResponse = { entries: AdminContentEntry[] };
+type MediaScrapeProvider = "tmdb" | "bilibili" | "bangumi" | "douban" | "jikan" | "wiki" | "local";
+type MediaProviderFilter = "all" | "tmdb" | "bangumi" | "douban";
 type MediaScrapeCandidate = ScreeningSourceItem & {
-  provider: "tmdb" | "bilibili" | "bangumi" | "jikan" | "wiki" | "local";
+  provider: MediaScrapeProvider;
   confidence: number;
+  providerId?: string;
+  aliases?: string[];
 };
 type MediaSearchResponse = {
   candidates: MediaScrapeCandidate[];
+  warnings?: string[];
   providerStatus: {
     tmdbConfigured: boolean;
     bangumiApiBase?: string;
@@ -63,6 +68,17 @@ const SCREENINGS_NEXT_KEY = "screenings.next";
 const SCREENINGS_LIBRARY_KEY = "screenings.library";
 const SCREENINGS_SOURCE_SUBMISSIONS_KEY = "screenings.sourceSubmissions";
 const SCREENINGS_SCHEDULE_KEY = "screenings.schedule";
+
+const providerFilters: Array<{ value: MediaProviderFilter; label: string; hint: string }> = [
+  { value: "all", label: "全部", hint: "TMDB / Bangumi / 豆瓣聚合" },
+  { value: "tmdb", label: "TMDB", hint: "电影 / 剧集主源" },
+  { value: "bangumi", label: "Bangumi", hint: "动漫资料源" },
+  { value: "douban", label: "豆瓣", hint: "中文电影兜底" }
+];
+
+function providersForFilter(filter: MediaProviderFilter): MediaScrapeProvider[] | undefined {
+  return filter === "all" ? undefined : [filter];
+}
 
 const movieTypes: Array<{ value: ScreeningMovie["type"]; label: string; tone: string }> = [
   { value: "good", label: "经典好片", tone: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
@@ -426,6 +442,8 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const [scrapeQuery, setScrapeQuery] = useState("");
   const [scrapeSourceUrl, setScrapeSourceUrl] = useState("");
   const [scrapeMediaType, setScrapeMediaType] = useState<ScreeningSourceItem["type"] | "auto">("auto");
+  const [scrapeProviderFilter, setScrapeProviderFilter] = useState<MediaProviderFilter>("all");
+  const [metadataProviderFilter, setMetadataProviderFilter] = useState<MediaProviderFilter>("all");
   const [scrapeResults, setScrapeResults] = useState<MediaScrapeCandidate[]>([]);
   const [isScraping, setIsScraping] = useState(false);
   const [showScraperSettings, setShowScraperSettings] = useState(false);
@@ -676,7 +694,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       items: [item, ...current.items]
     }));
     setEditingLibraryId(id);
-    setStatus("已创建新片源。输入片名后可点击「TMDB 自动补全」获取简介、海报、年份和评分。");
+    setStatus("已创建新片源。输入片名后可点击「自动补全元数据」获取简介、海报、年份和评分。");
   };
 
   const scrapeMedia = async () => {
@@ -701,7 +719,8 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         body: JSON.stringify({
           query: scrapeQuery,
           sourceUrl: scrapeSourceUrl,
-          mediaType: scrapeMediaType
+          mediaType: scrapeMediaType,
+          providers: providersForFilter(scrapeProviderFilter)
         })
       });
 
@@ -710,7 +729,8 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       const data = await response.json() as MediaSearchResponse;
       setScrapeResults(data.candidates);
       const autoSources = Array.from(new Set(data.candidates.map((candidate) => candidate.provider.toUpperCase()))).join(" / ") || "LOCAL";
-      setStatus(`已自动抓取 ${data.candidates.length} 条候选元数据，来源：${autoSources}${data.providerStatus.tmdbConfigured ? " / TMDB 已启用" : " / TMDB 未配置"}`);
+      const warningText = data.warnings?.length ? ` / 提醒：${data.warnings.join("；")}` : "";
+      setStatus(`已自动抓取 ${data.candidates.length} 条候选元数据，来源：${autoSources}${data.providerStatus.tmdbConfigured ? " / TMDB 已启用" : " / TMDB 未配置"}${warningText}`);
     } catch {
       setStatus("元数据抓取失败，请检查内容服务或网络连接");
     } finally {
@@ -822,18 +842,19 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
 
     const title = item.title.trim();
     if (!title || title === "新片源") {
-      setStatus("请先填写真实片名，再使用 TMDB 自动补全");
+      setStatus("请先填写真实片名，再使用自动补全元数据");
       return;
     }
 
     setIsScraping(true);
-    setStatus(`正在为《${title}》从 TMDB / Bangumi 等抓取源补全海报和简介...`);
+    const providerLabel = providerFilters.find((item) => item.value === metadataProviderFilter)?.label || "全部";
+    setStatus(`正在为《${title}》从 ${providerLabel} 抓取源覆盖补全海报和简介...`);
 
     try {
       const response = await authFetch(`${CONTENT_API_BASE}/api/admin/media/metadata/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item })
+        body: JSON.stringify({ item, providers: providersForFilter(metadataProviderFilter), overwrite: true })
       });
       const data = await response.json() as MediaMetadataCompleteResponse;
       if (!response.ok || !data.suggestion) throw new Error(data.error || "metadata completion failed");
@@ -841,7 +862,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       updateLibraryItem(index, data.suggestion.patch);
       const fields = Object.keys(data.suggestion.patch);
       setStatus(fields.length
-        ? `已补全《${title}》：${fields.join("、")}。确认无误后点击保存并发布。`
+        ? `已用 ${data.suggestion.sourceProviders.join(" / ") || providerLabel} 覆盖补全《${title}》：${fields.join("、")}。确认无误后点击保存并发布。`
         : `未找到可安全应用到《${title}》的补全字段。`);
     } catch (error) {
       setStatus(error instanceof Error ? `自动补全失败：${error.message}` : "自动补全失败，请检查 TMDB Key 或内容服务");
@@ -1252,9 +1273,9 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       {activeMode === "library" ? (
         <div className="rounded-3xl border border-border bg-background p-5 shadow-sm">
           <div className="mb-5 overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
-            <div className="relative grid gap-4 p-4 md:grid-cols-[1fr_1fr_150px_auto] md:items-end">
+            <div className="relative grid gap-4 p-4 md:grid-cols-[1fr_1fr_150px_150px_auto] md:items-end">
               <div className="absolute -right-16 -top-20 size-48 rounded-full bg-primary/10 blur-3xl" />
-              <div className="relative md:col-span-4">
+              <div className="relative md:col-span-5">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
                     <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-black tracking-widest text-primary">
@@ -1265,7 +1286,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="rounded-2xl border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground">
-                      自动抓取：Bilibili / Bangumi / Jikan / TMDB
+                      自动抓取：TMDB / Bangumi / 豆瓣 / Bilibili
                     </div>
                     <button onClick={() => setShowScraperSettings((value) => !value)} className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-background px-3 py-2 text-xs font-black text-foreground transition-colors hover:bg-muted">
                       <Settings className="size-3.5" /> 刮削设置
@@ -1275,7 +1296,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
               </div>
 
               {showScraperSettings && (
-                <div className="relative rounded-2xl border border-border bg-background/80 p-3 md:col-span-4">
+                <div className="relative rounded-2xl border border-border bg-background/80 p-3 md:col-span-5">
                   <div className="mb-3 flex items-center gap-2 text-sm font-black text-foreground">
                     <KeyRound className="size-4 text-primary" /> API 与反代配置
                   </div>
@@ -1300,9 +1321,18 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   {(["movie", "anime", "ova", "series", "short", "other"] as ScreeningSourceItem["type"][]).map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-muted-foreground">数据源</span>
+                <select value={scrapeProviderFilter} onChange={(event) => setScrapeProviderFilter(event.target.value as MediaProviderFilter)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                  {providerFilters.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
+                </select>
+              </label>
               <button onClick={scrapeMedia} disabled={isScraping} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-bold text-background shadow-sm transition-colors hover:bg-foreground/90 disabled:opacity-50">
                 <Search className={cn("size-4", isScraping && "animate-spin")} /> {isScraping ? "抓取中" : "搜索抓取"}
               </button>
+              <div className="text-xs font-bold text-muted-foreground md:col-span-5">
+                {providerFilters.find((item) => item.value === scrapeProviderFilter)?.hint}
+              </div>
             </div>
 
             {scrapeResults.length > 0 && (
@@ -1732,13 +1762,19 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   {editingLibraryItem.posterUrl ? <img src={editingLibraryItem.posterUrl} alt={editingLibraryItem.title} className="aspect-[2/3] w-full object-cover" /> : <div className="flex aspect-[2/3] items-center justify-center px-4 text-center text-sm font-black text-muted-foreground">暂无海报</div>}
                 </div>
                 <ImageUploadField label="海报" value={editingLibraryItem.posterUrl || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { posterUrl: value })} admin readOnly={readOnly} scope="screening-poster" compact />
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[12px] font-bold text-muted-foreground">补全来源</span>
+                  <select value={metadataProviderFilter} onChange={(event) => setMetadataProviderFilter(event.target.value as MediaProviderFilter)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
+                    {providerFilters.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
+                  </select>
+                </label>
                 <button
                   type="button"
                   onClick={() => { void completeLibraryItemMetadata(editingLibraryItem, editingLibraryIndex); }}
                   disabled={readOnly || isScraping || isSaving}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-black text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
                 >
-                  <Sparkles className={cn("size-4", isScraping && "animate-spin")} /> TMDB 自动补全
+                  <Sparkles className={cn("size-4", isScraping && "animate-spin")} /> 自动补全元数据
                 </button>
                 <div className="rounded-2xl border border-border bg-card p-3 text-xs font-bold text-muted-foreground">
                   <div>入库序号：<span className="text-foreground">{stableLibraryNumbers.get(editingLibraryItem.id) || editingLibraryIndex + 1}</span></div>
