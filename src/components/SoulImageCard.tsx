@@ -1,7 +1,10 @@
 import { Heart, Eye, Crown, HeartPulse, Clock } from "lucide-react";
+import { useMemo } from "react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
+import { OptimizedImage } from "./OptimizedImage";
+import { extractAssetIdFromUrl, getImageSrcSet, getImageUrl } from "../content/client";
 
 export interface Soul {
   id: number | string;
@@ -29,6 +32,21 @@ interface SoulImageCardProps {
 export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
   const { t } = useThemeLanguage();
 
+  const imageProps = useMemo(() => {
+    if (!soul.avatarSrc) return null;
+
+    const assetId = extractAssetIdFromUrl(soul.avatarSrc);
+    if (assetId) {
+      return {
+        src: getImageUrl(assetId, { w: 400 }),
+        srcSet: getImageSrcSet(assetId),
+        sizes: "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+      };
+    }
+
+    return { src: soul.avatarSrc };
+  }, [soul.avatarSrc]);
+
   return (
     <div className={cn(
       "break-inside-avoid group flex w-full flex-col rounded-xl border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer overflow-hidden",
@@ -47,8 +65,17 @@ export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
         <div className="relative z-10 w-full flex flex-col items-center">
           <div className="relative w-full">
             <div className="w-full flex items-center justify-center">
-              {soul.avatarSrc ? (
-                <img src={soul.avatarSrc} alt={soul.name} className="w-full h-auto object-cover" />
+              {imageProps ? (
+                <OptimizedImage
+                  src={imageProps.src}
+                  alt={soul.name}
+                  className="w-full"
+                  aspectRatio="1/1"
+                  fallbackColor={soul.bannerColor}
+                  fallbackText={soul.avatarInitials}
+                  srcSet={imageProps.srcSet}
+                  sizes={imageProps.sizes}
+                />
               ) : (
                 <div className="w-full aspect-square flex items-center justify-center bg-primary/10">
                   <span className="text-4xl font-semibold text-primary">{soul.avatarInitials}</span>

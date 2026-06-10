@@ -1,12 +1,13 @@
 import express from "express";
 import multer from "multer";
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, rename, statfs, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, statfs, writeFile, access } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { Pool } from "pg";
+import { generateThumbnails, getThumbnailUrls, detectBestFormat } from "./image-store";
 import { defaultHomeFaq, defaultHomeHero } from "../src/content/defaults/home";
 import { defaultGamingMain } from "../src/content/defaults/gaming";
 import { defaultTalksContent } from "../src/content/defaults/talks";
@@ -2388,18 +2389,34 @@ async function storeImageObject(file: Express.Multer.File, scope: string) {
 async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContext | null, scope: string) {
   const stored = await storeImageObject(file, scope);
   const now = new Date().toISOString();
+  const assetId = `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  let thumbnailUrls: Record<string, string> = {};
+  try {
+    const thumbs = await generateThumbnails(file.buffer, assetId, dataDir);
+    const publicBase = runtimeConfig.objectStoragePublicBaseUrl || `http://localhost:${runtimeConfig.port}`;
+    thumbnailUrls = getThumbnailUrls(assetId, publicBase);
+  } catch {
+    // thumbnail generation is best-effort, don't fail the upload
+  }
+
   const asset = {
-    id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: assetId,
     ownerId: auth?.user.id,
     kind: "image" as const,
     url: stored.url,
-    thumbnailUrl: stored.url,
+    thumbnailUrl: thumbnailUrls["400w"] || stored.url,
     originalName: file.originalname,
     mimeType: file.mimetype,
     fileSize: file.size,
     hash: sha256Hex(file.buffer),
     status: "published" as const,
-    metadata: { storage: stored.storage, objectKey: stored.key, scope },
+    metadata: {
+      storage: stored.storage,
+      objectKey: stored.key,
+      scope,
+      thumbnails: thumbnailUrls
+    },
     createdAt: now,
     updatedAt: now
   };
@@ -3595,6 +3612,69 @@ app.get("/api/public/image-proxy", async (req, res) => {
   } catch {
     res.status(400).json({ error: "Invalid image URL" });
   }
+});
+
+app.get("/api/public/images/:id", async (req, res) => {
+  const imageId = trimText(req.params.id, 120);
+  if (!imageId) {
+    res.status(400).json({ success: false, message: "Image ID is required", images: [] });
+    return;
+  }
+
+  const width = Math.min(Math.max(Number(req.query.w) || 400, 100), 2000);
+  const formatParam = trimText(req.query.format, 10) || "auto";
+  const returnType = trimText(req.query.return, 10) || "json";
+  const bestFormat = formatParam !== "auto" ? formatParam : detectBestFormat(req.headers.accept);
+
+  let thumbnailUrl: string | null = null;
+  let originalUrl: string | null = null;
+
+  if (db) {
+    try {
+      await ensureDatabaseSchema();
+      const database = requireDatabase();
+      const result = await database.query(
+        "select url, metadata from media_assets where id = $1 and status = 'published' limit 1",
+        [imageId]
+      );
+      if (result.rowCount) {
+        const row = result.rows[0];
+        originalUrl = row.url;
+        const meta = typeof row.metadata === "object" && row.metadata ? row.metadata : {};
+        const thumbnails = (meta.thumbnails || {}) as Record<string, string>;
+
+        const candidateWidths = [150, 400, 800].filter((w) => w >= width);
+        const targetWidth = candidateWidths.length > 0 ? candidateWidths[0] : 800;
+        thumbnailUrl = thumbnails[`${targetWidth}w`] || null;
+      }
+    } catch {
+      // database lookup best-effort
+    }
+  }
+
+  const serveUrl = thumbnailUrl || originalUrl;
+
+  if (!serveUrl) {
+    res.status(404).json({ success: false, message: "Image not found", images: [] });
+    return;
+  }
+
+  if (returnType === "redirect") {
+    res.redirect(302, serveUrl);
+    return;
+  }
+
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.json({
+    success: true,
+    width,
+    format: bestFormat,
+    url: serveUrl,
+    originalUrl,
+    thumbnailUrl,
+    detectedFormat: bestFormat,
+    imageId
+  });
 });
 
 app.post("/api/public/media/upload", publicWriteLimit, uploadImageFile, async (req, res) => {

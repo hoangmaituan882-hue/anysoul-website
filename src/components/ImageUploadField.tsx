@@ -4,6 +4,7 @@ import { Image, Link, Loader2, Upload } from "lucide-react";
 import { uploadImageAsset } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
+import { OptimizedImage } from "./OptimizedImage";
 
 type ImageUploadFieldProps = {
   label: string;
@@ -107,7 +108,7 @@ export function ImageUploadField({ label, value, onChange, admin = false, readOn
           )}
         >
           {value ? (
-            <img src={value} alt="" className="size-full object-cover" />
+            <OptimizedImage src={value} alt="" className="size-full" decoding="sync" />
           ) : (
             <div className="flex size-full items-center justify-center text-muted-foreground">
               <Image className={compact ? "size-5" : "size-7"} />

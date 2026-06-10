@@ -4,6 +4,28 @@ const inferredApiBase = typeof window === "undefined" ? "http://localhost:8787" 
 
 export const CONTENT_API_BASE = import.meta.env.VITE_CONTENT_API_URL || import.meta.env.VITE_CONTENT_API_BASE || inferredApiBase;
 
+export function getImageUrl(assetId: string, options?: { w?: number; format?: string }) {
+  const params = new URLSearchParams();
+  if (options?.w) params.set("w", String(options.w));
+  if (options?.format) params.set("format", options.format);
+  const qs = params.toString();
+  return `${CONTENT_API_BASE}/api/public/images/${encodeURIComponent(assetId)}${qs ? `?${qs}` : ""}`;
+}
+
+export function getImageSrcSet(assetId: string, widths: number[] = [150, 400, 800]) {
+  return widths
+    .map((w) => `${getImageUrl(assetId, { w })}&return=redirect ${w}w`)
+    .join(", ");
+}
+
+export function extractAssetIdFromUrl(url: string): string | null {
+  const match = url.match(/\/?media-(\d+)-[a-z0-9]+/i);
+  if (match) return match[0].replace(/^\//, "");
+  const thumbMatch = url.match(/thumbs\/(media-\d+-[a-z0-9]+)_/i);
+  if (thumbMatch) return thumbMatch[1];
+  return null;
+}
+
 export async function fetchBootstrap() {
   const response = await fetch(`${CONTENT_API_BASE}/api/public/bootstrap`);
 
