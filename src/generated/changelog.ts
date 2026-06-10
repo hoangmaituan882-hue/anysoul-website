@@ -31,6 +31,33 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "170d2bd",
+    "hash": "170d2bdd807e6a7b4e02652d1f7541f1a5bed05c",
+    "date": "2026-06-10",
+    "title": "Refactor talks detail data and editor",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2。",
+    "files": [
+      "src/components/TalkModal.tsx",
+      "src/content/defaults/talks.ts",
+      "src/content/types.ts",
+      "src/generated/changelog.ts",
+      "src/pages/Talks.tsx",
+      "src/workspace/TalksAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Refactor talks detail data and editor",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 1、工作台 1、内容数据 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "8bccb12",
     "hash": "8bccb12912d0db10b4a5edf347f0b268767e950f",
     "date": "2026-06-10",
@@ -1071,32 +1098,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "26b9f71",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "refactor: 优化移动端导航、清理VHS磁带播放器",
-        "description": "- 手机端 Header 标签改为横向可滑动胶囊，补充放映会/文章/杂谈/游戏/图库/关于/工作台入口\n- 登录/退出按钮改为头像图标/首字母图标\n- 删除磁带播放器入口和 VHSModal 接入\n- 工作台左侧导航移除无作用占位图标，新增文章和关于跳转\n- 手机端工作台胶囊导航保持横向滚动\n- 优化首页手写字手机端尺寸\n- 删除放映会'从夯到拉'板块\n- 清理所有 VHS 磁带组件和数据文件"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、组件 9、内容数据 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "34b7810",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1116,7 +1123,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1136,7 +1143,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1156,7 +1163,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -1176,7 +1183,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1196,7 +1203,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -1216,7 +1223,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1226,6 +1233,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "工作台 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "170d2bd",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "Refactor talks detail data and editor",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、组件 1、工作台 1、内容数据 2",
         "description": ""
       }
     ]

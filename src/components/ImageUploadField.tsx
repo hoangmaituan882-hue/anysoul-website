@@ -16,14 +16,20 @@ type ImageUploadFieldProps = {
   compact?: boolean;
 };
 
-const supportedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
-const acceptedImageTypes = "image/jpeg,image/png,image/webp,image/gif,image/avif";
+const supportedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "application/octet-stream"]);
+const acceptedImageTypes = "image/jpeg,image/png,image/webp,image/gif,image/avif,.jpg,.jpeg,.png,.webp,.gif,.avif";
 const recommendedMaxBytes = 15 * 1024 * 1024;
+const supportedExtensions = /\.(jpe?g|png|webp|gif|avif)$/i;
 
 function formatFileSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
   if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
   return `${bytes}B`;
+}
+
+function looksLikeSupportedImage(file: File) {
+  if (file.type && supportedImageTypes.has(file.type)) return true;
+  return supportedExtensions.test(file.name);
 }
 
 export function ImageUploadField({ label, value, onChange, admin = false, readOnly = false, scope = "media", compact = false }: ImageUploadFieldProps) {
@@ -38,15 +44,15 @@ export function ImageUploadField({ label, value, onChange, admin = false, readOn
   async function uploadFile(file?: File) {
     if (!file) return;
 
-    if (!supportedImageTypes.has(file.type)) {
+    if (!looksLikeSupportedImage(file)) {
       setStatusTone("error");
-      setStatus("格式不支持，请上传 JPG、PNG、WebP、GIF 或 AVIF 图片");
+      setStatus("格式不支持，请上传 JPG、PNG、WebP、GIF 或 AVIF 图片。");
       return;
     }
 
     if (file.size > recommendedMaxBytes) {
       setStatusTone("error");
-      setStatus(`图片过大（${formatFileSize(file.size)}），建议压缩到 15MB 以内后再上传`);
+      setStatus(`图片过大（${formatFileSize(file.size)}），建议压缩到 15MB 以内后再上传。`);
       return;
     }
 
@@ -58,7 +64,7 @@ export function ImageUploadField({ label, value, onChange, admin = false, readOn
       const result = await uploadImageAsset(authFetch, file, { admin, scope });
       onChange(result.asset.url);
       setStatusTone("success");
-      setStatus(result.storage === "object" ? "已上传到对象存储" : "已上传到服务器本地存储");
+      setStatus(result.storage === "object" ? "已上传到对象存储。" : "已上传到服务器本地存储。");
     } catch (error) {
       setStatusTone("error");
       setStatus(error instanceof Error ? error.message : "上传失败");
@@ -130,7 +136,7 @@ export function ImageUploadField({ label, value, onChange, admin = false, readOn
       </div>
       {!compact && !readOnly ? (
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
-          <Link className="size-3" /> 支持点击、拖拽上传，JPG/PNG/WebP/GIF/AVIF，建议 15MB 内
+          <Link className="size-3" /> 支持点击、拖拽上传，JPG/PNG/WebP/GIF/AVIF，建议 15MB 内。
         </div>
       ) : null}
       <input

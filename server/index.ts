@@ -2173,21 +2173,9 @@ function rowToServerAlert(row: any): ServerAlert {
   };
 }
 
-const localUploadDir = path.join(dataDir, "uploads");
-const imageUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: runtimeConfig.mediaUploadMaxBytes },
-  fileFilter: (_req, file, callback) => {
-    if (!allowedImageMimeTypes.has(file.mimetype)) {
-      callback(new Error("Only JPEG, PNG, WebP, GIF and AVIF images can be uploaded"));
-      return;
-    }
+type SupportedImageMimeType = "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "image/avif";
 
-    callback(null, true);
-  }
-});
-
-const allowedImageMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+const allowedImageMimeTypes = new Set<SupportedImageMimeType>(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
 const imageExtensions: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -2195,6 +2183,23 @@ const imageExtensions: Record<string, string> = {
   "image/gif": "gif",
   "image/avif": "avif"
 };
+
+const localUploadDir = path.join(dataDir, "uploads");
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: runtimeConfig.mediaUploadMaxBytes },
+  fileFilter: (_req, file, callback) => {
+    // Some exported images have AVIF/WebP bytes but keep a .jpg filename.
+    // Multer only sees the declared MIME here; the real signature is checked
+    // after the file is in memory.
+    if (!allowedImageMimeTypes.has(file.mimetype as SupportedImageMimeType) && file.mimetype !== "application/octet-stream") {
+      callback(new Error("Only JPEG, PNG, WebP, GIF and AVIF images can be uploaded"));
+      return;
+    }
+
+    callback(null, true);
+  }
+});
 
 function uploadImageFile(req: express.Request, res: express.Response, next: express.NextFunction) {
   imageUpload.single("file")(req, res, (error) => {
@@ -2212,20 +2217,20 @@ function uploadImageFile(req: express.Request, res: express.Response, next: expr
   });
 }
 
-function hasValidImageSignature(buffer: Buffer, mimeType: string) {
-  if (mimeType === "image/jpeg") return buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-  if (mimeType === "image/png") return buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
-  if (mimeType === "image/webp") return buffer.length > 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
-  if (mimeType === "image/avif") {
+function detectImageMimeType(buffer: Buffer): SupportedImageMimeType | null {
+  if (buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  if (buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
+  if (buffer.length > 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  if (buffer.length > 12) {
     const brands = buffer.subarray(4, Math.min(buffer.length, 32)).toString("ascii");
-    return brands.includes("ftypavif") || brands.includes("ftypavis");
+    if (brands.includes("ftypavif") || brands.includes("ftypavis")) return "image/avif";
   }
-  if (mimeType === "image/gif") {
+  if (buffer.length > 6) {
     const header = buffer.subarray(0, 6).toString("ascii");
-    return header === "GIF87a" || header === "GIF89a";
+    if (header === "GIF87a" || header === "GIF89a") return "image/gif";
   }
 
-  return false;
+  return null;
 }
 
 function safeObjectSegment(value: string) {
@@ -2238,11 +2243,11 @@ function safeObjectSegment(value: string) {
     .slice(0, 60) || "image";
 }
 
-function buildMediaObjectKey(file: Express.Multer.File, scope: string) {
+function buildMediaObjectKey(file: Express.Multer.File, scope: string, mimeType = file.mimetype) {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
-  const extension = imageExtensions[file.mimetype] || "bin";
+  const extension = imageExtensions[mimeType] || "bin";
   const prefix = runtimeConfig.objectStoragePrefix ? `${runtimeConfig.objectStoragePrefix}/` : "";
   const safeScope = safeObjectSegment(scope || "media");
   const baseName = safeObjectSegment(file.originalname || "image");
@@ -2339,15 +2344,16 @@ async function putS3CompatibleObject(key: string, body: Buffer, contentType: str
 }
 
 async function storeImageObject(file: Express.Multer.File, scope: string) {
-  if (!allowedImageMimeTypes.has(file.mimetype) || !hasValidImageSignature(file.buffer, file.mimetype)) {
+  const detectedMimeType = detectImageMimeType(file.buffer);
+  if (!detectedMimeType || !allowedImageMimeTypes.has(detectedMimeType)) {
     throw new Error("Image signature does not match a supported image format");
   }
 
-  const key = buildMediaObjectKey(file, scope);
+  const key = buildMediaObjectKey(file, scope, detectedMimeType);
 
   if (runtimeConfig.objectStorageDriver === "s3" || runtimeConfig.objectStorageDriver === "r2") {
-    const url = await putS3CompatibleObject(key, file.buffer, file.mimetype);
-    return { key, url, storage: "object" as const };
+    const url = await putS3CompatibleObject(key, file.buffer, detectedMimeType);
+    return { key, url, storage: "object" as const, mimeType: detectedMimeType };
   }
 
   const targetPath = path.join(localUploadDir, ...key.split("/"));
@@ -2358,7 +2364,7 @@ async function storeImageObject(file: Express.Multer.File, scope: string) {
   await mkdir(path.dirname(targetPath), { recursive: true });
   await writeFile(targetPath, file.buffer);
   const publicBase = runtimeConfig.objectStoragePublicBaseUrl || `http://localhost:${runtimeConfig.port}`;
-  return { key, url: `${publicBase.replace(/\/$/, "")}/uploads/${s3EncodePath(key)}`, storage: "local" as const };
+  return { key, url: `${publicBase.replace(/\/$/, "")}/uploads/${s3EncodePath(key)}`, storage: "local" as const, mimeType: detectedMimeType };
 }
 
 async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContext | null, scope: string) {
@@ -2382,7 +2388,7 @@ async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContex
     url: stored.url,
     thumbnailUrl: thumbnailUrls["400w"] || stored.url,
     originalName: file.originalname,
-    mimeType: file.mimetype,
+    mimeType: stored.mimeType,
     fileSize: file.size,
     hash: sha256Hex(file.buffer),
     status: "published" as const,
@@ -2407,6 +2413,12 @@ async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContex
   }
 
   return asset;
+}
+
+function sendUploadFailure(res: express.Response, error: unknown) {
+  console.error("Image upload failed", error);
+  const detail = error instanceof Error ? error.message : "Unknown upload error";
+  res.status(500).json({ error: `Image upload failed: ${detail}` });
 }
 
 function cleanPostTags(value: unknown) {
@@ -3540,8 +3552,12 @@ app.post("/api/me/media/upload", requireSignedInMiddleware, publicWriteLimit, up
   }
 
   const scope = trimText(req.body?.scope, 80) || "user";
-  const asset = await saveMediaAsset(file, auth, scope);
-  res.json({ asset, storage: asset.metadata.storage });
+  try {
+    const asset = await saveMediaAsset(file, auth, scope);
+    res.json({ asset, storage: asset.metadata.storage });
+  } catch (error) {
+    sendUploadFailure(res, error);
+  }
 });
 
 app.get("/api/public/image-proxy", async (req, res) => {
@@ -3651,8 +3667,12 @@ app.post("/api/public/media/upload", publicWriteLimit, uploadImageFile, async (r
   }
 
   const scope = trimText(req.body?.scope, 80) || "feedback";
-  const asset = await saveMediaAsset(file, null, scope);
-  res.json({ asset, storage: asset.metadata.storage });
+  try {
+    const asset = await saveMediaAsset(file, null, scope);
+    res.json({ asset, storage: asset.metadata.storage });
+  } catch (error) {
+    sendUploadFailure(res, error);
+  }
 });
 
 app.get("/api/admin/users", async (req, res) => {
@@ -3918,8 +3938,12 @@ app.post("/api/admin/media/upload", uploadImageFile, async (req, res) => {
   }
 
   const scope = trimText(req.body?.scope, 80) || "admin";
-  const asset = await saveMediaAsset(file, auth, scope);
-  res.json({ asset, storage: asset.metadata.storage });
+  try {
+    const asset = await saveMediaAsset(file, auth, scope);
+    res.json({ asset, storage: asset.metadata.storage });
+  } catch (error) {
+    sendUploadFailure(res, error);
+  }
 });
 
 app.get("/api/public/bootstrap", async (_req, res) => {

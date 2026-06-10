@@ -159,6 +159,21 @@ create table if not exists media_assets (
   updated_at timestamptz not null default now()
 );
 
+alter table media_assets add column if not exists owner_id text references auth_users(id) on delete set null;
+alter table media_assets add column if not exists kind text not null default 'image';
+alter table media_assets add column if not exists url text;
+alter table media_assets add column if not exists thumbnail_url text;
+alter table media_assets add column if not exists original_name text;
+alter table media_assets add column if not exists mime_type text;
+alter table media_assets add column if not exists file_size bigint;
+alter table media_assets add column if not exists width integer;
+alter table media_assets add column if not exists height integer;
+alter table media_assets add column if not exists hash text;
+alter table media_assets add column if not exists status text not null default 'published';
+alter table media_assets add column if not exists metadata jsonb not null default '{}';
+alter table media_assets add column if not exists created_at timestamptz not null default now();
+alter table media_assets add column if not exists updated_at timestamptz not null default now();
+
 create index if not exists media_assets_owner_id_idx on media_assets(owner_id);
 create index if not exists media_assets_status_idx on media_assets(status);
 
