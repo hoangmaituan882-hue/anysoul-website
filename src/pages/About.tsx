@@ -1,9 +1,7 @@
-import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { GraduationCap, History, MessageSquareText, Search, Send, ShieldAlert, Sparkles, Wrench } from "lucide-react";
-import { appendLocalFeedbackSubmission, CONTENT_API_BASE } from "../content/client";
-import type { FeedbackSubmission } from "../content/types";
-import { useAuth } from "../contexts/AuthContext";
+import { GraduationCap, History, MessageSquareText, Search, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+import { FeedbackChannelForm } from "../components/FeedbackChannelForm";
 import { cn } from "../lib/utils";
 
 const aboutData = [
@@ -76,56 +74,10 @@ const aboutData = [
 ];
 
 export function About() {
-  const { user } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
-  const [feedback, setFeedback] = useState({ category: "content", title: "", content: "", contact: "" });
-  const [feedbackStatus, setFeedbackStatus] = useState("");
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const active = aboutData[activeIdx];
   const ActiveIcon = active.icon;
-
-  async function submitFeedback(event: FormEvent) {
-    event.preventDefault();
-    setFeedbackStatus("");
-
-    if (!feedback.title.trim() || feedback.content.trim().length < 6) {
-      setFeedbackStatus("请填写标题，并至少写 6 个字的具体意见。");
-      return;
-    }
-
-    setIsSubmittingFeedback(true);
-    try {
-      const response = await fetch(`${CONTENT_API_BASE}/api/public/feedback-submissions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...feedback,
-          submitter: user?.name || "游客"
-        })
-      });
-      const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error || "提交失败");
-      setFeedback({ category: "content", title: "", content: "", contact: "" });
-      setFeedbackStatus("已提交到后台待办，管理员会在工作台审核处理。");
-    } catch {
-      const localSubmission: FeedbackSubmission = {
-        id: `local-feedback-${Date.now()}`,
-        category: feedback.category as FeedbackSubmission["category"],
-        title: feedback.title,
-        content: feedback.content,
-        contact: feedback.contact || undefined,
-        submitter: user?.name || "游客",
-        status: "pending",
-        createdAt: new Date().toISOString()
-      };
-      appendLocalFeedbackSubmission(localSubmission);
-      setFeedback({ category: "content", title: "", content: "", contact: "" });
-      setFeedbackStatus("内容服务暂不可用，已先保存到本地工作台待办。刷新工作台即可查看。");
-    } finally {
-      setIsSubmittingFeedback(false);
-    }
-  }
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6">
@@ -198,13 +150,7 @@ export function About() {
                 <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-muted-foreground sm:text-base">{active.body}</p>
 
                 {active.id === "feedback" ? (
-                  <FeedbackForm
-                    feedback={feedback}
-                    setFeedback={setFeedback}
-                    status={feedbackStatus}
-                    isSubmitting={isSubmittingFeedback}
-                    onSubmit={submitFeedback}
-                  />
+                  <FeedbackChannelForm source="about" />
                 ) : active.id === "changelog" ? (
                   <div className="mt-auto pt-10">
                     <a href="#changelog" className="inline-flex items-center gap-2 rounded-2xl bg-foreground px-5 py-3 text-sm font-black text-background shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]">
@@ -231,56 +177,5 @@ export function About() {
         </div>
       </section>
     </div>
-  );
-}
-
-function FeedbackForm({
-  feedback,
-  setFeedback,
-  status,
-  isSubmitting,
-  onSubmit
-}: {
-  feedback: { category: string; title: string; content: string; contact: string };
-  setFeedback: Dispatch<SetStateAction<{ category: string; title: string; content: string; contact: string }>>;
-  status: string;
-  isSubmitting: boolean;
-  onSubmit: (event: FormEvent) => void;
-}) {
-  return (
-    <form onSubmit={onSubmit} className="mt-8 grid gap-3 rounded-[1.5rem] border border-border bg-card p-4 text-left sm:p-5">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[170px_1fr]">
-        <label className="grid gap-1.5">
-          <span className="text-xs font-bold text-muted-foreground">类型</span>
-          <select value={feedback.category} onChange={(event) => setFeedback((current) => ({ ...current, category: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-            <option value="content">内容修正</option>
-            <option value="copyright">版权/权益</option>
-            <option value="bug">问题反馈</option>
-            <option value="feature">功能建议</option>
-            <option value="other">其他</option>
-          </select>
-        </label>
-        <label className="grid gap-1.5">
-          <span className="text-xs font-bold text-muted-foreground">标题</span>
-          <input value={feedback.title} onChange={(event) => setFeedback((current) => ({ ...current, title: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="例如：某张图片来源需要补充说明" />
-        </label>
-      </div>
-
-      <label className="grid gap-1.5">
-        <span className="text-xs font-bold text-muted-foreground">详细意见</span>
-        <textarea value={feedback.content} onChange={(event) => setFeedback((current) => ({ ...current, content: event.target.value }))} rows={4} className="resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium leading-relaxed outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="请写明页面位置、问题描述、希望如何处理。" />
-      </label>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
-        <label className="grid gap-1.5">
-          <span className="text-xs font-bold text-muted-foreground">联系方式（可选）</span>
-          <input value={feedback.contact} onChange={(event) => setFeedback((current) => ({ ...current, contact: event.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15" placeholder="邮箱 / B站 / 其他联系方式" />
-        </label>
-        <button disabled={isSubmitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
-          <Send className="size-4" /> {isSubmitting ? "提交中..." : "提交意见"}
-        </button>
-      </div>
-      {status ? <div className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold text-muted-foreground">{status}</div> : null}
-    </form>
   );
 }

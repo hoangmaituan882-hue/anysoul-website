@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import { useState, useRef, useEffect, useMemo, type UIEvent } from "react";
-import { ChevronLeft, ChevronRight, Play, Star, AlertTriangle, MonitorPlay, Clock, History, Film, Activity, Users, ListTodo, Plus, CheckCircle2, ThumbsUp, X, Mail, Database, Search, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Star, AlertTriangle, MonitorPlay, Clock, History, Film, Activity, Users, ListTodo, Plus, CheckCircle2, ThumbsUp, X, Database, Search, Shuffle } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { appendLocalSourceSubmission, CONTENT_API_BASE } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { useContent } from "../content/useContent";
+import { FeedbackChannelForm } from "../components/FeedbackChannelForm";
 import {
   defaultScreeningLibrary,
 } from "../content/defaults/screeningLibrary";
@@ -1991,7 +1992,7 @@ export function Screenings() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-background rounded-2xl p-6 shadow-xl w-full max-w-sm border"
+              className="bg-background rounded-2xl p-6 shadow-xl w-full max-w-xl border"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold">提名新电影</h3>
@@ -1999,19 +2000,20 @@ export function Screenings() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                想要提名新的影片加入待定池？或者发现图库资料有缺漏？<br className="my-1"/>
-                请发送邮件给站主邮箱进行投稿补缺。
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                提名电影、动画或补充片源资料会直接进入工作台意见待办，支持上传海报、截图或参考图。
               </p>
 
-              <div className="bg-muted/50 p-3 rounded-lg flex items-center justify-center gap-2 mb-6">
-                 <Mail className="w-4 h-4 text-blue-500" />
-                 <span className="font-mono text-sm font-semibold selection:bg-blue-200">22552255@qq.com</span>
-              </div>
-
-              <button onClick={() => setIsNominateModalOpen(false)} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2.5 rounded-xl transition-colors">
-                我知道了
-              </button>
+              <FeedbackChannelForm
+                compact
+                source="screening_nomination"
+                metadata={{ intent: "movie_nomination" }}
+                initialTitle="提名新电影/动画："
+                titlePlaceholder="例如：提名《某部电影》"
+                contentPlaceholder="请填写片名、播放链接、推荐理由或需要补充的资料。"
+                submitLabel="提交提名"
+                onSubmitted={() => setIsNominateModalOpen(false)}
+              />
             </motion.div>
           </div>
         )}

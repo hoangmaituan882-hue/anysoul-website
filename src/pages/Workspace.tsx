@@ -74,6 +74,10 @@ type PendingUserSubmission = {
   content: string;
   contact?: string;
   submitter?: string;
+  submitterRole?: "visitor" | "user" | "admin" | "owner";
+  sourceLabel?: string;
+  imageUrls?: string[];
+  reviewNote?: string;
   status: "pending" | "approved" | "rejected";
   createdAt: string;
   reviewedAt?: string;
@@ -162,11 +166,16 @@ function describeWorkspaceEvent(event: WorkspaceEvent) {
   return { action: "工作台记录", detail: message, tone: "sky" as const, decision: "changed" as const };
 }
 
-const todoFilterLabels: Record<"all" | "pending" | "approved" | "rejected", string> = {
+type TodoFilter = "all" | "pending" | "approved" | "rejected" | "visitor" | "user" | "admin";
+
+const todoFilterLabels: Record<TodoFilter, string> = {
   all: "全部",
-  pending: "进行中",
+  pending: "待处理",
   approved: "已同意",
-  rejected: "已拒绝"
+  rejected: "已拒绝",
+  visitor: "游客",
+  user: "用户",
+  admin: "管理员"
 };
 
 const submissionStatusLabels: Record<"pending" | "approved" | "rejected", string> = {
@@ -253,7 +262,7 @@ function ResizeHandle({
 export function Workspace() {
   const [activeTab, setActiveTab] = useLocalStorage<'content' | 'posts' | 'screenings' | 'talks' | 'games' | 'plaza' | 'users' | 'monitor'>('workspace-activeTab', 'content');
   const [todoView, setTodoView] = useLocalStorage<'list' | 'calendar' | 'monitor'>('workspace-todoView', 'list');
-  const [todoFilter, setTodoFilter] = useLocalStorage<'all' | 'pending' | 'approved' | 'rejected'>('workspace-todoFilter', 'all');
+  const [todoFilter, setTodoFilter] = useLocalStorage<TodoFilter>('workspace-todoFilter', 'all');
   const [feedbackTodoOrder, setFeedbackTodoOrder] = useLocalStorage<string[]>('workspace-feedback-todo-order', []);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsPage, setSettingsPage] = useState<"main" | "account">("main");
@@ -301,6 +310,10 @@ export function Workspace() {
       content: feedback.content,
       contact: feedback.contact,
       submitter: feedback.submitter,
+      submitterRole: feedback.submitterRole || "visitor",
+      sourceLabel: feedback.source === "screening_nomination" ? "电影提名" : feedback.source === "workspace" ? "工作台意见" : feedback.source === "other" ? "其他入口" : "关于页意见通道",
+      imageUrls: feedback.imageUrls || [],
+      reviewNote: feedback.reviewNote,
       status: feedback.status,
       createdAt: feedback.createdAt,
       reviewedAt: feedback.reviewedAt,
@@ -310,7 +323,13 @@ export function Workspace() {
   const pendingSubmissions = useMemo(() => {
     const orderIndex = new Map<string, number>(feedbackTodoOrder.map((id, index) => [id, index]));
     return allUserSubmissions
-      .filter((submission) => todoFilter === "all" || submission.status === todoFilter)
+      .filter((submission) => {
+        if (todoFilter === "all") return true;
+        if (todoFilter === "visitor") return (submission.submitterRole || "visitor") === "visitor";
+        if (todoFilter === "user") return submission.submitterRole === "user";
+        if (todoFilter === "admin") return submission.submitterRole === "admin" || submission.submitterRole === "owner";
+        return submission.status === todoFilter;
+      })
       .sort((a, b) => {
         const aIndex = orderIndex.get(a.id);
         const bIndex = orderIndex.get(b.id);
@@ -474,13 +493,13 @@ export function Workspace() {
       const items = Array.isArray(draft?.items) ? draft.items : [];
       const feedbackItems = Array.isArray(feedbackDraft?.items) ? feedbackDraft.items : [];
       const nextSourceItems = mergeSubmissionsById(items.length ? items : defaultScreeningSourceSubmissions.items, getLocalSourceSubmissions());
-      const nextFeedbackItems = mergeSubmissionsById(feedbackItems.length ? feedbackItems : defaultFeedbackSubmissions.items, getLocalFeedbackSubmissions());
+      const nextFeedbackItems = mergeSubmissionsById(feedbackItems, getLocalFeedbackSubmissions());
       setSourceSubmissions({ items: nextSourceItems });
       setFeedbackSubmissions({ items: nextFeedbackItems });
-      setTodoStatus(`已同步 ${nextSourceItems.filter((item) => item.status === "pending").length + nextFeedbackItems.filter((item) => item.status === "pending").length} 条待审核提交`);
+      setTodoStatus(`已同步 ${nextFeedbackItems.filter((item) => item.status === "pending").length} 条待审核意见`);
     } catch (error) {
       setSourceSubmissions({ items: mergeSubmissionsById(getLocalSourceSubmissions(), defaultScreeningSourceSubmissions.items) });
-      setFeedbackSubmissions({ items: mergeSubmissionsById(getLocalFeedbackSubmissions(), defaultFeedbackSubmissions.items) });
+      setFeedbackSubmissions({ items: getLocalFeedbackSubmissions() });
       setTodoStatus(error instanceof Error ? error.message : "待办加载失败");
     }
   }
@@ -530,7 +549,7 @@ export function Workspace() {
     }
   }
 
-  async function reviewSubmissionOnServer(submission: PendingUserSubmission, decision: "approved" | "rejected", message: string) {
+  async function reviewSubmissionOnServer(submission: PendingUserSubmission, decision: "pending" | "approved" | "rejected", message: string) {
     const response = await authFetch(`${CONTENT_API_BASE}/api/admin/submissions/${submission.kind}/${submission.id}/review`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -541,7 +560,7 @@ export function Workspace() {
     return data.entry;
   }
 
-  async function reviewSourceSubmission(submission: PendingUserSubmission, decision: "approved" | "rejected") {
+  async function reviewSourceSubmission(submission: PendingUserSubmission, decision: "pending" | "approved" | "rejected") {
     if (readOnly) {
       setTodoStatus("只读模式无法审核用户提交");
       return;
@@ -550,37 +569,38 @@ export function Workspace() {
     const reviewedAt = new Date().toISOString();
 
     setIsReviewingSubmission(true);
-    setTodoStatus(decision === "approved" ? `正在同意「${submission.title}」...` : `正在拒绝「${submission.title}」...`);
+    setTodoStatus(decision === "approved" ? `正在同意「${submission.title}」...` : decision === "rejected" ? `正在拒绝「${submission.title}」...` : `正在恢复「${submission.title}」为待处理...`);
 
     try {
       if (submission.kind === "source") {
-        const entry = await reviewSubmissionOnServer(submission, decision, `用户补充审核${decision === "approved" ? "通过" : "拒绝"}：${submission.title} / 字段 ${submission.category}`);
+        const entry = await reviewSubmissionOnServer(submission, decision, `用户补充审核${decision === "approved" ? "通过" : decision === "rejected" ? "拒绝" : "恢复待处理"}：${submission.title} / 字段 ${submission.category}`);
         const nextSubmissions = entry.draft as ScreeningSourceSubmissionsContent;
         setSourceSubmissions(nextSubmissions);
       } else {
-        const entry = await reviewSubmissionOnServer(submission, decision, `意见反馈审核${decision === "approved" ? "通过" : "拒绝"}：${submission.title} / 分类 ${submission.category}`);
+        const entry = await reviewSubmissionOnServer(submission, decision, `意见反馈审核${decision === "approved" ? "通过" : decision === "rejected" ? "拒绝" : "恢复待处理"}：${submission.title} / 分类 ${submission.category}`);
         const nextSubmissions = entry.draft as FeedbackSubmissionsContent;
         setFeedbackSubmissions(nextSubmissions);
       }
-      setSelectedSubmission((current) => current?.id === submission.id ? { ...submission, status: decision, reviewedAt } : current);
-      setTodoStatus(decision === "approved" ? "已同意，提交会从待办队列移出" : "已拒绝，提交会从待办队列移出");
+      setSelectedSubmission((current) => current?.id === submission.id ? { ...submission, status: decision, reviewedAt: decision === "pending" ? undefined : reviewedAt } : current);
+      setTodoStatus(decision === "approved" ? "已同意该意见" : decision === "rejected" ? "已拒绝该意见" : "已恢复为待处理");
       void loadWorkspaceEvents();
     } catch (error) {
       if (submission.kind === "source") {
         const nextSubmissions = {
-          items: sourceSubmissions.items.map((item) => item.id === submission.id ? { ...item, status: decision, reviewedAt } : item)
+          items: sourceSubmissions.items.map((item) => item.id === submission.id ? { ...item, status: decision, reviewedAt: decision === "pending" ? undefined : reviewedAt } : item)
         } satisfies ScreeningSourceSubmissionsContent;
         setSourceSubmissions(nextSubmissions);
         saveLocalSourceSubmissions(nextSubmissions.items);
       } else {
         const nextSubmissions = {
-          items: feedbackSubmissions.items.map((item) => item.id === submission.id ? { ...item, status: decision, reviewedAt } : item)
+          items: feedbackSubmissions.items.map((item) => item.id === submission.id ? { ...item, status: decision, reviewedAt: decision === "pending" ? undefined : reviewedAt } : item)
         } satisfies FeedbackSubmissionsContent;
         setFeedbackSubmissions(nextSubmissions);
         saveLocalFeedbackSubmissions(nextSubmissions.items);
       }
-      setSelectedSubmission((current) => current?.id === submission.id ? { ...submission, status: decision, reviewedAt } : current);
-      setTodoStatus(error instanceof Error ? `后端不可用，已在本地标记为${decision === "approved" ? "已同意" : "已拒绝"}：${error.message}` : `已在本地标记为${decision === "approved" ? "已同意" : "已拒绝"}`);
+      setSelectedSubmission((current) => current?.id === submission.id ? { ...submission, status: decision, reviewedAt: decision === "pending" ? undefined : reviewedAt } : current);
+      const localLabel = decision === "approved" ? "已同意" : decision === "rejected" ? "已拒绝" : "待处理";
+      setTodoStatus(error instanceof Error ? `后端不可用，已在本地标记为${localLabel}：${error.message}` : `已在本地标记为${localLabel}`);
     } finally {
       setIsReviewingSubmission(false);
     }
@@ -843,8 +863,16 @@ export function Workspace() {
                 </button>
                 {isTodoFilterOpen && (
                   <div className="absolute left-0 top-full z-40 mt-2 w-36 overflow-hidden rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-xl shadow-black/10 dark:shadow-black/40">
-                    {(["all", "pending", "approved", "rejected"] as const).map((filter) => {
-                      const count = filter === "all" ? allUserSubmissions.length : allUserSubmissions.filter((item) => item.status === filter).length;
+                    {(["all", "pending", "approved", "rejected", "visitor", "user", "admin"] as const).map((filter) => {
+                      const count = filter === "all"
+                        ? allUserSubmissions.length
+                        : filter === "visitor"
+                          ? allUserSubmissions.filter((item) => (item.submitterRole || "visitor") === "visitor").length
+                          : filter === "user"
+                            ? allUserSubmissions.filter((item) => item.submitterRole === "user").length
+                            : filter === "admin"
+                              ? allUserSubmissions.filter((item) => item.submitterRole === "admin" || item.submitterRole === "owner").length
+                              : allUserSubmissions.filter((item) => item.status === filter).length;
                       return (
                         <button
                           key={filter}
@@ -894,15 +922,15 @@ export function Workspace() {
                       <Reorder.Item
                         key={submission.id}
                         value={submission}
-                        onClick={() => setSelectedSubmission(submission)}
+                        onClick={() => setSelectedSubmission((current) => current?.id === submission.id ? null : submission)}
                         className={cn("flex items-start gap-2.5 group cursor-grab hover:bg-muted/40 p-2 -mx-2 rounded-lg transition-colors active:cursor-grabbing", selectedSubmission?.id === submission.id && "bg-primary/10", submission.status === "approved" && "opacity-75")}
                       >
                         <button
                           type="button"
-                          disabled={isReviewingSubmission || submission.status !== "pending"}
+                          disabled={isReviewingSubmission}
                           onClick={(event) => {
                             event.stopPropagation();
-                            if (submission.status === "pending") void reviewSourceSubmission(submission, "approved");
+                            void reviewSourceSubmission(submission, submission.status === "approved" ? "pending" : "approved");
                           }}
                           className="mt-0.5 text-muted-foreground transition-colors hover:text-emerald-500 disabled:cursor-default disabled:hover:text-muted-foreground"
                           aria-label="同意反馈待办"
@@ -920,12 +948,41 @@ export function Workspace() {
                           <div className="mt-1.5 flex flex-wrap items-center gap-2">
                             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">M/M</span>
                             <span className="flex items-center gap-1 rounded border border-amber-500/20 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                              <Bell className="size-3" /> 意见反馈
+                              <Bell className="size-3" /> {submission.sourceLabel || "意见反馈"}
                             </span>
                             <span className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">{submission.category}</span>
+                            <span className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">{todoFilterLabels[submission.submitterRole === "owner" ? "admin" : submission.submitterRole || "visitor"]}</span>
                             <span className={cn("rounded border px-1.5 py-0.5 text-[10px] font-black", submission.status === "approved" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" : submission.status === "rejected" ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300" : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300")}>{submissionStatusLabels[submission.status]}</span>
                             <span className="text-[10px] text-muted-foreground">{new Date(submission.createdAt).toLocaleDateString()}</span>
                           </div>
+                          <AnimatePresence>
+                            {selectedSubmission?.id === submission.id && (
+                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mt-3 overflow-hidden">
+                                <div className="rounded-2xl border border-border bg-background p-3 shadow-sm">
+                                  <p className="rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium leading-relaxed text-foreground/80">{submission.content}</p>
+                                  <div className="mt-2 grid gap-1 text-xs font-bold text-muted-foreground">
+                                    <div>提交者：{submission.submitter || "游客"} · {todoFilterLabels[submission.submitterRole === "owner" ? "admin" : submission.submitterRole || "visitor"]}</div>
+                                    {submission.contact ? <div>联系方式：{submission.contact}</div> : null}
+                                    <div>来源：{submission.sourceLabel || "意见反馈"} · 状态：{submissionStatusLabels[submission.status]}</div>
+                                    {submission.reviewNote ? <div className="text-rose-500">审核备注：{submission.reviewNote}</div> : null}
+                                  </div>
+                                  {submission.imageUrls?.length ? (
+                                    <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                      {submission.imageUrls.map((url) => (
+                                        <a key={url} href={url} target="_blank" rel="noreferrer" className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+                                          <img src={url} alt="意见图片" className="size-full object-cover transition-transform hover:scale-105" />
+                                        </a>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <button disabled={isReviewingSubmission} onClick={(event) => { event.stopPropagation(); void reviewSourceSubmission(submission, submission.status === "approved" ? "pending" : "approved"); }} className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50">{submission.status === "approved" ? "取消同意" : "同意"}</button>
+                                    <button disabled={isReviewingSubmission} onClick={(event) => { event.stopPropagation(); void reviewSourceSubmission(submission, submission.status === "rejected" ? "pending" : "rejected"); }} className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/15 disabled:opacity-50">{submission.status === "rejected" ? "取消拒绝" : "拒绝"}</button>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </Reorder.Item>
                     ))}
@@ -937,27 +994,6 @@ export function Workspace() {
                       </div>
                     ) : null}
                 </div>
-
-                {selectedSubmission && (
-                  <div className="rounded-2xl border border-border bg-background p-3 shadow-sm">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <div>
-                        <div className="text-xs font-black text-primary">二级详情 / 意见反馈</div>
-                        <div className="mt-1 text-sm font-black text-foreground">{selectedSubmission.title}</div>
-                      </div>
-                      <button onClick={() => setSelectedSubmission(null)} className="rounded-full border border-border px-2 py-1 text-xs font-black text-muted-foreground hover:bg-muted">关闭</button>
-                    </div>
-                    <div className="rounded-xl bg-card px-3 py-2 text-xs font-bold text-muted-foreground">来源：关于页意见通道 · 分类：{selectedSubmission.category} · 状态：{selectedSubmission.status}</div>
-                    <p className="mt-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium leading-relaxed text-foreground/80">{selectedSubmission.content}</p>
-                    {selectedSubmission.submitter ? <div className="mt-2 text-xs font-bold text-muted-foreground">提交者：{selectedSubmission.submitter}</div> : null}
-                    {selectedSubmission.contact ? <div className="mt-2 text-xs font-bold text-muted-foreground">联系方式：{selectedSubmission.contact}</div> : null}
-                    {selectedSubmission.status === "pending" ? <div className="mt-3 flex gap-2">
-                      <button disabled={isReviewingSubmission} onClick={() => reviewSourceSubmission(selectedSubmission, "approved")} className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50">同意</button>
-                      <button disabled={isReviewingSubmission} onClick={() => reviewSourceSubmission(selectedSubmission, "rejected")} className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/15 disabled:opacity-50">拒绝</button>
-                    </div> : <div className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs font-black text-muted-foreground">该提交已处理：{submissionStatusLabels[selectedSubmission.status]}</div>}
-                    <div className="mt-2 text-[11px] font-bold text-muted-foreground">{todoStatus}</div>
-                  </div>
-                )}
 
               </div>
             ) : todoView === 'calendar' ? (

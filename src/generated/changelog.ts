@@ -31,6 +31,34 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "8d3a86c",
+    "hash": "8d3a86c4bf14f2357e9d2bf27601da89ea7755f4",
+    "date": "2026-06-10",
+    "title": "Add standalone game library page",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 1、内容数据 2。",
+    "files": [
+      "src/App.tsx",
+      "src/content/defaults/gaming.ts",
+      "src/content/types.ts",
+      "src/generated/changelog.ts",
+      "src/pages/GameLibrary.tsx",
+      "src/pages/Gaming.tsx",
+      "src/workspace/GamingAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add standalone game library page",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 2、工作台 1、内容数据 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "0571df1",
     "hash": "0571df14447241ed9f61548006a5326d4391bb3d",
     "date": "2026-06-10",
@@ -670,32 +698,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "637755e",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-09",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add talks admin controls and archive data",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、组件 1、工作台 1、内容数据 2、后端 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、组件 1、工作台 1、内容数据 2、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "8a01a5c",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -715,7 +723,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -735,7 +743,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -755,7 +763,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "维护",
@@ -775,7 +783,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -795,7 +803,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -815,7 +823,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -825,6 +833,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、工作台 1、内容数据 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "8d3a86c",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add standalone game library page",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 1、内容数据 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 2、工作台 1、内容数据 2",
         "description": ""
       }
     ]

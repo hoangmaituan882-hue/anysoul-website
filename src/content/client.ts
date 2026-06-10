@@ -147,6 +147,24 @@ export async function uploadImageAsset(
   return response.json() as Promise<{ asset: MediaAssetRecord; storage: "local" | "object" }>;
 }
 
+export async function uploadPublicImageAsset(file: File, options: { scope?: string } = {}) {
+  const body = new FormData();
+  body.set("file", file);
+  if (options.scope) body.set("scope", options.scope);
+
+  const response = await fetch(`${CONTENT_API_BASE}/api/public/media/upload`, {
+    method: "POST",
+    body
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(data.error || `Image upload failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<{ asset: MediaAssetRecord; storage: "local" | "object" }>;
+}
+
 const LOCAL_SOURCE_SUBMISSIONS_KEY = "anysoul-local-source-submissions";
 const LOCAL_FEEDBACK_SUBMISSIONS_KEY = "anysoul-local-feedback-submissions";
 

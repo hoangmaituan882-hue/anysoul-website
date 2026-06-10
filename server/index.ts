@@ -1685,6 +1685,38 @@ function normalizeFeedbackSubmissions(value: unknown): FeedbackSubmissionsConten
   return { items: Array.isArray(content?.items) ? content.items : [] };
 }
 
+const bannedFeedbackWords = [
+  "博彩",
+  "赌博",
+  "诈骗",
+  "外挂",
+  "色情",
+  "政治敏感",
+  "违法"
+];
+
+function findBannedFeedbackWord(...values: Array<unknown>) {
+  const text = values.map((value) => typeof value === "string" ? value : "").join("\n").toLowerCase();
+  return bannedFeedbackWords.find((word) => text.includes(word.toLowerCase()));
+}
+
+function normalizeFeedbackImageUrls(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => trimText(item, 500))
+    .filter((item) => /^https?:\/\//i.test(item) || item.startsWith("/uploads/"))
+    .slice(0, 6);
+}
+
+function normalizeFeedbackMetadata(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .map(([key, item]) => [trimText(key, 60), trimText(item, 300)] as const)
+    .filter(([key, item]) => key && item)
+    .slice(0, 12);
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
 function normalizeSiteAnalytics(value: unknown): SiteAnalyticsContent {
   const content = value as Partial<SiteAnalyticsContent> | null;
   return {
@@ -3127,6 +3159,18 @@ app.post("/api/me/media/upload", requireSignedInMiddleware, publicWriteLimit, up
   res.json({ asset, storage: asset.metadata.storage });
 });
 
+app.post("/api/public/media/upload", publicWriteLimit, uploadImageFile, async (req, res) => {
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "Image file is required" });
+    return;
+  }
+
+  const scope = trimText(req.body?.scope, 80) || "feedback";
+  const asset = await saveMediaAsset(file, null, scope);
+  res.json({ asset, storage: asset.metadata.storage });
+});
+
 app.get("/api/admin/users", async (req, res) => {
   const auth = await requireOwner(req, res);
   if (!auth) return;
@@ -3808,6 +3852,15 @@ app.post("/api/public/feedback-submissions", publicWriteLimit, async (req, res) 
   const title = trimText(req.body?.title, 120);
   const content = trimText(req.body?.content, 1600);
   const category = (["content", "copyright", "bug", "feature", "other"].includes(req.body?.category) ? req.body.category : "other") as FeedbackSubmission["category"];
+  const auth = await currentAuthUser(req as AuthenticatedRequest);
+  const requestedRole = ["visitor", "user", "admin", "owner"].includes(req.body?.submitterRole)
+    ? req.body.submitterRole as NonNullable<FeedbackSubmission["submitterRole"]>
+    : "visitor";
+  const submitterRole: NonNullable<FeedbackSubmission["submitterRole"]> = auth?.user.role || requestedRole;
+  const source = (["about", "screening_nomination", "workspace", "other"].includes(req.body?.source) ? req.body.source : "about") as NonNullable<FeedbackSubmission["source"]>;
+  const imageUrls = normalizeFeedbackImageUrls(req.body?.imageUrls);
+  const metadata = normalizeFeedbackMetadata(req.body?.metadata);
+  const bannedWord = findBannedFeedbackWord(title, content, req.body?.contact);
 
   if (!title || content.length < 6) {
     res.status(400).json({ error: "title and content are required" });
@@ -3820,9 +3873,15 @@ app.post("/api/public/feedback-submissions", publicWriteLimit, async (req, res) 
     title,
     content,
     contact: trimText(req.body?.contact, 160) || undefined,
-    submitter: trimText(req.body?.submitter, 80) || undefined,
-    status: "pending",
-    createdAt: new Date().toISOString()
+    submitter: trimText(req.body?.submitter, 80) || auth?.user.name || undefined,
+    submitterRole,
+    source,
+    imageUrls,
+    metadata,
+    status: bannedWord ? "rejected" : "pending",
+    createdAt: new Date().toISOString(),
+    reviewedAt: bannedWord ? new Date().toISOString() : undefined,
+    reviewNote: bannedWord ? `自动拒绝：命中违禁词「${bannedWord}」` : undefined
   };
 
   const result = await mutateStore((store) => {
@@ -3841,7 +3900,7 @@ app.post("/api/public/feedback-submissions", publicWriteLimit, async (req, res) 
     return;
   }
 
-  res.json({ ok: true, submission });
+  res.json({ ok: true, submission, blocked: Boolean(bannedWord), blockedWord: bannedWord });
 });
 
 app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
@@ -3855,8 +3914,8 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
     res.status(400).json({ error: "Submission kind must be source or feedback" });
     return;
   }
-  if (decision !== "approved" && decision !== "rejected") {
-    res.status(400).json({ error: "Decision must be approved or rejected" });
+  if (decision !== "pending" && decision !== "approved" && decision !== "rejected") {
+    res.status(400).json({ error: "Decision must be pending, approved or rejected" });
     return;
   }
 
@@ -3873,7 +3932,7 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
       if (!existing) return { status: 404, error: "Submission not found" };
 
       const nextContent: ScreeningSourceSubmissionsContent = {
-        items: content.items.map((item) => item.id === submissionId ? { ...item, status: decision, reviewedAt } : item)
+        items: content.items.map((item) => item.id === submissionId ? { ...item, status: decision, reviewedAt: decision === "pending" ? undefined : reviewedAt } : item)
       };
       entry.draft = nextContent;
       entry.published = nextContent;
@@ -3884,7 +3943,7 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
       if (!existing) return { status: 404, error: "Submission not found" };
 
       entry.draft = {
-        items: content.items.map((item) => item.id === submissionId ? { ...item, status: decision, reviewedAt } : item)
+        items: content.items.map((item) => item.id === submissionId ? { ...item, status: decision, reviewedAt: decision === "pending" ? undefined : reviewedAt } : item)
       } satisfies FeedbackSubmissionsContent;
       entry.status = "draft";
     }

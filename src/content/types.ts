@@ -210,6 +210,10 @@ export type FeedbackSubmission = {
   content: string;
   contact?: string;
   submitter?: string;
+  submitterRole?: "visitor" | "user" | "admin" | "owner";
+  source?: "about" | "screening_nomination" | "workspace" | "other";
+  imageUrls?: string[];
+  metadata?: Record<string, string>;
   status: FeedbackSubmissionStatus;
   createdAt: string;
   reviewedAt?: string;
