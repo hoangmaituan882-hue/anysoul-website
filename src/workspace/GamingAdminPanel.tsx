@@ -58,6 +58,17 @@ function normalizeGamingDraft(value?: GamingMainContent): GamingMainContent {
   };
 }
 
+function getGameStatusLabel(status?: GamingLibraryItem["status"]) {
+  const labels: Record<NonNullable<GamingLibraryItem["status"]>, string> = {
+    playing: "正在记录",
+    planned: "待玩",
+    finished: "已通关",
+    paused: "暂停",
+    archived: "已归档"
+  };
+  return status ? labels[status] || status : "待记录";
+}
+
 function newGame(): GamingLibraryItem {
   const id = `game-${Date.now()}`;
   return {
@@ -72,7 +83,7 @@ function newGame(): GamingLibraryItem {
     coverUrl: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1200",
     rating: "",
     totalHours: "",
-    lastPlayedAt: new Date().toISOString().slice(0, 10),
+    lastPlayedAt: "",
     streamUrl: "",
     videoUrl: "",
     description: "补充游戏简介。",
@@ -282,10 +293,10 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <div className="space-y-2 p-3">
                     <div className="line-clamp-1 text-sm font-black">{game.title}</div>
                     <div className="flex flex-wrap gap-1.5">
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black text-primary">{game.status}</span>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black text-primary">{getGameStatusLabel(game.status)}</span>
                       <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{game.platform}</span>
                     </div>
-                    <div className="text-xs font-bold text-muted-foreground">{game.lastPlayedAt || "待记录"} · {game.totalHours || "0h"}</div>
+                    <div className="text-xs font-bold text-muted-foreground">{game.status === "planned" ? "待玩" : game.lastPlayedAt || "待记录"} · {game.totalHours || "0h"}</div>
                   </div>
                 </button>
               ))}
@@ -345,14 +356,14 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">状态</span>
                     <select value={selectedGame.status} onChange={(event) => updateGame(selectedGame.id, { status: event.target.value as GamingLibraryItem["status"] })} className="h-10 rounded-lg border border-border bg-card px-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      <option value="playing">进行中</option>
-                      <option value="planned">计划中</option>
+                      <option value="playing">正在记录</option>
+                      <option value="planned">待玩</option>
                       <option value="finished">已通关</option>
                       <option value="paused">暂停</option>
-                      <option value="archived">归档</option>
+                      <option value="archived">已归档</option>
                     </select>
                   </label>
-                  <DateTimePicker label="最近游玩" mode="date" value={selectedGame.lastPlayedAt || ""} onChange={(value) => updateGame(selectedGame.id, { lastPlayedAt: value })} />
+                  <DateTimePicker label="最近记录" mode="date" value={selectedGame.lastPlayedAt || ""} onChange={(value) => updateGame(selectedGame.id, { lastPlayedAt: value })} />
                   <Field label="累计时长" value={selectedGame.totalHours || ""} onChange={(value) => updateGame(selectedGame.id, { totalHours: value })} />
                   <Field label="评分" value={selectedGame.rating || ""} onChange={(value) => updateGame(selectedGame.id, { rating: value })} />
                   <Field label="标签，逗号分隔" value={toTextList(selectedGame.tags)} onChange={(value) => updateGame(selectedGame.id, { tags: parseTextList(value) })} />

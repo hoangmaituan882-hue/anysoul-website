@@ -31,6 +31,29 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "f000dc1",
+    "hash": "f000dc1cb91ec3220df38df7ffff6845fd87dbab",
+    "date": "2026-06-10",
+    "title": "Show gaming workspace tab label",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。",
+    "files": [
+      "src/generated/changelog.ts",
+      "src/pages/Workspace.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Show gaming workspace tab label",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "a8d916f",
     "hash": "a8d916f34b5cbbb34a1f9d72d351c76ea1b4b1ff",
     "date": "2026-06-10",
@@ -622,32 +645,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "74c28b2",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-09",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add talks page and rebuild about UI",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、组件 3、工作台 1、内容数据 2、后端 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、组件 3、工作台 1、内容数据 2、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "0500f63",
     "subtitle": "修复",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -667,7 +670,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -687,7 +690,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -707,7 +710,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -727,7 +730,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -747,7 +750,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "维护",
@@ -767,7 +770,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -777,6 +780,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 2、工作台 1、内容数据 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "f000dc1",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "Show gaming workspace tab label",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1",
         "description": ""
       }
     ]

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Bell, ChevronDown, Play, ArrowRight, Flame, ChevronLeft, ChevronRight, Clock, User, X, BookOpen, Star, Eye, Crown, Users, LayoutGrid, Heart, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useContent } from "../content/useContent";
@@ -109,6 +109,17 @@ function getGameImage(game?: GamingLibraryItem) {
   return game?.heroImage || game?.coverUrl || defaultGamingMain.streamImage;
 }
 
+function getGameStatusLabel(status?: GamingLibraryItem["status"]) {
+  const labels: Record<NonNullable<GamingLibraryItem["status"]>, string> = {
+    playing: "正在记录",
+    planned: "待玩",
+    finished: "已通关",
+    paused: "暂停",
+    archived: "已归档"
+  };
+  return status ? labels[status] || status : "待记录";
+}
+
 function buildHeatmap(records: GamingPlayRecord[]) {
   const map = new Map(records.map((record) => [record.date, Math.min(4, Math.max(1, Math.ceil(Number(record.durationHours || 0))))]));
   const today = new Date();
@@ -125,6 +136,7 @@ export function Gaming() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const exploreSectionRef = useRef<HTMLDivElement | null>(null);
 
   const library = content.library || [];
   const currentGame = library.find((game) => game.id === content.currentGameId) || library[0];
@@ -168,6 +180,13 @@ export function Gaming() {
   }, [currentSlide, heroGames.length]);
 
   const activeHero = heroGames[currentSlide] || heroGames[0] || libraryToHero(currentGame);
+  const totalGames = library.length;
+  const plannedGames = library.filter((game) => game.status === "planned").length;
+  const playingGames = library.filter((game) => game.status === "playing").length;
+  const openGameLibrary = () => {
+    setQuery("");
+    exploreSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto w-full px-6 pb-16">
@@ -203,7 +222,7 @@ export function Gaming() {
 
            {/* Progress bar and indicators */}
            <div className="absolute top-4 left-0 right-0 px-6 flex justify-between items-center z-20">
-             <div className="bg-red-500 text-white text-xs font-bold px-3 py-1 -rotate-12 rounded shadow-sm">PLAYING</div>
+             <div className="bg-red-500 text-white text-xs font-bold px-3 py-1 -rotate-12 rounded shadow-sm">RECORDING</div>
              <div className="flex gap-2">
                {heroGames.map((_, idx) => (
                  <div key={idx} className="h-1.5 w-12 bg-black/20 dark:bg-white/20 rounded-full overflow-hidden flex">
@@ -282,20 +301,35 @@ export function Gaming() {
 
         {/* Bottom Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-2">
-            {/* Accessories Info */}
-            <div className="col-span-1 bg-card rounded-[24px] border border-border p-6 flex flex-col justify-between shadow-sm relative overflow-hidden group cursor-pointer">
-               <h3 className="font-bold text-lg mb-2 z-10">Game notes for<br/><span className="text-xl font-black tracking-widest">ANY SOUL</span> <ArrowRight className="inline-block ml-1 size-5 group-hover:translate-x-1 transition-transform" /></h3>
+            {/* Game Library Entry */}
+            <button onClick={openGameLibrary} className="col-span-1 bg-card rounded-[24px] border border-border p-6 flex flex-col justify-between shadow-sm relative overflow-hidden group cursor-pointer text-left transition hover:-translate-y-0.5 hover:shadow-md">
+               <h3 className="font-bold text-lg mb-2 z-10">游戏库<br/><span className="text-xl font-black tracking-widest">待玩清单</span> <ArrowRight className="inline-block ml-1 size-5 group-hover:translate-x-1 transition-transform" /></h3>
+               <p className="z-10 text-sm font-medium leading-relaxed text-muted-foreground">观众查看主播游戏记录、待玩安排和联动游戏回归档。</p>
                <div className="mt-8 flex justify-center z-10">
                   <div className="size-24 bg-muted rounded-2xl flex items-center justify-center">
                      <span className="text-3xl">🎮</span>
                   </div>
                </div>
+               <div className="mt-6 grid grid-cols-3 gap-2 z-10">
+                  <div className="rounded-2xl bg-muted/60 p-3 text-center">
+                    <div className="text-xl font-black">{totalGames}</div>
+                    <div className="mt-1 text-[10px] font-bold text-muted-foreground">全部</div>
+                  </div>
+                  <div className="rounded-2xl bg-primary/10 p-3 text-center text-primary">
+                    <div className="text-xl font-black">{plannedGames}</div>
+                    <div className="mt-1 text-[10px] font-bold">待玩</div>
+                  </div>
+                  <div className="rounded-2xl bg-foreground/5 p-3 text-center">
+                    <div className="text-xl font-black">{playingGames}</div>
+                    <div className="mt-1 text-[10px] font-bold text-muted-foreground">记录中</div>
+                  </div>
+               </div>
                <div className="absolute -bottom-10 -right-10 size-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-            </div>
+            </button>
 
             {/* Recent Plays */}
             <div className="col-span-1 md:col-span-2 bg-card rounded-[24px] border border-border p-6 shadow-sm">
-               <h3 className="font-bold text-lg mb-4">Recent plays</h3>
+               <h3 className="font-bold text-lg mb-4">主播最近记录</h3>
                <div className="flex flex-col gap-4">
                   {filteredLibrary.slice(0, 3).map((game) => (
                     <div key={game.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-xl transition-colors">
@@ -303,11 +337,11 @@ export function Gaming() {
                           <img src={game.coverUrl} alt={game.title} className="size-10 rounded-lg object-cover" />
                           <div className="flex min-w-0 flex-col">
                              <span className="font-bold text-[15px] truncate">{game.title}</span>
-                             <span className="text-[11px] text-muted-foreground font-medium">{game.genre} / {game.platform}</span>
+                             <span className="text-[11px] text-muted-foreground font-medium">{getGameStatusLabel(game.status)} / {game.genre} / {game.platform}</span>
                           </div>
                        </div>
                        <button onClick={() => setSelectedGameId(game.id)} className="px-5 py-1.5 border-2 border-border/80 rounded-xl font-bold text-[13px] hover:border-foreground transition-colors hover:bg-foreground hover:text-background shadow-sm">
-                         View
+                         查看
                        </button>
                     </div>
                   ))}
@@ -350,7 +384,7 @@ export function Gaming() {
                     </div>
                  </div>
                  <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-black/50 px-3 py-2 text-white backdrop-blur">
-                   <div className="text-xs font-black uppercase tracking-wider text-white/70">Now playing</div>
+                   <div className="text-xs font-black uppercase tracking-wider text-white/70">记录中</div>
                    <div className="truncate text-sm font-black">{streamGame?.title || content.currentGameTitle}</div>
                  </div>
               </button>
@@ -358,7 +392,7 @@ export function Gaming() {
 
            <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                 <h3 className="font-bold text-lg">Library</h3>
+                 <h3 className="font-bold text-lg">游戏库</h3>
                  <span className="text-xs font-bold text-muted-foreground">{filteredLibrary.length}</span>
               </div>
               <div className="flex flex-col gap-3">
@@ -371,7 +405,7 @@ export function Gaming() {
                        <div className="flex flex-col gap-1 min-w-0 flex-1">
                           <span className="font-bold text-foreground text-[14px] leading-tight truncate">{game.title}</span>
                           <div className="flex items-center gap-3 text-[11px] text-muted-foreground whitespace-nowrap">
-                             <span className="flex items-center gap-1.5"><Clock className="size-3" /> {game.lastPlayedAt || "待记录"}</span>
+                             <span className="flex items-center gap-1.5"><Clock className="size-3" /> {game.status === "planned" ? "待玩" : game.lastPlayedAt || "待记录"}</span>
                              <div className="w-[1px] h-3 bg-border"></div>
                              <span className="flex items-center gap-1.5"><User className="size-3" /> {game.mode}</span>
                           </div>
@@ -380,7 +414,7 @@ export function Gaming() {
                  ))}
                  
                  <div className="flex justify-center mt-2">
-                   <button className="group relative inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 backdrop-blur-md shadow-[0_0_20px_rgba(164,198,57,0.1)] hover:shadow-[0_0_25px_rgba(164,198,57,0.2)] transition-all cursor-pointer">
+                   <button onClick={openGameLibrary} className="group relative inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 backdrop-blur-md shadow-[0_0_20px_rgba(164,198,57,0.1)] hover:shadow-[0_0_25px_rgba(164,198,57,0.2)] transition-all cursor-pointer">
                      <span className="relative flex h-2 w-2">
                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b4c053] opacity-75"></span>
                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#b4c053]"></span>
@@ -398,11 +432,11 @@ export function Gaming() {
 
 
       {/* Explore Section */}
-      <div className="mt-8 bg-[#f5f5f5] dark:bg-card rounded-[28px] border-[3px] border-[#e5e5e5] dark:border-border p-6 md:p-8 shadow-sm flex flex-col gap-6">
+      <div ref={exploreSectionRef} className="mt-8 scroll-mt-24 bg-[#f5f5f5] dark:bg-card rounded-[28px] border-[3px] border-[#e5e5e5] dark:border-border p-6 md:p-8 shadow-sm flex flex-col gap-6">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-black flex items-center gap-2 tracking-tight">探索游戏回里的精选游戏 <BookOpen className="size-6 text-[#b4c053]" /></h2>
-            <p className="text-muted-foreground mt-2 text-[14px]">探索游戏卡片、直播记录和站主评价</p>
+            <h2 className="text-2xl font-black flex items-center gap-2 tracking-tight">探索联动游戏回里的游戏 <BookOpen className="size-6 text-[#b4c053]" /></h2>
+            <p className="text-muted-foreground mt-2 text-[14px]">从游戏库读取主播记录、待玩清单和联动回顾。</p>
           </div>
           <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-full hover:bg-muted transition-colors font-bold text-sm shadow-sm bg-background">
             <LayoutGrid className="size-4" /> 浏览全部
@@ -506,8 +540,8 @@ export function Gaming() {
                   {/* Stats Row */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div className="bg-muted/30 rounded-2xl p-4 border border-border flex flex-col hover:border-[#b4c053]/50 transition-colors cursor-default">
-                      <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 whitespace-nowrap"><Clock className="size-3" /> 上次游玩</span>
-                      <span className="text-xl font-black">{selectedGame.lastPlayedAt || "待记录"}</span>
+                      <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 whitespace-nowrap"><Clock className="size-3" /> 最近记录</span>
+                       <span className="text-xl font-black">{selectedGame.status === "planned" ? "待玩" : selectedGame.lastPlayedAt || "待记录"}</span>
                     </div>
                     <div className="bg-muted/30 rounded-2xl p-4 border border-border flex flex-col hover:border-[#b4c053]/50 transition-colors cursor-default">
                       <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 whitespace-nowrap"><Play className="size-3" /> 累计时长</span>
@@ -564,6 +598,24 @@ export function Gaming() {
                     </p>
                   </div>
 
+                  {(selectedGame.streamUrl || selectedGame.videoUrl) && (
+                    <div className="flex flex-col gap-3">
+                      <h3 className="font-bold text-lg">相关链接</h3>
+                      <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-muted/20 p-4 text-sm font-bold">
+                        {selectedGame.streamUrl && (
+                          <a href={selectedGame.streamUrl} target="_blank" rel="noreferrer" className="rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground hover:text-foreground">
+                            直播记录
+                          </a>
+                        )}
+                        {selectedGame.videoUrl && (
+                          <a href={selectedGame.videoUrl} target="_blank" rel="noreferrer" className="rounded-full border border-border bg-card px-3 py-1.5 text-muted-foreground hover:text-foreground">
+                            录像回放
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
 
@@ -574,11 +626,10 @@ export function Gaming() {
                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b4c053] opacity-75"></span>
                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#b4c053]"></span>
                    </span>
-                   游戏详细卡片会自动同步后台发布的最新数据
+                   游戏记录卡片会自动同步后台发布的最新数据
                  </p>
                  <div className="flex gap-3 justify-end">
                     <button onClick={() => setSelectedGameId(null)} className="px-6 py-2.5 rounded-xl border border-border font-bold text-sm hover:bg-muted transition-colors">关闭</button>
-                    <a href={selectedGame.streamUrl || selectedGame.videoUrl || "#games"} target={selectedGame.streamUrl || selectedGame.videoUrl ? "_blank" : undefined} rel="noreferrer" className="px-6 py-2.5 rounded-xl bg-[#b4c053] text-[#1a1a1a] font-bold text-sm hover:bg-[#a4b043] transition-colors shadow-[0_4px_14px_0_rgba(180,192,83,0.39)] hover:shadow-[0_6px_20px_rgba(180,192,83,0.23)]">打开链接</a>
                  </div>
               </div>
             </motion.div>
