@@ -264,15 +264,15 @@ function WaveScrollbar({ scrollRef, schedules }: { scrollRef: React.RefObject<HT
       <div className="flex justify-between items-center px-1 mt-1 text-[10px] md:text-xs font-medium text-muted-foreground/60 font-mono">
         {schedules && schedules.length > 0 ? (
            <>
-             <span>{schedules[0]?.date || '2026.06.06'}</span>
-             <span>{schedules[Math.floor(schedules.length / 2)]?.date || '2026.03.21'}</span>
-             <span>{schedules[schedules.length - 1]?.date || '2026.01.03'}</span>
+             <span>{schedules[0]?.date || ""}</span>
+             <span>{schedules[Math.floor(schedules.length / 2)]?.date || ""}</span>
+             <span>{schedules[schedules.length - 1]?.date || ""}</span>
            </>
         ) : (
            <>
-             <span>2026.06.06</span>
-             <span>2026.03.21</span>
-             <span>2026.01.03</span>
+             <span>{new Date().getFullYear()}.01.01</span>
+             <span>{new Date().getFullYear()}.06.01</span>
+             <span>{new Date().getFullYear()}.12.01</span>
            </>
         )}
       </div>

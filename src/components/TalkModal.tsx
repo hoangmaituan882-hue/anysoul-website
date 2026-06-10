@@ -2,6 +2,35 @@ import React, { useRef, useState, useEffect } from "react";
 import { Play, FileText, Search, Users, Heart, Bot, Tag, List, MessageSquare, Sparkles, Clock, Eye, MessageCircle, ArrowDownUp, GripVertical, ChevronLeft, ChevronRight, X, Star, Zap, Quote, Lightbulb } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
+import type { TalkItem } from "../content/types";
+
+type TalkCard = {
+  id: string;
+  timestamp: number;
+  date: string;
+  day: string;
+  cat: string;
+  isLiked: boolean;
+  title: string;
+  desc: string;
+  min: number;
+  color: "pink" | "yellow" | "blue" | "green";
+  cover: string;
+  imgs: string[];
+  hasAiSummary: boolean;
+  viewers: number;
+  danmaku: number;
+  animeMentions: number;
+  summaryText: string;
+  summaryBullets: string[];
+  transcript: Array<{ time: string; speaker: string; text: string }>;
+  animes: string[];
+  highlights: Array<{ time: string; desc: string }>;
+  comments: string[];
+  biliUrl?: string;
+  videoUrl?: string;
+  videoProvider?: TalkItem["videoProvider"];
+};
 
 function AccordionSection({ title, icon, defaultOpen = true, children, colorClass, bgClass, headerAddon, className }: any) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -163,7 +192,7 @@ function TranscriptWaveScrollbar({
   );
 }
 
-export function TalkModal({ talk, onClose, t }: { talk: any, onClose: () => void, t: any }) {
+export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () => void; t: any }) {
   const [searchQuery, setSearchQuery] = useState("");
   const transcriptRef = useRef<HTMLDivElement>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);

@@ -5005,6 +5005,13 @@ app.post("/api/admin/talks/import-json", uploadJsonFile, async (req, res) => {
       total: cleaned.length
     });
 
+    broadcast("content.published", {
+      keys: ["talks.main"],
+      message: `导入杂谈录像: ${addedCount} 新增, ${skippedCount} 跳过, ${removedCount} 清理`,
+      actorId: auth.user.id,
+      actorName: auth.user.name
+    });
+
     return { data: { imported: addedCount, skipped: skippedCount, removed: removedCount, total: cleaned.length } };
   });
 

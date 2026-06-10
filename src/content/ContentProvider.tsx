@@ -50,6 +50,11 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         console.warn("Failed to refresh published content.", error);
       });
     });
+    source.addEventListener("talks.imported", (_event) => {
+      refreshContent(["talks.main"]).catch((error) => {
+        console.warn("Failed to refresh talks after import.", error);
+      });
+    });
     source.onerror = () => setIsConnected(false);
 
     return () => source.close();
