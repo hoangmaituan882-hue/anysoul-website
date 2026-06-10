@@ -78,6 +78,10 @@ type MediaAiCompleteRequest = {
   limit?: number;
 };
 
+type MediaMetadataCompleteRequest = {
+  item?: ScreeningSourceItem;
+};
+
 type AiCoreSettings = {
   apiKey: string;
   baseUrl: string;
@@ -724,6 +728,19 @@ function buildLocalCandidate(request: MediaScrapeRequest): MediaScrapeCandidate 
   };
 }
 
+function tmdbFetchOptions(url: URL, token: string): RequestInit {
+  const headers: Record<string, string> = { Accept: "application/json" };
+
+  // TMDB v3 API keys use the api_key query parameter; v4 read tokens use Bearer auth.
+  if (token.startsWith("eyJ") || token.split(".").length >= 3) {
+    headers.Authorization = `Bearer ${token}`;
+  } else {
+    url.searchParams.set("api_key", token);
+  }
+
+  return { headers };
+}
+
 async function searchTmdbCandidates(request: MediaScrapeRequest, settings: MediaScraperSettings): Promise<MediaScrapeCandidate[]> {
   const token = settings.tmdbApiKey || runtimeConfig.tmdbApiKey;
   const query = extractTitle(request.query || "");
@@ -736,12 +753,7 @@ async function searchTmdbCandidates(request: MediaScrapeRequest, settings: Media
   url.searchParams.set("language", "zh-CN");
   url.searchParams.set("include_adult", "false");
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json"
-    }
-  });
+  const response = await fetch(url, tmdbFetchOptions(url, token));
 
   if (!response.ok) return [];
   const data = await response.json() as { results?: Array<Record<string, unknown>> };
@@ -1070,6 +1082,45 @@ function fallbackPatchFromCandidates(item: ScreeningSourceItem, candidates: Medi
     tags: Array.from(new Set([...item.tags, ...best.tags, "AI建议"])),
     sourceNote: item.sourceUrl ? "播放链接来自已配置的 Bilibili 外跳地址；元数据经抓取源与 AI 清洗。" : best.sourceNote
   }, item, candidates);
+}
+
+function metadataPatchFromCandidates(item: ScreeningSourceItem, candidates: MediaScrapeCandidate[]) {
+  const best = candidates.find((candidate) => candidate.provider !== "local") || candidates[0];
+  if (!best) return {};
+
+  return sanitizeAiPatch({
+    originalTitle: item.originalTitle || best.originalTitle,
+    type: best.type,
+    category: best.category,
+    year: item.year || best.year,
+    duration: item.duration || best.duration,
+    rating: item.rating ?? best.rating,
+    posterUrl: item.posterUrl || best.posterUrl,
+    description: item.description && item.description !== "填写简介、推荐理由或吐槽点。" ? item.description : best.description,
+    tags: Array.from(new Set([...item.tags, ...best.tags])),
+    sourceNote: item.sourceNote || (item.sourceUrl ? "播放链接来自已配置的 Bilibili 外跳地址；元数据由 TMDB/Bangumi 等抓取源补全。" : best.sourceNote)
+  }, item, candidates);
+}
+
+async function completeMediaMetadataItem(item: ScreeningSourceItem): Promise<MediaAiSuggestion> {
+  const candidates = await scrapeMediaCandidates({ query: item.title, sourceUrl: item.sourceUrl, mediaType: item.type });
+  const sourceProviders = Array.from(new Set(candidates.map((candidate) => candidate.provider)));
+  const patch = metadataPatchFromCandidates(item, candidates);
+  const best = candidates.find((candidate) => candidate.provider !== "local") || candidates[0];
+  const risks: string[] = [];
+
+  if (!best || Object.keys(patch).length === 0) risks.push("没有找到可安全应用的自动补全字段");
+  if (!patch.posterUrl && !item.posterUrl) risks.push("抓取源未提供可用海报");
+
+  return {
+    id: item.id,
+    title: item.title,
+    patch,
+    confidence: best?.confidence || 0,
+    reason: best ? `已根据 ${best.provider.toUpperCase()} 等真实抓取源生成元数据补全。` : "未找到匹配的元数据候选。",
+    risks,
+    sourceProviders
+  };
 }
 
 async function callOpenAiForCompletion(item: ScreeningSourceItem, candidates: MediaScrapeCandidate[]) {
@@ -4183,6 +4234,28 @@ app.post("/api/admin/media/parse", async (req, res) => {
       redirectPlaybackOnly: true
     }
   });
+});
+
+app.post("/api/admin/media/metadata/complete", async (req, res) => {
+  const auth = await requireWorkspaceAdmin(req, res);
+  if (!auth) return;
+
+  const request = req.body as MediaMetadataCompleteRequest;
+  const item = request.item;
+  if (!item?.id || !item.title?.trim()) {
+    res.status(400).json({ error: "A source item with id and title is required" });
+    return;
+  }
+
+  try {
+    const suggestion = await completeMediaMetadataItem(item);
+    res.json({ suggestion, warnings: suggestion.risks });
+  } catch (error) {
+    res.status(502).json({
+      error: error instanceof Error ? error.message : "Metadata completion failed",
+      warnings: ["自动补全失败，片源库未被修改"]
+    });
+  }
 });
 
 app.post("/api/admin/media/ai/complete", async (req, res) => {

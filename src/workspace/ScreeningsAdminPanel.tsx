@@ -44,6 +44,11 @@ type MediaAiCompleteResponse = {
   warnings: string[];
   error?: string;
 };
+type MediaMetadataCompleteResponse = {
+  suggestion?: MediaAiSuggestion;
+  warnings?: string[];
+  error?: string;
+};
 type ContentBatchOperation = {
   key: string;
   payload: unknown;
@@ -652,24 +657,26 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       return;
     }
 
+    const id = `source-${Date.now()}`;
+    const item: ScreeningSourceItem = {
+      id,
+      title: "新片源",
+      type: "movie",
+      category: "other",
+      description: "填写简介、推荐理由或吐槽点。",
+      tags: [],
+      status: "available",
+      priority: "normal",
+      timesWatched: 0,
+      addedAt: new Date().toISOString().slice(0, 10)
+    };
+
     setLibrary((current) => ({
       ...current,
-      items: [
-        {
-          id: `source-${Date.now()}`,
-          title: "新片源",
-          type: "movie",
-          category: "other",
-          description: "填写简介、推荐理由或吐槽点。",
-          tags: [],
-          status: "available",
-          priority: "normal",
-          timesWatched: 0,
-          addedAt: new Date().toISOString().slice(0, 10)
-        },
-        ...current.items
-      ]
+      items: [item, ...current.items]
     }));
+    setEditingLibraryId(id);
+    setStatus("已创建新片源。输入片名后可点击「TMDB 自动补全」获取简介、海报、年份和评分。");
   };
 
   const scrapeMedia = async () => {
@@ -804,6 +811,42 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       setStatus(error instanceof Error ? error.message : "AI 建议应用失败，请检查内容服务");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const completeLibraryItemMetadata = async (item: ScreeningSourceItem, index: number) => {
+    if (readOnly) {
+      setStatus("只读模式无法自动补全片源");
+      return;
+    }
+
+    const title = item.title.trim();
+    if (!title || title === "新片源") {
+      setStatus("请先填写真实片名，再使用 TMDB 自动补全");
+      return;
+    }
+
+    setIsScraping(true);
+    setStatus(`正在为《${title}》从 TMDB / Bangumi 等抓取源补全海报和简介...`);
+
+    try {
+      const response = await authFetch(`${CONTENT_API_BASE}/api/admin/media/metadata/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item })
+      });
+      const data = await response.json() as MediaMetadataCompleteResponse;
+      if (!response.ok || !data.suggestion) throw new Error(data.error || "metadata completion failed");
+
+      updateLibraryItem(index, data.suggestion.patch);
+      const fields = Object.keys(data.suggestion.patch);
+      setStatus(fields.length
+        ? `已补全《${title}》：${fields.join("、")}。确认无误后点击保存并发布。`
+        : `未找到可安全应用到《${title}》的补全字段。`);
+    } catch (error) {
+      setStatus(error instanceof Error ? `自动补全失败：${error.message}` : "自动补全失败，请检查 TMDB Key 或内容服务");
+    } finally {
+      setIsScraping(false);
     }
   };
 
@@ -1237,14 +1280,14 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                     <KeyRound className="size-4 text-primary" /> API 与反代配置
                   </div>
                   <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
-                    <Field label="TMDB API Key" type="password" value={scraperSettings.tmdbApiKey} onChange={(value) => setScraperSettings((current) => ({ ...current, tmdbApiKey: value }))} placeholder="Bearer Token，可留空" />
+                    <Field label="TMDB API Key" type="password" value={scraperSettings.tmdbApiKey} onChange={(value) => setScraperSettings((current) => ({ ...current, tmdbApiKey: value }))} placeholder="v3 API Key 或 v4 Bearer Token，可留空" />
                     <Field label="Bangumi API 反代" value={scraperSettings.bangumiApiBase} onChange={(value) => setScraperSettings((current) => ({ ...current, bangumiApiBase: value }))} placeholder="https://bgmapi.anibt.net" />
                     <Field label="Bangumi 图片反代" value={scraperSettings.bangumiImageBase} onChange={(value) => setScraperSettings((current) => ({ ...current, bangumiImageBase: value }))} placeholder="https://bgmimg.anibt.net" />
                     <button disabled={isSaving} onClick={saveScraperSettings} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-black text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
                       <Save className="size-4" /> 保存设置
                     </button>
                   </div>
-                  <p className="mt-2 text-xs font-medium text-muted-foreground">TMDB 用于电影/剧集海报简介增强；Bangumi 反代用于中文动漫搜索和封面加载。设置保存在本地内容服务，不会发布到前台。</p>
+                  <p className="mt-2 text-xs font-medium text-muted-foreground">TMDB 用于电影/剧集海报简介增强，支持普通 v3 API Key 或 v4 Bearer Token；Bangumi 反代用于中文动漫搜索和封面加载。设置保存在本地内容服务，不会发布到前台。</p>
                 </div>
               )}
 
@@ -1689,6 +1732,14 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   {editingLibraryItem.posterUrl ? <img src={editingLibraryItem.posterUrl} alt={editingLibraryItem.title} className="aspect-[2/3] w-full object-cover" /> : <div className="flex aspect-[2/3] items-center justify-center px-4 text-center text-sm font-black text-muted-foreground">暂无海报</div>}
                 </div>
                 <ImageUploadField label="海报" value={editingLibraryItem.posterUrl || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { posterUrl: value })} admin readOnly={readOnly} scope="screening-poster" compact />
+                <button
+                  type="button"
+                  onClick={() => { void completeLibraryItemMetadata(editingLibraryItem, editingLibraryIndex); }}
+                  disabled={readOnly || isScraping || isSaving}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-black text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+                >
+                  <Sparkles className={cn("size-4", isScraping && "animate-spin")} /> TMDB 自动补全
+                </button>
                 <div className="rounded-2xl border border-border bg-card p-3 text-xs font-bold text-muted-foreground">
                   <div>入库序号：<span className="text-foreground">{stableLibraryNumbers.get(editingLibraryItem.id) || editingLibraryIndex + 1}</span></div>
                   <div className="mt-1">状态：<span className="text-foreground">{editingLibraryItem.status === "watched" ? "已归档" : editingLibraryItem.status === "planned" ? "已排期" : "待放映"}</span></div>

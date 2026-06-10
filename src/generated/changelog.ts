@@ -31,6 +31,35 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "4349726",
+    "hash": "43497266755130f79bb505c77cb5174c0db9074d",
+    "date": "2026-06-10",
+    "title": "Modularize feedback channels and todos",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 3、组件 1、内容数据 2、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/components/FeedbackChannelForm.tsx",
+      "src/content/client.ts",
+      "src/content/types.ts",
+      "src/generated/changelog.ts",
+      "src/pages/About.tsx",
+      "src/pages/Screenings.tsx",
+      "src/pages/Workspace.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Modularize feedback channels and todos",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 3、组件 1、内容数据 2、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "8d3a86c",
     "hash": "8d3a86c4bf14f2357e9d2bf27601da89ea7755f4",
     "date": "2026-06-10",
@@ -698,32 +727,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "8a01a5c",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-09",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Refine workspace gallery editors",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 3、内容数据 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、工作台 3、内容数据 2",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "a742abb",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -743,7 +752,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-09",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -763,7 +772,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "维护",
@@ -783,7 +792,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -803,7 +812,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -823,7 +832,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -843,7 +852,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -853,6 +862,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 2、工作台 1、内容数据 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "4349726",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "Modularize feedback channels and todos",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 3、组件 1、内容数据 2、后端 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 3、组件 1、内容数据 2、后端 1",
         "description": ""
       }
     ]
