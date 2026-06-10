@@ -31,6 +31,32 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "3439c0a",
+    "hash": "3439c0a44c563b2fcde35cc409ca807e077b0b8f",
+    "date": "2026-06-10",
+    "title": "refactor: 片源库状态文案统一+审核回写library+增强去重",
+    "description": "- 新增 src/content/screeningUtils.ts 共享纯函数\n- 统一状态文案: 已看→已归档, 待放映→可排播, 已计划→已排期\n- 审核通过 source submission 时回写 library 主数据\n- mergeLibraryItems 补全空字段(posterUrl/sourceUrl/rating/status等)\n- public submission 相同 sourceId+field+content 去重",
+    "files": [
+      "server/index.ts",
+      "src/content/screeningUtils.ts",
+      "src/generated/changelog.ts",
+      "src/pages/Screenings.tsx",
+      "src/workspace/ScreeningsAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "refactor: 片源库状态文案统一+审核回写library+增强去重",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、工作台 1、内容数据 1、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "7e775df",
     "hash": "7e775df109f5bf7f636eed594c7e5107ea647b79",
     "date": "2026-06-10",
@@ -971,32 +997,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "a29c2c9",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Enhance screening metadata providers",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1、后端 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "0a738de",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1016,7 +1022,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1036,7 +1042,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1056,7 +1062,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1076,7 +1082,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1096,7 +1102,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1116,7 +1122,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1126,6 +1132,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、组件 1、内容数据 1、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "3439c0a",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "refactor: 片源库状态文案统一+审核回写library+增强去重",
+        "description": "- 新增 src/content/screeningUtils.ts 共享纯函数\n- 统一状态文案: 已看→已归档, 待放映→可排播, 已计划→已排期\n- 审核通过 source submission 时回写 library 主数据\n- mergeLibraryItems 补全空字段(posterUrl/sourceUrl/rating/status等)\n- public submission 相同 sourceId+field+content 去重"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、工作台 1、内容数据 1、后端 1",
         "description": ""
       }
     ]

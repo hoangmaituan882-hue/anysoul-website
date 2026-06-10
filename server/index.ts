@@ -4565,6 +4565,9 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
   }
 
   broadcast("submission.reviewed", result.event);
+  if (kind === "source") {
+    broadcast("content.published", { keys: result.event.keys });
+  }
   res.json({ entry: result.entry, event: result.event });
 });
 
