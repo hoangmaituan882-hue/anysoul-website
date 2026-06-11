@@ -31,6 +31,52 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "75e61a8",
+    "hash": "75e61a8be469b865e20c6963236579bcb7e8cb3b",
+    "date": "2026-06-12",
+    "title": "Remove home nav capsule, logo already links to home",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1。",
+    "files": [
+      "src/components/Header.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Remove home nav capsule, logo already links to home",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "8ddea0b",
+    "hash": "8ddea0b2dfba9a9332060fad7237269a8bd46661",
+    "date": "2026-06-12",
+    "title": "UI: Fix Hero title typography wrap issue on mobile screens",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、工作台 1。",
+    "files": [
+      "src/components/Hero.tsx",
+      "src/generated/changelog.ts",
+      "src/workspace/GamingAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "UI: Fix Hero title typography wrap issue on mobile screens",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 1、工作台 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "efb2334",
     "hash": "efb2334a0648dc7857f88629119a331cc0a63a35",
     "date": "2026-06-12",
@@ -2069,46 +2115,6 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "7f53fa8",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "UI: Update recent talks card design to match reference",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "15b775a",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Rebuild timeline as website changelog and future plans system",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2、后端 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、组件 1、工作台 1、内容数据 2、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "1303431",
     "subtitle": "新功能",
     "status": "published",
@@ -2224,6 +2230,46 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 2、工作台 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "8ddea0b",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "UI: Fix Hero title typography wrap issue on mobile screens",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、工作台 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "组件 1、工作台 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "75e61a8",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "Remove home nav capsule, logo already links to home",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "组件 1",
         "description": ""
       }
     ]
