@@ -18,7 +18,7 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 
 import { cn } from "../lib/utils";
-import { TalkModal } from "../components/TalkModal";
+import { TalkDetail } from "../features/TalkDetail";
 import { TopicsModal } from "../components/TopicsModal";
 import { useContent } from "../content/useContent";
 import { defaultTalksContent } from "../content/defaults/talks";
@@ -703,7 +703,7 @@ export function Talks() {
           </div>
         ) : null}
         
-        {selectedTalk && <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />}
+        {selectedTalk && <TalkDetail talk={selectedTalk} onBack={() => setSelectedTalk(null)} t={t} />}
       </div>
     );
   }
@@ -1078,7 +1078,7 @@ export function Talks() {
         </div>
       </div>
       
-      {selectedTalk && <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />}
+      {selectedTalk && <TalkDetail talk={selectedTalk} onBack={() => setSelectedTalk(null)} t={t} />}
       <TopicsModal isOpen={showTopicsModal} onClose={() => setShowTopicsModal(false)} t={t} initialTopicId={activeTopicId} topics={[...talksContent.recentUpdates, ...talksContent.topics]} />
       
     </div>
