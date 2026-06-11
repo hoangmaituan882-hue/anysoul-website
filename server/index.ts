@@ -3863,7 +3863,7 @@ app.post("/api/me/plaza/submissions", requireSignedInMiddleware, publicWriteLimi
         bannerColor: gradients[index % gradients.length],
         featured: false,
         visibility: "pending",
-        desc: `由 ${auth.user.name} 投稿，等待后台审核。`,
+        desc: "",
         importBatchId: batchId,
         importYear: batchYear,
         importWeek: batchWeek,

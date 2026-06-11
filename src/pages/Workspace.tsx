@@ -63,7 +63,7 @@ import { PostAdminPanel } from "../workspace/PostAdminPanel";
 import { TalksAdminPanel } from "../workspace/TalksAdminPanel";
 import { GamingAdminPanel } from "../workspace/GamingAdminPanel";
 import type { AdminContentEntry, FeedbackSubmission, FeedbackSubmissionsContent, PlazaContent, PlazaSoulItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ServerAlert, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint } from "../content/types";
-import { CONTENT_API_BASE, getLocalFeedbackSubmissions, getLocalSourceSubmissions, saveLocalFeedbackSubmissions, saveLocalSourceSubmissions } from "../content/client";
+import { CONTENT_API_BASE, getImageUrl, getLocalFeedbackSubmissions, getLocalSourceSubmissions, saveLocalFeedbackSubmissions, saveLocalSourceSubmissions } from "../content/client";
 import { defaultScreeningSourceSubmissions } from "../content/defaults/screenings";
 import { defaultFeedbackSubmissions } from "../content/defaults/feedback";
 
@@ -111,7 +111,7 @@ type CalendarTodoItem = {
 
 type PendingUserSubmission = {
   id: string;
-  kind: "source" | "feedback";
+  kind: "source" | "feedback" | "plaza";
   title: string;
   category: string;
   content: string;
@@ -126,6 +126,7 @@ type PendingUserSubmission = {
   reviewedAt?: string;
   source?: ScreeningSourceSubmission;
   feedback?: FeedbackSubmission;
+  soul?: PlazaSoulItem;
 };
 
 const SOURCE_SUBMISSIONS_KEY = "screenings.sourceSubmissions";
@@ -347,6 +348,19 @@ export function Workspace() {
   const accountName = user?.name || "未登录用户";
   const accountInitial = accountName.trim().slice(0, 1).toUpperCase() || "A";
   const allUserSubmissions = useMemo<PendingUserSubmission[]>(() => [
+    ...plazaSouls.filter((s) => s.visibility === "pending").map((soul) => ({
+      id: soul.id,
+      kind: "plaza" as const,
+      title: `图库投稿：${soul.name}`,
+      category: "图库",
+      content: soul.submittedByName ? `由 ${soul.submittedByName} 投稿` : "",
+      submitter: soul.submittedByName,
+      submitterRole: "user" as const,
+      sourceLabel: "图库投稿",
+      status: "pending" as const,
+      createdAt: soul.submittedAt || soul.createdAt,
+      soul
+    })),
     ...sourceSubmissions.items.map((source) => ({
       id: source.id,
       kind: "source" as const,
@@ -380,7 +394,7 @@ export function Workspace() {
       reviewedAt: feedback.reviewedAt,
       feedback
     }))
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [feedbackSubmissions.items, sourceSubmissions.items]);
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [feedbackSubmissions.items, sourceSubmissions.items, plazaSouls]);
   const pendingSubmissions = useMemo(() => {
     const orderIndex = new Map<string, number>(feedbackTodoOrder.map((id, index) => [id, index]));
     return allUserSubmissions
@@ -408,7 +422,7 @@ export function Workspace() {
         id: submission.id,
         date: formatDateKey(new Date(submission.createdAt)),
         title: submission.title,
-        meta: `${submission.kind === "source" ? "用户补充" : "意见反馈"} · ${new Date(submission.createdAt).toLocaleDateString()}`,
+        meta: `${submission.kind === "source" ? "用户补充" : submission.kind === "plaza" ? "图库投稿" : "意见反馈"} · ${new Date(submission.createdAt).toLocaleDateString()}`,
         tone: "sky" as const,
         submission
       }))
@@ -424,15 +438,14 @@ export function Workspace() {
       : activeTab === "screenings" || activeTab === "plaza" || activeTab === "talks" || activeTab === "games"
         ? "columns"
         : "system";
-  const pendingPlazaSouls = useMemo(() => plazaSouls.filter((s) => s.visibility === "pending"), [plazaSouls]);
   const reviewStats = useMemo(() => ({
     pending: allUserSubmissions.filter((submission) => submission.status === "pending").length,
     approved: allUserSubmissions.filter((submission) => submission.status === "approved").length,
     rejected: allUserSubmissions.filter((submission) => submission.status === "rejected").length,
     feedback: allUserSubmissions.filter((submission) => submission.kind === "feedback").length,
     source: allUserSubmissions.filter((submission) => submission.kind === "source").length,
-    plaza: pendingPlazaSouls.length
-  }), [allUserSubmissions, pendingPlazaSouls]);
+    plaza: allUserSubmissions.filter((submission) => submission.kind === "plaza").length
+  }), [allUserSubmissions]);
 
   function startLayoutResize(event: ReactPointerEvent<HTMLDivElement>, area: "columns" | "leftStack" | "rightStack") {
     event.preventDefault();
@@ -650,6 +663,15 @@ export function Workspace() {
     setTodoStatus(decision === "approved" ? `正在同意「${submission.title}」...` : decision === "rejected" ? `正在拒绝「${submission.title}」...` : `正在恢复「${submission.title}」为待处理...`);
 
     try {
+      if (submission.kind === "plaza") {
+        if (decision === "approved") {
+          await reviewPlazaSoul(submission.id, "approve");
+        } else if (decision === "rejected") {
+          await reviewPlazaSoul(submission.id, "reject");
+        }
+        setSelectedSubmission(null);
+        return;
+      }
       if (submission.kind === "source") {
         const entry = await reviewSubmissionOnServer(submission, decision, `用户补充审核${decision === "approved" ? "通过" : decision === "rejected" ? "拒绝" : "恢复待处理"}：${submission.title} / 字段 ${submission.category}`);
         const nextSubmissions = entry.draft as ScreeningSourceSubmissionsContent;
@@ -876,76 +898,6 @@ export function Workspace() {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-border bg-background shadow-sm">
-                        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <h3 className="inline-flex items-center gap-2 text-sm font-black text-foreground">
-                              <Image className="size-4 text-primary" /> 图库投稿审核
-                            </h3>
-                            <p className="mt-1 text-xs font-bold text-muted-foreground">用户提交的图库图片，通过后发布到前台图库，拒绝会删除上传文件。</p>
-                          </div>
-                          <button
-                            type="button"
-                            disabled={readOnly}
-                            onClick={() => { void loadPlazaDraft(); }}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
-                          >
-                            <RefreshCw className="size-3.5" /> 刷新
-                          </button>
-                        </div>
-                        <div>
-                          {pendingPlazaSouls.length > 0 ? (
-                            <div className="divide-y divide-border">
-                              {pendingPlazaSouls.map((soul) => (
-                                <div key={soul.id} className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                                  <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-600">待审核</span>
-                                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">图库投稿</span>
-                                      {soul.submittedAt && (
-                                        <span className="text-xs font-bold text-muted-foreground">{new Date(soul.submittedAt).toLocaleDateString()}</span>
-                                      )}
-                                    </div>
-                                    <div className="mt-2 truncate text-sm font-black text-foreground">{soul.name}</div>
-                                    <p className="mt-1 text-xs font-medium text-muted-foreground">
-                                      by {soul.author || "未知作者"}
-                                      {soul.submittedByName && ` · 投稿：${soul.submittedByName}`}
-                                      {soul.sourceAnimeTitle && ` · 动画：${soul.sourceAnimeTitle}`}
-                                    </p>
-                                    {soul.mediaAssetId && (
-                                      <div className="mt-1 text-[10px] font-bold text-muted-foreground">
-                                        媒体ID：{soul.mediaAssetId}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
-                                    <button
-                                      disabled={isReviewingPlaza || readOnly}
-                                      onClick={() => { void reviewPlazaSoul(soul.id, "approve"); }}
-                                      className="h-8 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50"
-                                    >
-                                      通过并发布
-                                    </button>
-                                    <button
-                                      disabled={isReviewingPlaza || readOnly}
-                                      onClick={() => { void reviewPlazaSoul(soul.id, "reject"); }}
-                                      className="h-8 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/15 disabled:opacity-50"
-                                    >
-                                      拒绝并删除
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="px-4 py-8 text-center">
-                              <CheckCircle2 className="mx-auto size-6 text-emerald-400" />
-                              <div className="mt-2 text-sm font-black text-foreground">暂无待审核图库投稿</div>
-                              <p className="mt-1 text-xs font-bold text-muted-foreground">用户投稿会显示在这里，或前往图库中心查看全部状态。</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
                     </motion.div>
 
       {/* 2. Main content area (Resizable panel group conceptually) */}
@@ -1487,28 +1439,65 @@ export function Workspace() {
                         </div>
                         <div className="divide-y divide-border">
                           {pendingSubmissions.slice(0, 12).map((submission) => (
-                            <div key={submission.id} className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedSubmission((current) => current?.id === submission.id ? null : submission)}
-                                className="min-w-0 text-left"
-                              >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className={cn("rounded-full border px-2.5 py-1 text-xs font-black", submission.status === "approved" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" : submission.status === "rejected" ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300" : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300")}>{submissionStatusLabels[submission.status]}</span>
-                                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">{submission.kind === "source" ? "片源补充" : "反馈"}</span>
-                                  <span className="text-xs font-bold text-muted-foreground">{new Date(submission.createdAt).toLocaleDateString()}</span>
-                                </div>
-                                <div className="mt-2 truncate text-sm font-black text-foreground">{submission.title}</div>
-                                <p className="mt-1 line-clamp-2 text-sm font-medium leading-6 text-muted-foreground">{submission.content}</p>
-                                {selectedSubmission?.id === submission.id ? (
-                                  <div className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold leading-6 text-muted-foreground">
-                                    提交者：{submission.submitter || "访客"} · 分类：{submission.category}{submission.contact ? ` · 联系：${submission.contact}` : ""}
+                            <div key={submission.id}>
+                              <div className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedSubmission((current) => current?.id === submission.id ? null : submission)}
+                                  className="min-w-0 text-left flex gap-3"
+                                >
+                                  {submission.kind === "plaza" && submission.soul?.avatarSrc && (
+                                    <img
+                                      src={submission.soul.mediaAssetId ? getImageUrl(submission.soul.mediaAssetId, { w: 150 }) : submission.soul.avatarSrc}
+                                      alt={submission.soul.name}
+                                      className="size-14 shrink-0 rounded-xl object-cover border border-border"
+                                    />
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className={cn("rounded-full border px-2.5 py-1 text-xs font-black", submission.status === "approved" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" : submission.status === "rejected" ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300" : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300")}>{submissionStatusLabels[submission.status]}</span>
+                                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">{submission.kind === "source" ? "片源补充" : submission.kind === "plaza" ? "图库投稿" : "反馈"}</span>
+                                      <span className="text-xs font-bold text-muted-foreground">{new Date(submission.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="mt-2 truncate text-sm font-black text-foreground">{submission.title}</div>
+                                    {submission.kind === "plaza" ? (
+                                      <p className="mt-1 text-xs font-medium text-muted-foreground">
+                                        by {submission.soul?.author || "未知作者"}
+                                        {submission.soul?.submittedByName && ` · 投稿：${submission.soul.submittedByName}`}
+                                        {submission.soul?.sourceAnimeTitle && ` · 动画：${submission.soul.sourceAnimeTitle}`}
+                                      </p>
+                                    ) : (
+                                      <p className="mt-1 line-clamp-2 text-sm font-medium leading-6 text-muted-foreground">{submission.content}</p>
+                                    )}
+                                    {selectedSubmission?.id === submission.id ? (
+                                      submission.kind === "plaza" ? (
+                                        <div className="mt-3 flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
+                                          {submission.soul?.avatarSrc && (
+                                            <img
+                                              src={submission.soul.avatarSrc}
+                                              alt={submission.soul.name}
+                                              className="w-full max-w-xs rounded-lg object-contain border border-border"
+                                            />
+                                          )}
+                                          <div className="grid grid-cols-1 gap-2 text-xs font-bold text-muted-foreground md:grid-cols-2">
+                                            <div>投稿用户：<span className="text-foreground">{submission.soul?.submittedByName || "-"}</span></div>
+                                            <div>来源动画：<span className="text-foreground">{submission.soul?.sourceAnimeTitle || "-"}</span></div>
+                                            <div>创作日期：<span className="text-foreground">{submission.soul?.createdAt || "-"}</span></div>
+                                            <div>媒体ID：<span className="text-foreground">{submission.soul?.mediaAssetId || "-"}</span></div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold leading-6 text-muted-foreground">
+                                          提交者：{submission.submitter || "访客"} · 分类：{submission.category}{submission.contact ? ` · 联系：${submission.contact}` : ""}
+                                        </div>
+                                      )
+                                    ) : null}
                                   </div>
-                                ) : null}
-                              </button>
-                              <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
-                                <button disabled={isReviewingSubmission || readOnly} onClick={() => reviewSourceSubmission(submission, submission.status === "approved" ? "pending" : "approved")} className="h-8 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50">{submission.status === "approved" ? "撤回通过" : "通过"}</button>
-                                <button disabled={isReviewingSubmission || readOnly} onClick={() => reviewSourceSubmission(submission, submission.status === "rejected" ? "pending" : "rejected")} className="h-8 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/15 disabled:opacity-50">{submission.status === "rejected" ? "撤回拒绝" : "拒绝"}</button>
+                                </button>
+                                <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
+                                  <button disabled={(submission.kind === "plaza" ? isReviewingPlaza : isReviewingSubmission) || readOnly} onClick={() => reviewSourceSubmission(submission, submission.status === "approved" ? "pending" : "approved")} className="h-8 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50">{submission.status === "approved" ? "撤回通过" : "通过"}</button>
+                                  <button disabled={(submission.kind === "plaza" ? isReviewingPlaza : isReviewingSubmission) || readOnly} onClick={() => reviewSourceSubmission(submission, submission.status === "rejected" ? "pending" : "rejected")} className="h-8 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/15 disabled:opacity-50">{submission.status === "rejected" ? "撤回拒绝" : "拒绝"}</button>
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -1516,7 +1505,7 @@ export function Workspace() {
                             <div className="px-4 py-12 text-center">
                               <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
                               <div className="mt-3 text-sm font-black text-foreground">暂无需要处理的审核项</div>
-                              <p className="mt-1 text-xs font-bold text-muted-foreground">反馈、投稿和片源补充会集中显示在这里。</p>
+                              <p className="mt-1 text-xs font-bold text-muted-foreground">反馈、投稿、片源补充和图库投稿会集中显示在这里。</p>
                             </div>
                           ) : null}
                         </div>
