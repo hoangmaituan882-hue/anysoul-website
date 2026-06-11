@@ -16,7 +16,8 @@ import { CONTENT_API_BASE } from "../content/client";
 import { defaultHomeFaq, defaultHomeHero } from "../content/defaults/home";
 import { defaultSiteAnnouncements } from "../content/defaults/siteAnnouncements";
 import { defaultTalksContent } from "../content/defaults/talks";
-import type { AdminContentEntry, FaqContent, HomeHeroContent, SiteAnnouncementsContent, TalksContent } from "../content/types";
+import { defaultTimelinePlans } from "../content/defaults/timeline";
+import type { AdminContentEntry, FaqContent, HomeHeroContent, SiteAnnouncementsContent, TalksContent, TimelinePlansContent } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 
@@ -45,6 +46,11 @@ const editableLabels: Record<string, { title: string; description: string; icon:
     title: "站点公告",
     description: "管理公开站点工作台里的置顶公告、提醒等级、有效时间和跳转入口。",
     icon: Bell
+  },
+  "timeline.plans": {
+    title: "未来计划",
+    description: "管理网站时间线页面的未来计划列表，包括标题、描述、状态和标签。",
+    icon: Rocket
   }
 };
 
@@ -485,6 +491,114 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
             className="inline-flex items-center gap-2 rounded-lg border border-dashed border-border bg-background px-4 py-2 text-sm font-bold text-muted-foreground hover:border-primary/50 hover:text-primary"
           >
             <Plus className="size-4" /> 添加公告
+          </button>
+        </div>
+      );
+    }
+
+    if (selectedKey === "timeline.plans") {
+      const plans = (draft as TimelinePlansContent)?.plans || defaultTimelinePlans.plans;
+
+      const updatePlans = (updater: (current: TimelinePlansContent) => TimelinePlansContent) => {
+        const current = (draft as TimelinePlansContent) || defaultTimelinePlans;
+        setDraft(updater(current));
+      };
+
+      return (
+        <div className="space-y-5">
+          {plans.map((plan, index) => (
+            <div key={plan.id} className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-black",
+                    plan.status === "planned" ? "border-slate-500/20 bg-slate-500/10 text-slate-600" :
+                    plan.status === "in-progress" ? "border-amber-500/20 bg-amber-500/10 text-amber-600" :
+                    "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+                  )}>
+                    {plan.status === "planned" ? "计划中" : plan.status === "in-progress" ? "进行中" : "已完成"}
+                  </span>
+                  <h3 className="text-sm font-bold">计划 {index + 1}</h3>
+                </div>
+                <button
+                  onClick={() => updatePlans((current) => ({
+                    ...current,
+                    plans: current.plans.filter((_, i) => i !== index)
+                  }))}
+                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-500/10"
+                >
+                  <Trash2 className="size-3.5" /> 删除
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <TextField
+                  label="标题"
+                  value={plan.title}
+                  onChange={(value) => updatePlans((c) => ({
+                    ...c, plans: c.plans.map((p, i) => i === index ? { ...p, title: value } : p)
+                  }))}
+                />
+                <TextField
+                  label="目标时间"
+                  value={plan.targetDate || ""}
+                  placeholder="2026-07-01"
+                  onChange={(value) => updatePlans((c) => ({
+                    ...c, plans: c.plans.map((p, i) => i === index ? { ...p, targetDate: value } : p)
+                  }))}
+                />
+                <TextField
+                  label="标签（逗号分隔）"
+                  value={plan.tags.join(", ")}
+                  onChange={(value) => updatePlans((c) => ({
+                    ...c, plans: c.plans.map((p, i) => i === index ? { ...p, tags: value.split(",").map((t) => t.trim()).filter(Boolean) } : p)
+                  }))}
+                />
+              </div>
+
+              <TextAreaField
+                label="描述"
+                value={plan.description}
+                rows={2}
+                onChange={(value) => updatePlans((c) => ({
+                  ...c, plans: c.plans.map((p, i) => i === index ? { ...p, description: value } : p)
+                }))}
+              />
+
+              <div className="flex items-center gap-2 pt-1">
+                {(["planned", "in-progress", "completed"] as const).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => updatePlans((c) => ({
+                      ...c, plans: c.plans.map((p, i) => i === index ? { ...p, status } : p)
+                    }))}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-[10px] font-bold transition-colors",
+                      plan.status === status ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-muted"
+                    )}
+                  >
+                    {status === "planned" ? "计划中" : status === "in-progress" ? "进行中" : "已完成"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={() => updatePlans((current) => ({
+              ...current,
+              plans: [...current.plans, {
+                id: `plan-${Date.now()}`,
+                title: "新的计划",
+                description: "在这里填写计划描述。",
+                status: "planned" as const,
+                tags: [],
+                createdAt: new Date().toISOString()
+              }]
+            }))}
+            className="inline-flex items-center gap-2 rounded-lg border border-dashed border-border bg-background px-4 py-2 text-sm font-bold text-muted-foreground hover:border-primary/50 hover:text-primary"
+          >
+            <Plus className="size-4" /> 添加计划
           </button>
         </div>
       );

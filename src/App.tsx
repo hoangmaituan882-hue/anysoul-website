@@ -43,7 +43,7 @@ const routeTitles: Record<string, string> = {
   "#game-library": "游戏库",
   "#game-recordings": "游戏录像库",
   "#about": "关于",
-  "#timeline": "人生时间线"
+  "#timeline": "网站时间线"
 };
 
 const pageShellClass = "relative min-h-screen bg-background text-foreground antialiased selection:bg-primary/30 font-sans flex flex-col overflow-x-hidden transition-colors duration-300";

@@ -16,6 +16,7 @@ import { defaultHomeFaq, defaultHomeHero } from "../src/content/seeds/home";
 import { defaultGamingMain } from "../src/content/seeds/gaming";
 import { defaultTalksContent } from "../src/content/seeds/talks";
 import { defaultPlazaContent } from "../src/content/seeds/plaza";
+import { defaultTimelinePlans } from "../src/content/defaults/timeline";
 import { defaultSiteAnnouncements } from "../src/content/seeds/siteAnnouncements";
 import { defaultFeedbackSubmissions } from "../src/content/seeds/feedback";
 import { defaultSiteAnalytics } from "../src/content/seeds/analytics";
@@ -358,6 +359,16 @@ const defaultStore: ContentStore = {
       publishedAt: new Date().toISOString(),
       draft: defaultSiteAnalytics,
       published: defaultSiteAnalytics
+    },
+    "timeline.plans": {
+      key: "timeline.plans",
+      type: "timeline.plans",
+      status: "published",
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      publishedAt: new Date().toISOString(),
+      draft: defaultTimelinePlans,
+      published: defaultTimelinePlans
     }
   },
   events: []

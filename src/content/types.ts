@@ -704,3 +704,18 @@ export type MediaAssetRecord = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type TimelinePlanItem = {
+  id: string;
+  title: string;
+  description: string;
+  status: "planned" | "in-progress" | "completed";
+  targetDate?: string;
+  tags: string[];
+  createdAt: string;
+};
+
+export type TimelinePlansContent = {
+  plans: TimelinePlanItem[];
+  updatedAt?: string;
+};

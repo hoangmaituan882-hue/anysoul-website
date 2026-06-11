@@ -193,7 +193,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
           </a>
           <a href="#timeline" className={moreItemClass} role="menuitem">
             <Clock className="size-4 text-primary" />
-            <span>人生时间线</span>
+            <span>网站时间线</span>
           </a>
           <button onClick={handleWorkspaceClick} className={moreItemClass} role="menuitem">
             <LayoutDashboard className="size-4 text-primary" />
