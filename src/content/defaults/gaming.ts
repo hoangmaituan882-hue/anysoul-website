@@ -12,5 +12,6 @@ export const defaultGamingMain: GamingMainContent = {
   categories: [],
   recentGames: [],
   library: [],
-  exploreItems: []
+  exploreItems: [],
+  recordings: []
 };

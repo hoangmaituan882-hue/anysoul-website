@@ -123,5 +123,70 @@ export const defaultGamingMain: GamingMainContent = {
     { id: "explore-elden", gameId: "elden-ring", title: "艾尔登法环复健记录", author: "AnySoul", description: "DLC 前重新熟悉地图、Boss 和配装。", coverUrl: covers.elden, tags: ["魂系", "复健"], stars: 4, views: 92 },
     { id: "explore-cyberpunk", gameId: "cyberpunk-2077", title: "夜之城截图与剧情", author: "AnySoul", description: "把剧情回顾、截图和支线感想归档。", coverUrl: covers.cyberpunk, tags: ["剧情", "截图"], stars: 4, views: 76 },
     { id: "explore-zelda", gameId: "zelda-tears", title: "待玩清单：王国之泪", author: "AnySoul", description: "后续准备记录建造、解谜和探索路线。", coverUrl: covers.zelda, tags: ["待玩", "冒险", "联动游戏"], stars: 3, views: 45, badge: "待玩" }
+  ],
+  recordings: [
+    {
+      id: "recording-waves-20260609",
+      title: "鸣潮版本活动与材料路线回放",
+      gameId: "wuthering-waves",
+      gameTitle: "鸣潮 Wuthering Waves",
+      date: "2026-06-09",
+      duration: "02:48:00",
+      coverUrl: covers.waves,
+      host: "AnySoul",
+      videoUrl: "https://www.bilibili.com",
+      videoProvider: "bilibili",
+      tags: ["鸣潮", "开放世界", "材料路线", "记录中"],
+      summary: "围绕当前版本活动、角色养成和地图探索进行的一次完整游戏回放，适合回看路线和资源规划。",
+      highlights: ["主线推进与材料收集", "角色培养路线整理", "地图探索点位复盘"],
+      chapters: [
+        { time: "00:00", title: "开场与今日目标", description: "确认活动、体力和材料路线。" },
+        { time: "36:20", title: "主线推进", description: "集中处理剧情与地图解锁。" },
+        { time: "01:54:10", title: "角色培养", description: "整理养成材料和后续待刷清单。" }
+      ],
+      viewers: 1280,
+      danmaku: 342,
+      isFeatured: true
+    },
+    {
+      id: "recording-elden-20260608",
+      title: "艾尔登法环 DLC 前复健记录",
+      gameId: "elden-ring",
+      gameTitle: "艾尔登法环 Elden Ring",
+      date: "2026-06-08",
+      duration: "01:56:00",
+      coverUrl: covers.elden,
+      host: "AnySoul",
+      tags: ["艾尔登法环", "魂系", "Boss", "复健"],
+      summary: "重新熟悉角色手感、地图路线和 Boss 节奏，为后续长线回顾做准备。",
+      highlights: ["复盘配装与加点", "支线地图路线回忆", "Boss 战手感恢复"],
+      chapters: [
+        { time: "00:00", title: "角色状态检查" },
+        { time: "28:45", title: "支线探索复健" },
+        { time: "01:20:30", title: "Boss 战练习" }
+      ],
+      viewers: 920,
+      danmaku: 188
+    },
+    {
+      id: "recording-cyberpunk-20260605",
+      title: "夜之城支线与截图整理",
+      gameId: "cyberpunk-2077",
+      gameTitle: "赛博朋克 2077",
+      date: "2026-06-05",
+      duration: "02:12:00",
+      coverUrl: covers.cyberpunk,
+      host: "AnySoul",
+      tags: ["赛博朋克", "剧情", "截图", "支线"],
+      summary: "一次偏剧情和视觉记录的回放，整理夜之城支线、截图点和后续复盘素材。",
+      highlights: ["支线剧情回看", "城市截图点整理", "资料片体验复盘"],
+      chapters: [
+        { time: "00:00", title: "夜之城开场漫游" },
+        { time: "42:10", title: "支线剧情推进" },
+        { time: "01:37:40", title: "截图和素材整理" }
+      ],
+      viewers: 760,
+      danmaku: 104
+    }
   ]
 };

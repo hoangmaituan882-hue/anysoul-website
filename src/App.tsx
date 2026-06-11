@@ -21,6 +21,7 @@ import { SiteWorkspace } from "./pages/SiteWorkspace";
 import { About } from "./pages/About";
 import { Gaming } from "./pages/Gaming";
 import { GameLibrary } from "./pages/GameLibrary";
+import { GameRecordings } from "./pages/GameRecordings";
 import { Posts } from "./pages/Posts";
 import { Talks } from "./pages/Talks";
 import { Timeline } from "./pages/Timeline";
@@ -40,6 +41,7 @@ const routeTitles: Record<string, string> = {
   "#workspace": "管理后台",
   "#games": "游戏回",
   "#game-library": "游戏库",
+  "#game-recordings": "游戏录像库",
   "#about": "关于",
   "#timeline": "人生时间线"
 };
@@ -188,6 +190,18 @@ export default function App() {
         <Header isGames />
         <main className="flex-1 flex flex-col pt-24 pb-8">
           <GameLibrary route={route} />
+        </main>
+        <Footer />
+      </AppShell>
+    );
+  }
+
+  if (routeKey === "#game-recordings") {
+    return (
+      <AppShell className={pageShellClass}>
+        <Header isGames />
+        <main className="flex-1 flex flex-col pt-24 pb-8">
+          <GameRecordings />
         </main>
         <Footer />
       </AppShell>

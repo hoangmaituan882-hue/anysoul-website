@@ -492,6 +492,33 @@ export type GamingPlayRecord = {
   href?: string;
 };
 
+export type GamingRecordingChapter = {
+  time: string;
+  title: string;
+  description?: string;
+};
+
+export type GamingRecordingItem = {
+  id: string;
+  title: string;
+  gameId?: string;
+  gameTitle: string;
+  date: string;
+  duration: string;
+  coverUrl: string;
+  host?: string;
+  sourceUrl?: string;
+  videoUrl?: string;
+  videoProvider?: "bilibili" | "youtube" | "web" | "cloud" | "other";
+  tags: string[];
+  summary: string;
+  highlights: string[];
+  chapters: GamingRecordingChapter[];
+  viewers: number;
+  danmaku: number;
+  isFeatured?: boolean;
+};
+
 export type GamingLibraryItem = {
   id: string;
   title: string;
@@ -541,6 +568,7 @@ export type GamingMainContent = {
   streamGameId?: string;
   library?: GamingLibraryItem[];
   exploreItems?: GamingExploreItem[];
+  recordings?: GamingRecordingItem[];
 };
 
 export type PlazaVisibility = "visible" | "hidden" | "pending" | "rejected";

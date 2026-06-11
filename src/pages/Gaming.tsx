@@ -12,6 +12,7 @@ import X from "../components/icons/x-icon";
 import BookOpen from "../components/icons/library-icon";
 import Star from "../components/icons/star-icon";
 import Eye from "../components/icons/eye-icon";
+import MessageCircle from "../components/icons/message-circle-icon";
 import Crown from "../components/icons/trophy-icon";
 import LayoutGrid from "../components/icons/layout-dashboard-icon";
 import Heart from "../components/icons/heart-icon";
@@ -21,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useContent } from "../content/useContent";
 import { defaultGamingMain } from "../content/defaults/gaming";
-import type { GamingCategory, GamingExploreItem, GamingHeroGame, GamingLibraryItem, GamingMainContent, GamingPlayRecord, GamingRecentGame } from "../content/types";
+import type { GamingCategory, GamingExploreItem, GamingHeroGame, GamingLibraryItem, GamingMainContent, GamingPlayRecord, GamingRecentGame, GamingRecordingItem } from "../content/types";
 
 const tagPalette = [
   "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400",
@@ -158,6 +159,33 @@ function buildHeatmap(records: GamingPlayRecord[]) {
   });
 }
 
+function deriveRecordingPreview(content: GamingMainContent, library: GamingLibraryItem[]): GamingRecordingItem[] {
+  if (content.recordings?.length) return [...content.recordings].sort((a, b) => b.date.localeCompare(a.date));
+
+  return library.flatMap((game) => (game.playRecords || []).map((record, index) => ({
+    id: `recording-${game.id}-${record.date || index}`,
+    title: record.note ? `${game.title}：${record.note}` : `${game.title} 游戏回放`,
+    gameId: game.id,
+    gameTitle: game.title,
+    date: record.date,
+    duration: record.durationHours ? `${record.durationHours}h` : "待记录",
+    coverUrl: getGameImage(game),
+    host: "AnySoul",
+    videoUrl: record.href || game.videoUrl || game.streamUrl,
+    videoProvider: record.href || game.videoUrl || game.streamUrl ? "bilibili" as const : undefined,
+    tags: Array.from(new Set([game.genre, ...(game.tags || [])].filter(Boolean))),
+    summary: record.note ? `${record.note}。${game.review || game.description}` : game.review || game.description,
+    highlights: [record.note || "游玩记录", game.genre, getGameStatusLabel(game.status)].filter(Boolean),
+    chapters: [
+      { time: "00:00", title: "开场与目标确认" },
+      { time: "00:30", title: record.note || "游玩记录", description: game.description }
+    ],
+    viewers: Math.max(120, 520 - index * 45),
+    danmaku: Math.max(12, 86 - index * 10),
+    isFeatured: index === 0 && game.status === "playing"
+  }))).sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export function Gaming() {
   const content = normalizeGamingContent(useContent("gaming.main", defaultGamingMain));
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -169,6 +197,7 @@ export function Gaming() {
   const streamGame = library.find((game) => game.id === content.streamGameId) || currentGame;
   const heroGames = content.heroGames.length ? content.heroGames : library.map(libraryToHero);
   const selectedGame = library.find((game) => game.id === selectedGameId) || null;
+  const recordingPreview = useMemo(() => deriveRecordingPreview(content, library), [content, library]);
   const heatmap = useMemo(() => buildHeatmap(selectedGame?.playRecords || []), [selectedGame]);
 
   const filteredLibrary = useMemo(() => {
@@ -211,6 +240,9 @@ export function Gaming() {
   const openGameLibrary = () => {
     window.location.hash = "#game-library";
   };
+  const openGameRecordings = () => {
+    window.location.hash = "#game-recordings";
+  };
 
   if (!library.length && !heroGames.length) {
     return (
@@ -238,14 +270,24 @@ export function Gaming() {
                 后台发布游戏条目后，这里会恢复原来的轮播、分类、最近记录和联动游戏展示。
               </p>
             </div>
-            <button
-              onClick={openGameLibrary}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-bold shadow-sm transition-colors hover:bg-muted"
-            >
-              <LayoutGrid className="size-4" />
-              游戏库
-              <ArrowRight className="size-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={openGameLibrary}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-bold shadow-sm transition-colors hover:bg-muted"
+              >
+                <LayoutGrid className="size-4" />
+                游戏库
+                <ArrowRight className="size-4" />
+              </button>
+              <button
+                onClick={openGameRecordings}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-bold text-background shadow-sm transition-opacity hover:opacity-90"
+              >
+                <Play className="size-4" />
+                游戏录像库
+                <ArrowRight className="size-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -253,6 +295,7 @@ export function Gaming() {
   }
 
   const activeHero = heroGames[currentSlide] || heroGames[0] || libraryToHero(currentGame);
+  const latestRecording = recordingPreview[0];
 
   return (
     <div className="max-w-[1400px] mx-auto w-full px-6 pb-16">
@@ -415,6 +458,53 @@ export function Gaming() {
             </div>
         </div>
 
+        {/* Game Recording Tapes */}
+        <section className="rounded-[28px] border border-border bg-card p-5 shadow-sm md:p-6">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-red-500/10 px-3 py-1 text-xs font-black text-red-600 dark:text-red-300">
+                <Play className="size-3.5" /> GAME TAPES
+              </div>
+              <h3 className="mt-3 text-2xl font-black tracking-tight">游戏录像带</h3>
+              <p className="mt-1 text-sm font-bold text-muted-foreground">沉淀直播回放、游玩节点和高光摘要，进入游戏录像库继续检索。</p>
+            </div>
+            <button onClick={openGameRecordings} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-black text-background shadow-sm transition-opacity hover:opacity-90">
+              进入游戏录像库 <ArrowRight className="size-4" />
+            </button>
+          </div>
+
+          {recordingPreview.length ? (
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              {recordingPreview.slice(0, 3).map((recording, index) => (
+                <button key={recording.id} onClick={() => { window.location.hash = "#game-recordings"; }} className={cn("group flex min-h-[180px] flex-col overflow-hidden rounded-2xl border border-border bg-background text-left transition hover:-translate-y-0.5 hover:shadow-md", index === 0 && "lg:col-span-1")}>
+                  <div className="relative aspect-video overflow-hidden bg-muted">
+                    <img src={recording.coverUrl} alt={recording.title} className="size-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute left-3 top-3 rounded-full bg-black/65 px-2 py-1 text-[10px] font-black text-white backdrop-blur">{recording.date}</div>
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 text-white">
+                      <span className="line-clamp-1 text-xs font-black">{recording.gameTitle}</span>
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-bold backdrop-blur"><Clock className="size-3" /> {recording.duration}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col p-4">
+                    <h4 className="line-clamp-2 text-sm font-black leading-tight group-hover:text-primary">{recording.title}</h4>
+                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{recording.summary}</p>
+                    <div className="mt-auto flex items-center justify-between border-t border-border pt-3 text-[11px] font-bold text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><Eye className="size-3" /> {recording.viewers.toLocaleString()}</span>
+                      <span className="inline-flex items-center gap-1"><MessageCircle className="size-3" /> {recording.danmaku.toLocaleString()}</span>
+                      <span>{recording.chapters.length} 节点</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-background p-6 text-sm font-bold text-muted-foreground">
+              暂无游戏录像。后台发布录播，或给游戏条目添加游玩记录后，这里会自动生成录像带入口。
+            </div>
+          )}
+        </section>
+
       </div>
 
       {/* Right Sidebar */}
@@ -437,10 +527,10 @@ export function Gaming() {
         <div className="bg-card rounded-[28px] border border-border p-6 flex flex-col gap-8 shadow-sm flex-1">
            
            {/* Stream */}
-           <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                 <h3 className="font-bold text-lg">{content.streamTitle || "Stream"}</h3>
-                 <ChevronDown className="size-4 text-muted-foreground" />
+            <div className="flex flex-col gap-3">
+               <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-lg">{content.streamTitle || "Stream"}</h3>
+                  <ChevronDown className="size-4 text-muted-foreground" />
               </div>
               <button onClick={() => streamGame && setSelectedGameId(streamGame.id)} className="relative w-full aspect-video rounded-xl overflow-hidden group cursor-pointer shadow-sm text-left">
                  <img src={getGameImage(streamGame)} alt={streamGame?.title || "Stream"} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -452,13 +542,33 @@ export function Gaming() {
                  <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-black/50 px-3 py-2 text-white backdrop-blur">
                    <div className="text-xs font-black uppercase tracking-wider text-white/70">记录中</div>
                    <div className="truncate text-sm font-black">{streamGame?.title || content.currentGameTitle}</div>
-                 </div>
-              </button>
-           </div>
+                  </div>
+               </button>
+            </div>
 
-           <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                 <h3 className="font-bold text-lg">游戏库</h3>
+            <button onClick={openGameRecordings} className="group relative overflow-hidden rounded-2xl border border-border bg-background p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              {latestRecording ? (
+                <img src={latestRecording.coverUrl} alt={latestRecording.title} className="absolute inset-0 size-full object-cover opacity-20 transition-transform duration-700 group-hover:scale-105" />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/50" />
+              <div className="relative">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-1 text-[11px] font-black text-red-600 dark:text-red-300">
+                    <Play className="size-3" /> 游戏录像库
+                  </span>
+                  <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                </div>
+                <div className="line-clamp-2 text-sm font-black">{latestRecording?.title || "等待第一卷游戏录像带"}</div>
+                <div className="mt-2 flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
+                  <span>{recordingPreview.length} 条录像</span>
+                  {latestRecording && <span>{latestRecording.date}</span>}
+                </div>
+              </div>
+            </button>
+
+            <div className="flex flex-col gap-3">
+               <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-lg">游戏库</h3>
                  <span className="text-xs font-bold text-muted-foreground">{filteredLibrary.length}</span>
               </div>
               <div className="flex flex-col gap-3">
