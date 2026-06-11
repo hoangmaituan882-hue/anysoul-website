@@ -23,7 +23,7 @@ import { TopicsModal } from "../components/TopicsModal";
 import { useContent } from "../content/useContent";
 import { defaultTalksContent } from "../content/defaults/talks";
 import { DEFAULT_TALK_COVER_URL } from "../content/talkAssets";
-import type { TalkItem, TalkScheduleItem, TalksContent } from "../content/types";
+import type { TalkItem, TalkScheduleItem, TalkSidebarItem, TalksContent } from "../content/types";
 
 type TalkCard = {
   id: string;
@@ -193,20 +193,99 @@ function asMentionTitles(value: unknown): string[] {
   }).map((item) => item.trim()).filter(Boolean);
 }
 
+function normalizeTalkItem(value: unknown, index = 0): TalkItem {
+  const row = asObject(value);
+  return {
+    ...defaultTalksContent.live,
+    ...row,
+    id: asText(row.id, `talk-${index}`),
+    title: asText(row.title, defaultTalksContent.live.title),
+    subtitle: asText(row.subtitle, ""),
+    date: asText(row.date, defaultTalksContent.live.date),
+    time: asText(row.time, defaultTalksContent.live.time),
+    duration: asText(row.duration, defaultTalksContent.live.duration),
+    coverUrl: asText(row.coverUrl, ""),
+    status: (["live", "scheduled", "archived"].includes(asText(row.status)) ? row.status : "archived") as TalkItem["status"],
+    category: (["talk", "special", "selected", "notice", "other"].includes(asText(row.category)) ? row.category : "talk") as TalkItem["category"],
+    host: asText(row.host, ""),
+    guests: asTextArray(row.guests),
+    tags: asTextArray(row.tags),
+    summary: asText(row.summary, ""),
+    summaryBullets: asTextArray(row.summaryBullets),
+    highlights: asHighlightItems(row.highlights),
+    reviewPoints: asTextArray(row.reviewPoints),
+    quotes: asQuoteItems(row.quotes),
+    watchAdvice: asText(row.watchAdvice, ""),
+    viewers: Number(row.viewers || 0),
+    danmaku: Number(row.danmaku || 0),
+    likes: Number(row.likes || 0),
+    sourceUrl: row.sourceUrl === undefined ? undefined : asText(row.sourceUrl),
+    videoUrl: row.videoUrl === undefined ? undefined : asText(row.videoUrl),
+    videoProvider: row.videoProvider as TalkItem["videoProvider"],
+    animeMentions: Number(row.animeMentions || 0),
+    isFeatured: Boolean(row.isFeatured),
+    isLiked: Boolean(row.isLiked),
+    transcript: asTranscriptItems(row.transcript),
+    comments: asCommentTextItems(row.comments).map((content, commentIndex) => ({ author: "观众", content, time: String(commentIndex + 1) })),
+    mentions: asMentionTitles(row.mentions).map((title) => ({ title, type: "话题", tags: [], summary: "" }))
+  };
+}
+
+function normalizeScheduleItem(value: unknown, index = 0): TalkScheduleItem {
+  const row = asObject(value);
+  return {
+    id: asText(row.id, `schedule-${index}`),
+    date: asText(row.date, ""),
+    time: asText(row.time, ""),
+    title: asText(row.title, ""),
+    topic: asText(row.topic, ""),
+    tags: asTextArray(row.tags)
+  };
+}
+
+function normalizeSidebarItem(value: unknown, index = 0, prefix = "item"): TalkSidebarItem {
+  const row = asObject(value);
+  return {
+    id: asText(row.id, `${prefix}-${index}`),
+    title: asText(row.title, ""),
+    description: asText(row.description, ""),
+    date: row.date === undefined ? undefined : asText(row.date),
+    href: row.href === undefined ? undefined : asText(row.href),
+    tags: asTextArray(row.tags)
+  };
+}
+
 function normalizeTalksContent(value: TalksContent): TalksContent {
+  const raw = asObject(value);
+  const hero = asObject(raw.hero);
+  const archive = (Array.isArray(raw.archive) ? raw.archive : defaultTalksContent.archive).map(normalizeTalkItem);
+  const upcoming = (Array.isArray(raw.upcoming) ? raw.upcoming : defaultTalksContent.upcoming).map(normalizeScheduleItem);
+  const weekly = (Array.isArray(raw.weekly) ? raw.weekly : defaultTalksContent.weekly).map(normalizeScheduleItem);
+  const recentUpdates = (Array.isArray(raw.recentUpdates) ? raw.recentUpdates : defaultTalksContent.recentUpdates).map((item, index) => normalizeSidebarItem(item, index, "update"));
+  const topArticles = (Array.isArray(raw.topArticles) ? raw.topArticles : defaultTalksContent.topArticles).map((item, index) => normalizeSidebarItem(item, index, "article"));
+  const newUploads = (Array.isArray(raw.newUploads) ? raw.newUploads : defaultTalksContent.newUploads).map((item, index) => normalizeSidebarItem(item, index, "upload"));
+  const topics = (Array.isArray(raw.topics) ? raw.topics : defaultTalksContent.topics).map((item, index) => normalizeSidebarItem(item, index, "topic"));
+
   return {
     ...defaultTalksContent,
-    ...(value || {}),
-    hero: { ...defaultTalksContent.hero, ...(value?.hero || {}) },
-    liveTalkId: value?.liveTalkId || defaultTalksContent.liveTalkId,
-    live: { ...defaultTalksContent.live, ...(value?.live || {}) },
-    upcoming: Array.isArray(value?.upcoming) ? value.upcoming : defaultTalksContent.upcoming,
-    weekly: Array.isArray(value?.weekly) ? value.weekly : defaultTalksContent.weekly,
-    archive: Array.isArray(value?.archive) ? value.archive : defaultTalksContent.archive,
-    recentUpdates: Array.isArray(value?.recentUpdates) ? value.recentUpdates : defaultTalksContent.recentUpdates,
-    topArticles: Array.isArray(value?.topArticles) ? value.topArticles : defaultTalksContent.topArticles,
-    newUploads: Array.isArray(value?.newUploads) ? value.newUploads : defaultTalksContent.newUploads,
-    topics: Array.isArray(value?.topics) ? value.topics : defaultTalksContent.topics
+    ...raw,
+    hero: {
+      ...defaultTalksContent.hero,
+      ...hero,
+      eyebrow: asText(hero.eyebrow, defaultTalksContent.hero.eyebrow),
+      title: asText(hero.title, defaultTalksContent.hero.title),
+      subtitle: asText(hero.subtitle, defaultTalksContent.hero.subtitle)
+    },
+    defaultCoverUrl: asText(raw.defaultCoverUrl, defaultTalksContent.defaultCoverUrl),
+    liveTalkId: asText(raw.liveTalkId, defaultTalksContent.liveTalkId),
+    live: normalizeTalkItem(raw.live, -1),
+    upcoming,
+    weekly,
+    archive,
+    recentUpdates,
+    topArticles,
+    newUploads,
+    topics
   };
 }
 
