@@ -31,6 +31,52 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "b29cdcc",
+    "hash": "b29cdcc0a6f0b8917d9f9650734da87fe9091f9d",
+    "date": "2026-06-12",
+    "title": "commit generated changelog and pending configurations",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：内容数据 1。",
+    "files": [
+      "src/content/seeds/home.ts",
+      "src/contexts/ThemeLanguageContext.tsx",
+      "src/generated/changelog.ts"
+    ],
+    "items": [
+      {
+        "type": "维护",
+        "text": "chore: commit generated changelog and pending configurations",
+        "color": "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+      },
+      {
+        "type": "影响范围",
+        "text": "内容数据 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "cbdc913",
+    "hash": "cbdc9131134351847ceee35222645a93e30275c7",
+    "date": "2026-06-12",
+    "title": "refactor About page to use Bento Box grid UI",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。",
+    "files": [
+      "src/pages/About.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "feat: refactor About page to use Bento Box grid UI",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "2883018",
     "hash": "2883018c19ee20d4f8cf4cc4e869450152745edf",
     "date": "2026-06-12",
@@ -2225,46 +2271,6 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "efb2334",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-12",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add page copy controls for games and screenings",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、工作台 2",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "8ddea0b",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-12",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "UI: Fix Hero title typography wrap issue on mobile screens",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、工作台 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "组件 1、工作台 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "75e61a8",
     "subtitle": "改进",
     "status": "published",
@@ -2380,6 +2386,46 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "组件 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "cbdc913",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "feat: refactor About page to use Bento Box grid UI",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "b29cdcc",
+    "subtitle": "维护",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "维护",
+        "title": "chore: commit generated changelog and pending configurations",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：内容数据 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "内容数据 1",
         "description": ""
       }
     ]
