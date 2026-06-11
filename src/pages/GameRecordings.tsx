@@ -23,9 +23,101 @@ type RecordingFilter = {
   value: string;
 };
 
+function safeString(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function safeNumber(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function safeStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+}
+
+function safePlayRecords(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((record, index) => {
+    const item = (record && typeof record === "object" ? record : {}) as { date?: unknown; durationHours?: unknown; note?: unknown; href?: unknown };
+    return {
+      date: safeString(item.date, `record-${index + 1}`),
+      durationHours: safeNumber(item.durationHours, 0),
+      note: safeString(item.note),
+      href: safeString(item.href)
+    };
+  });
+}
+
+function normalizeLibraryItem(value: unknown, index: number): GamingLibraryItem {
+  const game = (value && typeof value === "object" ? value : {}) as Partial<GamingLibraryItem>;
+  const fallback = defaultGamingMain.library?.[index % (defaultGamingMain.library?.length || 1)];
+  const tags = safeStringArray(game.tags);
+  const genre = safeString(game.genre, tags[0] || fallback?.genre || "GAME");
+  const coverUrl = safeString(game.coverUrl, safeString(game.heroImage, fallback?.coverUrl || defaultGamingMain.streamImage));
+  const status = ["playing", "planned", "finished", "paused", "archived"].includes(String(game.status)) ? game.status as GamingLibraryItem["status"] : fallback?.status || "archived";
+
+  return {
+    ...(fallback || {}),
+    id: safeString(game.id, fallback?.id || `game-${index + 1}`),
+    title: safeString(game.title, fallback?.title || `Game ${index + 1}`),
+    subtitle: safeString(game.subtitle, fallback?.subtitle),
+    platform: safeString(game.platform, fallback?.platform || ""),
+    genre,
+    mode: safeString(game.mode, fallback?.mode || ""),
+    status,
+    tags: tags.length ? tags : [genre],
+    coverUrl,
+    heroImage: safeString(game.heroImage, coverUrl),
+    rating: safeString(game.rating, fallback?.rating),
+    totalHours: safeString(game.totalHours, fallback?.totalHours),
+    lastPlayedAt: safeString(game.lastPlayedAt, fallback?.lastPlayedAt),
+    streamUrl: safeString(game.streamUrl, fallback?.streamUrl),
+    videoUrl: safeString(game.videoUrl, fallback?.videoUrl),
+    description: safeString(game.description, safeString(game.review, fallback?.description || "")),
+    review: safeString(game.review, fallback?.review),
+    playRecords: safePlayRecords(game.playRecords).length ? safePlayRecords(game.playRecords) : fallback?.playRecords || []
+  };
+}
+
+function normalizeRecordingItem(value: unknown, index: number, library: GamingLibraryItem[]): GamingRecordingItem {
+  const recording = (value && typeof value === "object" ? value : {}) as Partial<GamingRecordingItem>;
+  const game = recording.gameId ? library.find((item) => item.id === recording.gameId) : library[index % Math.max(1, library.length)];
+  const chapters = Array.isArray(recording.chapters)
+    ? recording.chapters.map((chapter, chapterIndex) => {
+        const item = (chapter && typeof chapter === "object" ? chapter : {}) as Partial<GamingRecordingChapter>;
+        return {
+          time: safeString(item.time, chapterIndex === 0 ? "00:00" : `${chapterIndex}`),
+          title: safeString(item.title, "Recording chapter"),
+          description: safeString(item.description)
+        };
+      })
+    : [];
+
+  return {
+    id: safeString(recording.id, `recording-${game?.id || index}`),
+    title: safeString(recording.title, game ? `${game.title} Recording` : `Recording ${index + 1}`),
+    gameId: safeString(recording.gameId, game?.id),
+    gameTitle: safeString(recording.gameTitle, game?.title || "Game"),
+    date: safeString(recording.date, game?.lastPlayedAt || ""),
+    duration: safeString(recording.duration, "0h"),
+    coverUrl: safeString(recording.coverUrl, getGameImage(game)),
+    host: safeString(recording.host, "AnySoul"),
+    sourceUrl: safeString(recording.sourceUrl),
+    videoUrl: safeString(recording.videoUrl),
+    videoProvider: recording.videoProvider,
+    tags: safeStringArray(recording.tags).length ? safeStringArray(recording.tags) : [game?.genre, ...(game?.tags || [])].filter(Boolean) as string[],
+    summary: safeString(recording.summary, game?.review || game?.description || ""),
+    highlights: safeStringArray(recording.highlights),
+    chapters: chapters.length ? chapters : [{ time: "00:00", title: "Recording", description: game?.description || "" }],
+    viewers: safeNumber(recording.viewers, 0),
+    danmaku: safeNumber(recording.danmaku, 0),
+    isFeatured: Boolean(recording.isFeatured)
+  };
+}
+
 function normalizeGamingContent(content: GamingMainContent): GamingMainContent {
-  const library = content.library?.length ? content.library : defaultGamingMain.library || [];
-  const recordings = content.recordings?.length ? content.recordings : deriveRecordingsFromLibrary(library);
+  const library = content.library?.length ? content.library.map((game, index) => normalizeLibraryItem(game, index)) : (defaultGamingMain.library || []).map((game, index) => normalizeLibraryItem(game, index));
+  const recordings = content.recordings?.length ? content.recordings.map((recording, index) => normalizeRecordingItem(recording, index, library)) : deriveRecordingsFromLibrary(library);
   return { ...defaultGamingMain, ...content, library, recordings };
 }
 
@@ -112,7 +204,7 @@ function searchableText(recording: GamingRecordingItem) {
 function matchesFilter(recording: GamingRecordingItem, filter: RecordingFilter) {
   if (filter.kind === "all") return true;
   if (filter.kind === "year") return recording.date.startsWith(filter.value);
-  if (filter.kind === "tag") return recording.tags.includes(filter.value);
+  if (filter.kind === "tag") return (recording.tags || []).includes(filter.value);
   if (filter.kind === "game") return recording.gameId === filter.value || recording.gameTitle === filter.value;
   return true;
 }

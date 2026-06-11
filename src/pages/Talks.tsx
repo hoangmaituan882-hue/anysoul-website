@@ -581,9 +581,8 @@ export function Talks() {
     || talksContent.archive[0]
     || defaultTalksContent.live;
   const liveTalkData = talkToCard(liveTalkSource, talksContent.defaultCoverUrl);
-  const schedules = talksContent.upcoming.length
-    ? talksContent.upcoming.map(scheduleToCard)
-    : latestYearTalks.slice(1);
+  // Read real past archive from this year
+  const schedules = latestYearTalks.filter((t) => t.id !== liveTalkData.id).slice(0, 8);
   const weeklyDisplay = (talksContent.weekly.length ? talksContent.weekly : defaultTalksContent.weekly).slice(0, 7);
   if (showAllArchive) {
     if (selectedTalk) {

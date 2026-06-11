@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useContent } from "../content/useContent";
 import { defaultGamingMain } from "../content/defaults/gaming";
-import type { GamingCategory, GamingExploreItem, GamingHeroGame, GamingLibraryItem, GamingMainContent, GamingPlayRecord, GamingRecentGame, GamingRecordingItem } from "../content/types";
+import type { GamingCategory, GamingExploreItem, GamingHeroGame, GamingLibraryItem, GamingMainContent, GamingPlayRecord, GamingRecentGame, GamingRecordingChapter, GamingRecordingItem } from "../content/types";
 
 const tagPalette = [
   "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400",
@@ -35,10 +35,107 @@ const tagPalette = [
 
 const barPalette = ["bg-green-500", "bg-blue-500", "bg-amber-500", "bg-purple-500", "bg-teal-500", "bg-rose-500"];
 
+const validGameStatuses: GamingLibraryItem["status"][] = ["playing", "planned", "finished", "paused", "archived"];
+
+function safeString(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function safeNumber(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function safeStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+}
+
+function safePlayRecords(value: unknown): GamingPlayRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((record, index) => {
+      const item = (record && typeof record === "object" ? record : {}) as Partial<GamingPlayRecord>;
+      return {
+        date: safeString(item.date, `record-${index + 1}`),
+        durationHours: safeNumber(item.durationHours, 0),
+        note: safeString(item.note),
+        href: safeString(item.href)
+      };
+    })
+    .filter((record) => record.date);
+}
+
+function normalizeLibraryItem(value: unknown, index: number): GamingLibraryItem {
+  const game = (value && typeof value === "object" ? value : {}) as Partial<GamingLibraryItem>;
+  const fallback = defaultGamingMain.library?.[index % (defaultGamingMain.library?.length || 1)];
+  const rawTags = safeStringArray(game.tags);
+  const genre = safeString(game.genre, rawTags[0] || fallback?.genre || "GAME");
+  const tags = rawTags.length ? rawTags : [genre].filter(Boolean);
+  const coverUrl = safeString(game.coverUrl, safeString(game.heroImage, fallback?.coverUrl || defaultGamingMain.streamImage));
+  const status = validGameStatuses.includes(game.status as GamingLibraryItem["status"]) ? game.status as GamingLibraryItem["status"] : fallback?.status || "archived";
+
+  return {
+    ...(fallback || {}),
+    id: safeString(game.id, fallback?.id || `game-${index + 1}`),
+    title: safeString(game.title, fallback?.title || `Game ${index + 1}`),
+    subtitle: safeString(game.subtitle, fallback?.subtitle),
+    platform: safeString(game.platform, fallback?.platform || ""),
+    genre,
+    mode: safeString(game.mode, fallback?.mode || ""),
+    status,
+    tags,
+    coverUrl,
+    heroImage: safeString(game.heroImage, coverUrl),
+    rating: safeString(game.rating, fallback?.rating),
+    totalHours: safeString(game.totalHours, fallback?.totalHours),
+    lastPlayedAt: safeString(game.lastPlayedAt, fallback?.lastPlayedAt),
+    streamUrl: safeString(game.streamUrl, fallback?.streamUrl),
+    videoUrl: safeString(game.videoUrl, fallback?.videoUrl),
+    description: safeString(game.description, safeString(game.review, fallback?.description || "")),
+    review: safeString(game.review, fallback?.review),
+    playRecords: safePlayRecords(game.playRecords).length ? safePlayRecords(game.playRecords) : fallback?.playRecords || []
+  };
+}
+
+function normalizeRecordingItem(value: unknown, index: number, library: GamingLibraryItem[]): GamingRecordingItem {
+  const recording = (value && typeof value === "object" ? value : {}) as Partial<GamingRecordingItem>;
+  const game = recording.gameId ? library.find((item) => item.id === recording.gameId) : library[index % Math.max(1, library.length)];
+  const chapters = Array.isArray(recording.chapters)
+    ? recording.chapters.map((chapter, chapterIndex) => {
+        const item = (chapter && typeof chapter === "object" ? chapter : {}) as Partial<GamingRecordingChapter>;
+        return {
+          time: safeString(item.time, chapterIndex === 0 ? "00:00" : `${chapterIndex}`),
+          title: safeString(item.title, "Recording chapter"),
+          description: safeString(item.description)
+        };
+      })
+    : [];
+
+  return {
+    id: safeString(recording.id, `recording-${game?.id || index}`),
+    title: safeString(recording.title, game ? `${game.title} Recording` : `Recording ${index + 1}`),
+    gameId: safeString(recording.gameId, game?.id),
+    gameTitle: safeString(recording.gameTitle, game?.title || "Game"),
+    date: safeString(recording.date, game?.lastPlayedAt || ""),
+    duration: safeString(recording.duration, "0h"),
+    coverUrl: safeString(recording.coverUrl, getGameImage(game)),
+    host: safeString(recording.host, "AnySoul"),
+    sourceUrl: safeString(recording.sourceUrl),
+    videoUrl: safeString(recording.videoUrl),
+    videoProvider: recording.videoProvider,
+    tags: safeStringArray(recording.tags).length ? safeStringArray(recording.tags) : [game?.genre, ...(game?.tags || [])].filter(Boolean) as string[],
+    summary: safeString(recording.summary, game?.review || game?.description || ""),
+    highlights: safeStringArray(recording.highlights),
+    chapters: chapters.length ? chapters : [{ time: "00:00", title: "Recording", description: game?.description || "" }],
+    viewers: safeNumber(recording.viewers, 0),
+    danmaku: safeNumber(recording.danmaku, 0),
+    isFeatured: Boolean(recording.isFeatured)
+  };
+}
+
 function normalizeGamingContent(content: GamingMainContent): Required<Pick<GamingMainContent, "heroGames" | "categories" | "recentGames">> & GamingMainContent {
   const legacyRecent = content.recentGames?.length ? content.recentGames : defaultGamingMain.recentGames;
   const library = content.library?.length
-    ? content.library
+    ? content.library.map((game, index) => normalizeLibraryItem(game, index))
     : legacyRecent.map((game, index) => recentToLibrary(game, index));
   const heroGames = content.heroGames?.length
     ? content.heroGames
@@ -62,17 +159,19 @@ function normalizeGamingContent(content: GamingMainContent): Required<Pick<Gamin
 }
 
 function recentToLibrary(game: GamingRecentGame, index: number): GamingLibraryItem {
+  const primaryTag = game.tag1?.text || "GAME";
+  const coverUrl = game.img || defaultGamingMain.streamImage;
   return {
     id: `legacy-game-${index}`,
-    title: game.title,
+    title: game.title || `Game ${index + 1}`,
     subtitle: game.desc,
     platform: "未设置",
-    genre: game.tag1.text,
+    genre: primaryTag,
     mode: game.desc,
     status: index === 0 ? "playing" : "archived",
-    tags: [game.tag1.text, game.tag2?.text].filter(Boolean) as string[],
-    coverUrl: game.img,
-    heroImage: game.img,
+    tags: [primaryTag, game.tag2?.text].filter(Boolean) as string[],
+    coverUrl,
+    heroImage: coverUrl,
     rating: game.rating,
     totalHours: "",
     lastPlayedAt: game.time,
@@ -91,9 +190,10 @@ function libraryToHero(game: GamingLibraryItem): GamingHeroGame {
 }
 
 function libraryToRecent(game: GamingLibraryItem, index: number): GamingRecentGame {
+  const tags = game.tags || [];
   return {
     title: game.title,
-    tag1: { text: game.genre || game.tags[0] || "GAME", bg: tagPalette[index % tagPalette.length] },
+    tag1: { text: game.genre || tags[0] || "GAME", bg: tagPalette[index % tagPalette.length] },
     tag2: game.status === "playing" ? { text: "进行中", bg: "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400" } : undefined,
     barColor: barPalette[index % barPalette.length],
     time: game.lastPlayedAt || "待记录",
@@ -112,7 +212,7 @@ function libraryToExplore(game: GamingLibraryItem, index: number): GamingExplore
     author: "AnySoul",
     description: game.description,
     coverUrl: game.coverUrl,
-    tags: game.tags,
+    tags: game.tags || [],
     stars: Math.max(1, 5 - (index % 3)),
     views: 36 + index * 22,
     badge: game.status === "playing" ? "精选" : undefined
@@ -160,7 +260,7 @@ function buildHeatmap(records: GamingPlayRecord[]) {
 }
 
 function deriveRecordingPreview(content: GamingMainContent, library: GamingLibraryItem[]): GamingRecordingItem[] {
-  if (content.recordings?.length) return [...content.recordings].sort((a, b) => b.date.localeCompare(a.date));
+  if (content.recordings?.length) return content.recordings.map((recording, index) => normalizeRecordingItem(recording, index, library)).sort((a, b) => b.date.localeCompare(a.date));
 
   return library.flatMap((game) => (game.playRecords || []).map((record, index) => ({
     id: `recording-${game.id}-${record.date || index}`,
@@ -210,7 +310,7 @@ export function Gaming() {
       game.genre,
       game.mode,
       game.status,
-      ...game.tags
+      ...(game.tags || [])
     ].filter(Boolean).join(" ").toLowerCase().includes(keyword));
   }, [library, query]);
 

@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { motion } from "motion/react";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { TimelineJourney, type TimelineJourneyItem } from "../components/ui/timeline/TimelineJourney";
-import { Sparkles, Calendar as CalendarIcon } from "lucide-react";
+import { ArchiveTimeline, type ArchiveTimelinePost } from "../components/ui/timeline/ArchiveTimeline";
+import { Sparkles, Calendar as CalendarIcon, Archive } from "lucide-react";
+import { cn } from "../lib/utils";
 
 const defaultTimelineItems: TimelineJourneyItem[] = [
   {
@@ -123,6 +125,15 @@ const defaultTimelineItems: TimelineJourneyItem[] = [
 export function Timeline() {
   const [items] = useState<TimelineJourneyItem[]>(defaultTimelineItems);
 
+  const archivePosts = useMemo<ArchiveTimelinePost[]>(() =>
+    items.map((item) => ({
+      id: item.id,
+      date: item.startDate,
+      title: item.title,
+      tags: item.skills || [],
+      category: item.type === "education" ? "教育" : item.type === "work" ? "工作" : item.type === "project" ? "项目" : "成就"
+    })), [items]);
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 animate-in fade-in duration-700">
       <motion.div
@@ -144,6 +155,23 @@ export function Timeline() {
       </motion.div>
 
       <TimelineJourney items={items} showStats />
+
+      <div className="mt-16 pt-8 border-t border-border/50">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-8"
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-black text-muted-foreground mb-4">
+            <Archive className="size-3.5 text-primary" /> 简洁历史
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-foreground">
+            时间归档
+          </h2>
+        </motion.div>
+        <ArchiveTimeline posts={archivePosts} categories={["全部", "教育", "工作", "项目", "成就"]} />
+      </div>
     </div>
   );
 }

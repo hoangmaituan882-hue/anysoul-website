@@ -31,6 +31,464 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "c031a77",
+    "hash": "c031a77e84bd22a96ffe896557f020bfac0f24bd",
+    "date": "2026-06-11",
+    "title": "Add game recording library",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、内容数据 3。",
+    "files": [
+      "docs/plaza-gallery-image-handoff.md",
+      "src/App.tsx",
+      "src/content/defaults/gaming.ts",
+      "src/content/seeds/gaming.ts",
+      "src/content/types.ts",
+      "src/pages/GameRecordings.tsx",
+      "src/pages/Gaming.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add game recording library",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 2、内容数据 3",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "790728f",
+    "hash": "790728ff20f71ee37f3d19d62c5f04f1ac39e336",
+    "date": "2026-06-11",
+    "title": "Add timeline page, fix TalkDetail full-page rendering, add to More menu",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、组件 1。",
+    "files": [
+      "src/App.tsx",
+      "src/components/Header.tsx",
+      "src/pages/Talks.tsx",
+      "src/pages/Timeline.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add timeline page, fix TalkDetail full-page rendering, add to More menu",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 2、组件 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "cfb0ccd",
+    "hash": "cfb0ccd2c52dcb69cc09385ebc0aa0f8e9cd6542",
+    "date": "2026-06-11",
+    "title": "Integrate TalkDetail page and timeline components from external repo",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。",
+    "files": [
+      "src/components/ui/timeline/ArchiveTimeline.tsx",
+      "src/components/ui/timeline/TimelineJourney.tsx",
+      "src/features/TalkDetail/FeedbackModal.tsx",
+      "src/features/TalkDetail/WaveScrollbar.tsx",
+      "src/features/TalkDetail/index.tsx",
+      "src/pages/Talks.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Integrate TalkDetail page and timeline components from external repo",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "369c5bf",
+    "hash": "369c5bf7b7d09226937159428ead20538f91df96",
+    "date": "2026-06-11",
+    "title": "Add plaza like and view tracking with server persistence",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、内容数据 1、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/components/SoulImageCard.tsx",
+      "src/content/client.ts"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add plaza like and view tracking with server persistence",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 1、内容数据 1、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "f2a7028",
+    "hash": "f2a7028ae6bcd20e8f3199c740191ac89f3800c8",
+    "date": "2026-06-11",
+    "title": "Adaptive waterfall layout with natural image proportions",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。",
+    "files": [
+      "src/components/OptimizedImage.tsx",
+      "src/components/SoulImageCard.tsx",
+      "src/pages/Plaza.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Adaptive waterfall layout with natural image proportions",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "9ebee8e",
+    "hash": "9ebee8ed5e4a6a0df577c6358ccfbc6904916384",
+    "date": "2026-06-11",
+    "title": "Add lazy loading and fetchPriority for plaza gallery images",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。",
+    "files": [
+      "src/components/OptimizedImage.tsx",
+      "src/components/SoulImageCard.tsx",
+      "src/pages/Plaza.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add lazy loading and fetchPriority for plaza gallery images",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "1fafbe7",
+    "hash": "1fafbe7c630c63bb93d75c6bbfc3e6e728533443",
+    "date": "2026-06-11",
+    "title": "Integrate plaza review into audit queue, show image thumbnails, remove auto desc",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/pages/Workspace.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Integrate plaza review into audit queue, show image thumbnails, remove auto desc",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "213223b",
+    "hash": "213223b9bb0216125930a4469abcb8f9b6111700",
+    "date": "2026-06-11",
+    "title": "Optimize plaza image loading, add lightbox preview, and integrate plaza review into workspace audit tab",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2、工作台 1。",
+    "files": [
+      "src/components/ImageUploadField.tsx",
+      "src/components/SoulImageCard.tsx",
+      "src/pages/Workspace.tsx",
+      "src/workspace/PlazaAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Optimize plaza image loading, add lightbox preview, and integrate plaza review into workspace audit tab",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 2、工作台 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "79214a5",
+    "hash": "79214a563de3b79b17866b04ec3567e3da140e40",
+    "date": "2026-06-11",
+    "title": "Fix plaza file selection upload feedback",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1。",
+    "files": [
+      "src/components/PlazaContributionPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "Fix plaza file selection upload feedback",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "cfc1ce4",
+    "hash": "cfc1ce461d7322e6b2733511106b686c5be8fcb8",
+    "date": "2026-06-11",
+    "title": "Fix plaza upload stale demo auth",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1。",
+    "files": [
+      "src/components/PlazaContributionPanel.tsx",
+      "src/contexts/AuthContext.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "Fix plaza upload stale demo auth",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "e169866",
+    "hash": "e16986659449b7c6b0448a42cfcde939e54df454",
+    "date": "2026-06-11",
+    "title": "Add plaza user submissions and feedback",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 1、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/components/PlazaContributionPanel.tsx",
+      "src/content/types.ts",
+      "src/pages/Plaza.tsx",
+      "src/workspace/PlazaAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add plaza user submissions and feedback",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 1、工作台 1、内容数据 1、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "fc588a7",
+    "hash": "fc588a76faa90f42fc814cd2d73c24c6af97820a",
+    "date": "2026-06-11",
+    "title": "Fix animated icon hover crash",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 2。",
+    "files": [
+      "src/components/icons/alarm-clock-plus-icon.tsx",
+      "src/components/icons/trash-icon.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "Fix animated icon hover crash",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "3c6020f",
+    "hash": "3c6020f7109fe7698e83ad408135484741539da4",
+    "date": "2026-06-11",
+    "title": "Harden talks content normalization",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。",
+    "files": [
+      "src/pages/Talks.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Harden talks content normalization",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "905747a",
+    "hash": "905747a4070bb08a1ccbed003332338b3f21b137",
+    "date": "2026-06-11",
+    "title": "Fix talks page crash on malformed content",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。",
+    "files": [
+      "src/pages/Talks.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "Fix talks page crash on malformed content",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "5d9a23a",
+    "hash": "5d9a23ad50721d1748b3c3286700f4e4086a001b",
+    "date": "2026-06-11",
+    "title": "Add default talk recording cover",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、内容数据 3。",
+    "files": [
+      "public/assets/talks-default-cover.jpg",
+      "src/components/TalkModal.tsx",
+      "src/content/defaults/talks.ts",
+      "src/content/seeds/talks.ts",
+      "src/content/talkAssets.ts",
+      "src/pages/Talks.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add default talk recording cover",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 1、内容数据 3",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "9879a43",
+    "hash": "9879a43d408376aec5c370f34b9cb6e725d34532",
+    "date": "2026-06-11",
+    "title": "UI: Allow icon animation on parent group hover & update nav icons",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 71。",
+    "files": [
+      "src/components/Header.tsx",
+      "src/components/icons/alarm-clock-plus-icon.tsx",
+      "src/components/icons/brightness-down-icon.tsx",
+      "src/components/icons/bulb-svg.tsx",
+      "src/components/icons/camera-icon.tsx",
+      "src/components/icons/chart-bar-icon.tsx",
+      "src/components/icons/chart-line-icon.tsx",
+      "src/components/icons/checked-icon.tsx",
+      "src/components/icons/clock-icon.tsx",
+      "src/components/icons/cpu-icon.tsx",
+      "src/components/icons/dots-horizontal-icon.tsx",
+      "src/components/icons/dots-vertical-icon.tsx",
+      "src/components/icons/down-chevron.tsx",
+      "src/components/icons/download-icon.tsx",
+      "src/components/icons/expand-icon.tsx",
+      "src/components/icons/external-link-icon.tsx",
+      "src/components/icons/eye-icon.tsx",
+      "src/components/icons/eye-off-icon.tsx",
+      "src/components/icons/file-description-icon.tsx",
+      "src/components/icons/filled-bell-icon.tsx",
+      "src/components/icons/filter-icon.tsx",
+      "src/components/icons/flame-icon.tsx",
+      "src/components/icons/gamepad-icon.tsx",
+      "src/components/icons/gear-icon.tsx",
+      "src/components/icons/github-copilot-icon.tsx",
+      "src/components/icons/globe-icon.tsx",
+      "src/components/icons/hashtag-icon.tsx",
+      "src/components/icons/heart-icon.tsx",
+      "src/components/icons/history-circle-icon.tsx",
+      "src/components/icons/home-icon.tsx",
+      "src/components/icons/info-circle-icon.tsx",
+      "src/components/icons/layout-dashboard-icon.tsx",
+      "src/components/icons/library-icon.tsx",
+      "src/components/icons/like-icon.tsx",
+      "src/components/icons/link-icon.tsx",
+      "src/components/icons/locate-icon.tsx",
+      "src/components/icons/lock-icon.tsx",
+      "src/components/icons/magnifier-icon.tsx",
+      "src/components/icons/mail-filled-icon.tsx",
+      "src/components/icons/message-circle-icon.tsx",
+      "src/components/icons/moon-icon.tsx",
+      "src/components/icons/paint-icon.tsx",
+      "src/components/icons/party-popper-icon.tsx",
+      "src/components/icons/pen-icon.tsx",
+      "src/components/icons/player-icon.tsx",
+      "src/components/icons/question-mark.tsx",
+      "src/components/icons/radio-icon.tsx",
+      "src/components/icons/refresh-icon.tsx",
+      "src/components/icons/right-chevron.tsx",
+      "src/components/icons/rocket-icon.tsx",
+      "src/components/icons/save-icon.tsx",
+      "src/components/icons/scan-heart-icon.tsx",
+      "src/components/icons/send-icon.tsx",
+      "src/components/icons/shield-check.tsx",
+      "src/components/icons/simple-checked-icon.tsx",
+      "src/components/icons/sparkles-icon.tsx",
+      "src/components/icons/stack-3-icon.tsx",
+      "src/components/icons/star-icon.tsx",
+      "src/components/icons/telephone-icon.tsx",
+      "src/components/icons/trash-icon.tsx",
+      "src/components/icons/triangle-alert-icon.tsx",
+      "src/components/icons/trophy-icon.tsx",
+      "src/components/icons/types.ts",
+      "src/components/icons/unlink-icon.tsx",
+      "src/components/icons/unordered-list-icon.tsx",
+      "src/components/icons/upload-icon.tsx",
+      "src/components/icons/user-icon.tsx",
+      "src/components/icons/users-group-icon.tsx",
+      "src/components/icons/volume-2-icon.tsx",
+      "src/components/icons/volume-x-icon.tsx",
+      "src/components/icons/x-icon.tsx",
+      "src/generated/changelog.ts"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "UI: Allow icon animation on parent group hover & update nav icons",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 71",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "95fb36f",
     "hash": "95fb36f905eef502e5ed6cd4bf6c4b520254876a",
     "date": "2026-06-11",
@@ -1370,161 +1828,161 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "0a23431",
+    "version": "213223b",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
-    "date": "2026-06-10",
+    "date": "2026-06-11",
     "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
-        "title": "refactor(server): extract config/store/routes from index.ts (Phase 1)",
-        "description": "- server/config/runtime.ts: env parsing + RuntimeConfig type\n- server/store/content-events.ts: SSE clients/broadcast\n- server/routes/content.ts: content CRUD routes (bootstrap/content/batch/publish)\n- server/routes/realtime.ts: SSE EventSource endpoint\n- server/index.ts: imports from new modules, removes duplicated config+broadcast+realtime code\n- Smoke test: health check passes, PostgreSQL connected"
+        "title": "Optimize plaza image loading, add lightbox preview, and integrate plaza review into workspace audit tab",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2、工作台 1。"
       },
       {
         "type": "影响范围",
-        "title": "后端 5",
+        "title": "页面 1、组件 2、工作台 1",
         "description": ""
       }
     ]
   },
   {
-    "version": "8bccb12",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "Fix plaza weekly image upload trigger",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "170d2bd",
+    "version": "1fafbe7",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Refactor talks detail data and editor",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、组件 1、工作台 1、内容数据 2",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "21ebf6b",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
+    "date": "2026-06-11",
     "cardsPosition": "bottom",
     "cards": [
       {
-        "type": "修复",
-        "title": "Fix image upload format detection",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、后端 2。"
+        "type": "改进",
+        "title": "Integrate plaza review into audit queue, show image thumbnails, remove auto desc",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、后端 1。"
       },
       {
         "type": "影响范围",
-        "title": "组件 1、后端 2",
+        "title": "页面 1、后端 1",
         "description": ""
       }
     ]
   },
   {
-    "version": "2316bb9",
+    "version": "9ebee8e",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
-    "date": "2026-06-10",
+    "date": "2026-06-11",
     "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
-        "title": "Add public site workspace",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2、后端 1。"
+        "title": "Add lazy loading and fetchPriority for plaza gallery images",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。"
       },
       {
         "type": "影响范围",
-        "title": "页面 1、组件 1、工作台 1、内容数据 2、后端 1",
+        "title": "页面 1、组件 2",
         "description": ""
       }
     ]
   },
   {
-    "version": "cd34f08",
-    "subtitle": "维护",
+    "version": "f2a7028",
+    "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
     "cardsPosition": "bottom",
     "cards": [
       {
-        "type": "维护",
-        "title": "UI: Replace native selects with OptionCapsule component for better UX",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 7、组件 9、工作台 4、内容数据 20、后端 4、脚本配置 1。"
+        "type": "改进",
+        "title": "Adaptive waterfall layout with natural image proportions",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。"
       },
       {
         "type": "影响范围",
-        "title": "页面 7、组件 9、工作台 4、内容数据 20、后端 4、脚本配置 1",
+        "title": "页面 1、组件 2",
         "description": ""
       }
     ]
   },
   {
-    "version": "0fde746",
-    "subtitle": "改进",
+    "version": "369c5bf",
+    "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
     "cardsPosition": "top",
     "cards": [
       {
-        "type": "改进",
-        "title": "UI: Fix OptionCapsule styling issues and replace remaining native selects",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1。"
+        "type": "新功能",
+        "title": "Add plaza like and view tracking with server persistence",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、内容数据 1、后端 1。"
       },
       {
         "type": "影响范围",
-        "title": "页面 1、工作台 1",
+        "title": "组件 1、内容数据 1、后端 1",
         "description": ""
       }
     ]
   },
   {
-    "version": "95fb36f",
-    "subtitle": "维护",
+    "version": "cfb0ccd",
+    "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
     "cardsPosition": "bottom",
     "cards": [
       {
-        "type": "维护",
-        "title": "UI: Replace lucide-react icons with itshover animated icons",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 10、组件 85、工作台 7、脚本配置 1。"
+        "type": "改进",
+        "title": "Integrate TalkDetail page and timeline components from external repo",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。"
       },
       {
         "type": "影响范围",
-        "title": "页面 10、组件 85、工作台 7、脚本配置 1",
+        "title": "页面 1、组件 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "790728f",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add timeline page, fix TalkDetail full-page rendering, add to More menu",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、组件 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 2、组件 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "c031a77",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add game recording library",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、内容数据 3。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 2、内容数据 3",
         "description": ""
       }
     ]
