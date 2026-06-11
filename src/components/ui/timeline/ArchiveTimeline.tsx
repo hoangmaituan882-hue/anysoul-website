@@ -71,27 +71,23 @@ export function ArchiveTimeline({ posts, categories = ["全部", "游戏", "杂�
             {postsByYear.map((group) => (
               <motion.div 
                 layout
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-10%" }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                transition={{ 
-                  duration: 0.5,
-                  ease: [0.23, 1, 0.32, 1]
-                }}
+                transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
                 key={group.year} 
                 className="flex mb-2 group"
               >
                 <div className="w-20 sm:w-24 shrink-0 flex flex-col text-right pr-4 sm:pr-6">
                   <div className="h-16 flex items-start justify-end pt-1">
-                    <span className="text-2xl sm:text-3xl font-bold">{group.year}</span>
+                    <time className="text-2xl sm:text-3xl font-bold">{group.year}</time>
                   </div>
                   {group.posts.map((post, postIdx) => (
                     <motion.div 
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: Math.min(postIdx * 0.05, 0.5) + 0.1 }}
+                      initial={{ opacity: 0, y: 8 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-60px" }}
+                      transition={{ duration: 0.4, delay: postIdx * 0.06, ease: "easeOut" }}
                       key={post.id} 
                       className="h-14 flex items-center justify-end"
                     >
@@ -104,8 +100,8 @@ export function ArchiveTimeline({ posts, categories = ["全部", "游戏", "杂�
                   <motion.div 
                     initial={{ height: 0 }}
                     whileInView={{ height: "100%" }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 1.2, ease: "easeInOut" }}
                     className="absolute top-3 bottom-0 w-px border-l-[1.5px] border-dashed border-border/70 origin-top" 
                   />
                   
@@ -113,7 +109,7 @@ export function ArchiveTimeline({ posts, categories = ["全部", "游戏", "杂�
                     <motion.div 
                       initial={{ scale: 0 }}
                       whileInView={{ scale: 1 }}
-                      viewport={{ once: true }}
+                      viewport={{ once: true, margin: "-60px" }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       className="w-3.5 h-3.5 rounded-full border-[2.5px] border-blue-500 bg-background z-10" 
                     />
@@ -123,8 +119,8 @@ export function ArchiveTimeline({ posts, categories = ["全部", "游戏", "杂�
                       <motion.div 
                         initial={{ scale: 0 }}
                         whileInView={{ scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: Math.min(postIdx * 0.05, 0.5) + 0.15 }}
+                        viewport={{ once: true, margin: "-60px" }}
+                        transition={{ duration: 0.35, delay: postIdx * 0.06, ease: "easeOut" }}
                         className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500" 
                       />
                     </div>
@@ -134,14 +130,14 @@ export function ArchiveTimeline({ posts, categories = ["全部", "游戏", "杂�
                 <div className="flex-1 flex flex-col pl-4 sm:pl-8 pb-10">
                   <div className="h-16 flex flex-col justify-start pt-1 text-muted-foreground border-b border-transparent">
                     <span className="text-sm font-medium leading-none mb-1">{group.posts.length}</span>
-                    <span className="text-sm">篇帖子</span>
+                    <span className="text-sm">条记录</span>
                   </div>
                   {group.posts.map((post, postIdx) => (
                     <motion.div 
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -12 }}
                       whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: Math.min(postIdx * 0.05, 0.5) + 0.1 }}
+                      viewport={{ once: true, margin: "-60px" }}
+                      transition={{ duration: 0.4, delay: postIdx * 0.06, ease: "easeOut" }}
                       key={post.id} 
                       className="h-14 flex flex-col sm:flex-row sm:items-center justify-center sm:justify-between border-b border-transparent hover:border-border/50 hover:bg-muted/30 px-3 -ml-3 rounded-xl gap-1 sm:gap-4 transition-colors cursor-pointer group/item relative z-10"
                     >

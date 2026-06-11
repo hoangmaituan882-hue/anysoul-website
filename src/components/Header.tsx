@@ -25,6 +25,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [morePos, setMorePos] = useState({ top: 80, right: 16 });
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme, language, toggleLanguage, t } = useThemeLanguage();
   const { user, logout, canEditWorkspace } = useAuth();
@@ -49,11 +50,15 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
       if (event.key === "Escape") setIsMoreOpen(false);
     };
 
+    const handleResize = () => setIsMoreOpen(false); // Close on resize to prevent floating
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
     };
   }, [isMoreOpen]);
 
@@ -100,6 +105,14 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
 
   const toggleMore = (event: ReactMouseEvent) => {
     event.stopPropagation();
+    if (!isMoreOpen) {
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      const rightPadding = Math.max(16, document.documentElement.clientWidth - rect.right);
+      setMorePos({
+        top: rect.bottom + 8,
+        right: rightPadding
+      });
+    }
     setIsMoreOpen((open) => !open);
   };
 
@@ -178,7 +191,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
       </div>
 
       {isMoreOpen ? (
-        <div ref={moreMenuRef} role="menu" className="pointer-events-auto fixed right-4 top-20 z-[70] w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card/95 p-2 shadow-xl backdrop-blur-md">
+        <div ref={moreMenuRef} role="menu" className="pointer-events-auto fixed z-[70] w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card/95 p-2 shadow-xl backdrop-blur-md" style={{ top: morePos.top, right: morePos.right }}>
           <a href="#posts" className={moreItemClass} role="menuitem">
             <Newspaper className="size-4 text-primary" />
             <span>文章</span>

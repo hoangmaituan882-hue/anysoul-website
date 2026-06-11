@@ -31,6 +31,127 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "fc01682",
+    "hash": "fc01682ccf9a0c3c2e1840af86aa88b28e57d9d4",
+    "date": "2026-06-12",
+    "title": "Add 64 precise commit entries to timeline and date picker for future plans",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1。",
+    "files": [
+      "src/pages/Timeline.tsx",
+      "src/workspace/ContentAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add 64 precise commit entries to timeline and date picker for future plans",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、工作台 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "109f67a",
+    "hash": "109f67a2b48e0b14c7bf0cdefb929be0783ee6d5",
+    "date": "2026-06-12",
+    "title": "Add game recording bulk admin stats",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1、内容数据 1。",
+    "files": [
+      "src/content/types.ts",
+      "src/pages/GameLibrary.tsx",
+      "src/workspace/GamingAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add game recording bulk admin stats",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、工作台 1、内容数据 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "1303431",
+    "hash": "1303431a25aea6f3eb8a1646b58e34b7b12fde4b",
+    "date": "2026-06-11",
+    "title": "Add game recording admin controls",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。",
+    "files": [
+      "src/workspace/GamingAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add game recording admin controls",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "工作台 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "15b775a",
+    "hash": "15b775a3318224d5366f49fb92a1da1d6c0df944",
+    "date": "2026-06-11",
+    "title": "Rebuild timeline as website changelog and future plans system",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/App.tsx",
+      "src/components/Header.tsx",
+      "src/content/defaults/timeline.ts",
+      "src/content/types.ts",
+      "src/pages/Timeline.tsx",
+      "src/workspace/ContentAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "Rebuild timeline as website changelog and future plans system",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 1、工作台 1、内容数据 2、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "7f53fa8",
+    "hash": "7f53fa851df5bec36b4c97c6604a5a01a62704ea",
+    "date": "2026-06-11",
+    "title": "UI: Update recent talks card design to match reference",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2。",
+    "files": [
+      "src/generated/changelog.ts",
+      "src/pages/Talks.tsx",
+      "src/pages/Timeline.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "UI: Update recent talks card design to match reference",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "5fbf332",
     "hash": "5fbf33282d83ba1f8b9e5e2279636374e592869a",
     "date": "2026-06-11",
@@ -1876,112 +1997,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "9ebee8e",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add lazy loading and fetchPriority for plaza gallery images",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、组件 2",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "f2a7028",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Adaptive waterfall layout with natural image proportions",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、组件 2",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "369c5bf",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add plaza like and view tracking with server persistence",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1、内容数据 1、后端 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "组件 1、内容数据 1、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "cfb0ccd",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "Integrate TalkDetail page and timeline components from external repo",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、组件 2",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "790728f",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add timeline page, fix TalkDetail full-page rendering, add to More menu",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、组件 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、组件 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "c031a77",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -2001,7 +2022,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -2021,7 +2042,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -2031,6 +2052,106 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "7f53fa8",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "UI: Update recent talks card design to match reference",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "15b775a",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "Rebuild timeline as website changelog and future plans system",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2、后端 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、组件 1、工作台 1、内容数据 2、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "1303431",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add game recording admin controls",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "工作台 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "109f67a",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add game recording bulk admin stats",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1、内容数据 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、工作台 1、内容数据 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "fc01682",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add 64 precise commit entries to timeline and date picker for future plans",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、工作台 1",
         "description": ""
       }
     ]
