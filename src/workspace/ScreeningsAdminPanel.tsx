@@ -1082,9 +1082,10 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
 
   const deleteLibraryItemAndPublish = async (index: number) => {
     if (readOnly) return;
+    const prevLibrary = library;
+    const prevNext = next;
     const nextLibrary = normalizeLibraryForPublish({ ...library, items: library.items.filter((_, itemIndex) => itemIndex !== index) });
     const syncedNext = syncNextMoviesFromLibrary(next, nextLibrary);
-    setEditingLibraryId(null);
     setLibrary(nextLibrary);
     setNext(syncedNext);
     setIsSaving(true);
@@ -1093,9 +1094,13 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         { key: SCREENINGS_LIBRARY_KEY, payload: nextLibrary, publish: true, message: "Delete screening source and publish" },
         { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening after source delete" }
       ], "Delete screening source and publish");
-      setStatus("片源已删除并发布");
+      setEditingLibraryId(null);
+      setStatus("片源已删除");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "片源删除发布失败");
+      setLibrary(prevLibrary);
+      setNext(prevNext);
+      const message = error instanceof Error ? error.message : "片源删除失败";
+      setStatus(message.includes("409") || message.includes("version") ? `内容已被其他人修改，请刷新后重试：${message}` : message);
     } finally {
       setIsSaving(false);
     }
@@ -1950,7 +1955,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
             <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t border-border bg-background/95 px-5 py-4 backdrop-blur">
               <button onClick={() => setEditingLibraryId(null)} className="rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold hover:bg-muted">取消</button>
               <button onClick={() => { void deleteLibraryItemAndPublish(editingLibraryIndex); }} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-500/15 disabled:opacity-50">
-                <Trash2 className="size-4" /> 删除并发布
+                 <Trash2 className="size-4" /> 删除
               </button>
               <button onClick={() => { setEditingLibraryId(null); void publishLibraryNow(); }} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
                 <Save className="size-4" /> 保存并发布
