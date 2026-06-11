@@ -5,8 +5,8 @@ import Search from "../components/icons/magnifier-icon";
 import ShieldAlert from "../components/icons/shield-check";
 import Sparkles from "../components/icons/sparkles-icon";
 import Wrench from "../components/icons/gear-icon";
-import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import ArrowUpRight from "../components/icons/external-link-icon";
+import { motion } from "motion/react";
 
 import { FeedbackChannelForm } from "../components/FeedbackChannelForm";
 import { cn } from "../lib/utils";
@@ -81,108 +81,120 @@ const aboutData = [
 ];
 
 export function About() {
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  const active = aboutData[activeIdx];
-  const ActiveIcon = active.icon;
-
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6">
-      <section className="relative min-h-[72vh] overflow-hidden rounded-[2rem] border border-border bg-[#fbf5ea] p-5 dark:bg-zinc-950 sm:p-8 lg:p-10">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-6 top-4 text-[18vw] font-black leading-none tracking-tighter text-foreground/[0.035] sm:text-[150px]">ABOUT</div>
-          <div className="absolute -right-28 top-10 h-72 w-72 rounded-full bg-[#a4c639]/20 blur-3xl" />
-          <div className="absolute -bottom-28 left-1/4 h-80 w-80 rounded-full bg-rose-400/20 blur-3xl" />
+    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 md:py-12">
+      <div className="mb-8 md:mb-12">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-sm md:px-4 md:py-1.5">
+          <Sparkles className="size-3.5 text-primary md:size-4" />
+          <span className="text-xs font-black tracking-widest text-muted-foreground md:text-sm">ABOUT</span>
         </div>
+        <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl md:mt-6 md:text-6xl lg:text-7xl">关于本站</h1>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground md:mt-6 md:text-lg">
+          一个把放映会、图库、文章、投稿、后台监控和部署实践串在一起的个人内容站。
+        </p>
+      </div>
 
-        <div className="relative grid min-h-[620px] gap-6 lg:grid-cols-[360px_1fr]">
-          <aside className="flex flex-col justify-between gap-6 rounded-[1.5rem] border border-white/70 bg-background/70 p-4 shadow-sm backdrop-blur dark:border-zinc-800">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-black text-primary">
-                <Sparkles className="size-3.5" /> linzesss.icu
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
+        
+        {/* Card 1: 数据来源 - Spans 2 cols, 1 row */}
+        <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.5, delay:0}} className="group relative col-span-1 flex flex-col justify-between overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm transition hover:shadow-lg md:col-span-2 md:p-8">
+           <div className="absolute -right-10 -top-10 size-40 rounded-full bg-blue-500/10 blur-3xl transition-colors group-hover:bg-blue-500/20" />
+           <div className="relative z-10 flex items-center justify-between">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500 backdrop-blur">
+                <Search className="size-6" />
               </div>
-              <h1 className="mt-5 text-4xl font-black tracking-tight text-foreground sm:text-5xl">关于这个站点</h1>
-              <p className="mt-4 text-sm font-medium leading-relaxed text-muted-foreground">
-                一个把放映会、图库、文章、投稿、后台监控和部署实践串在一起的个人内容站。
-              </p>
-            </div>
+              <span className="text-sm font-black text-muted-foreground">01</span>
+           </div>
+           <div className="relative z-10 mt-8 md:mt-16">
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">数据来源</h2>
+              <p className="mt-3 text-lg font-bold text-foreground">{aboutData[0].summary}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{aboutData[0].body}</p>
+           </div>
+        </motion.div>
 
-            <div className="space-y-2">
-              {aboutData.map((item, index) => {
-                const Icon = item.icon;
-                const isActive = index === activeIdx;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveIdx(index)}
-                    className={cn(
-                      "group flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all",
-                      isActive ? "border-primary/30 bg-primary/10 shadow-sm" : "border-transparent bg-card/60 hover:bg-muted/60"
-                    )}
-                  >
-                    <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", item.bg, item.color)}>
-                      <Icon className="size-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-black text-muted-foreground">{item.number}</div>
-                      <div className="truncate text-sm font-black text-foreground">{item.shortTitle}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
+        {/* Card 2: 毕业设计 - Spans 2 cols */}
+        <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.5, delay:0.1}} className="group relative col-span-1 flex flex-col justify-between overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm transition hover:shadow-lg md:col-span-2 md:p-8">
+           <div className="absolute -right-10 -top-10 size-40 rounded-full bg-emerald-500/10 blur-3xl transition-colors group-hover:bg-emerald-500/20" />
+           <div className="relative z-10 flex items-center justify-between">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 backdrop-blur">
+                <GraduationCap className="size-6" />
+              </div>
+              <span className="text-sm font-black text-muted-foreground">02</span>
+           </div>
+           <div className="relative z-10 mt-8 md:mt-16">
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">毕业设计</h2>
+              <p className="mt-3 text-lg font-bold text-foreground">{aboutData[1].summary}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{aboutData[1].body}</p>
+           </div>
+        </motion.div>
 
-          <main className="relative overflow-hidden rounded-[1.75rem] border border-border bg-background shadow-sm">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active.id}
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -18 }}
-                transition={{ duration: 0.28 }}
-                className="flex min-h-full flex-col p-5 sm:p-8 lg:p-10"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-black uppercase tracking-[0.35em] text-muted-foreground">{active.number}</div>
-                    <h2 className="mt-3 max-w-3xl text-5xl font-black leading-none tracking-tight text-foreground sm:text-7xl">{active.title}</h2>
-                  </div>
-                  <div className={cn("flex size-16 items-center justify-center rounded-[1.5rem]", active.bg, active.color)}>
-                    <ActiveIcon className="size-8" />
-                  </div>
-                </div>
+        {/* Card 3: 古法匠人 - Spans 1 col */}
+        <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.5, delay:0.2}} className="group relative col-span-1 flex flex-col overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm transition hover:shadow-lg lg:col-span-1">
+           <div className="absolute -left-10 -top-10 size-32 rounded-full bg-amber-500/10 blur-3xl transition-colors group-hover:bg-amber-500/20" />
+           <div className="relative z-10 mb-6 flex items-center justify-between">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 backdrop-blur">
+                <Wrench className="size-5" />
+              </div>
+              <span className="text-sm font-black text-muted-foreground">03</span>
+           </div>
+           <h3 className="relative z-10 text-xl font-black tracking-tight">古法匠人</h3>
+           <p className="relative z-10 mt-2 text-sm font-bold text-foreground">{aboutData[2].summary}</p>
+           <p className="relative z-10 mt-1 text-xs leading-relaxed text-muted-foreground">{aboutData[2].body}</p>
+        </motion.div>
 
-                <p className="mt-8 max-w-2xl text-xl font-black leading-snug text-foreground">{active.summary}</p>
-                <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-muted-foreground sm:text-base">{active.body}</p>
+        {/* Card 4: 免责声明 - Spans 1 col */}
+        <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.5, delay:0.3}} className="group relative col-span-1 flex flex-col overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm transition hover:shadow-lg lg:col-span-1">
+           <div className="absolute -left-10 -bottom-10 size-32 rounded-full bg-rose-500/10 blur-3xl transition-colors group-hover:bg-rose-500/20" />
+           <div className="relative z-10 mb-6 flex items-center justify-between">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 backdrop-blur">
+                <ShieldAlert className="size-5" />
+              </div>
+              <span className="text-sm font-black text-muted-foreground">04</span>
+           </div>
+           <h3 className="relative z-10 text-xl font-black tracking-tight">免责声明</h3>
+           <p className="relative z-10 mt-2 text-sm font-bold text-foreground">{aboutData[3].summary}</p>
+           <p className="relative z-10 mt-1 text-xs leading-relaxed text-muted-foreground">{aboutData[3].body}</p>
+        </motion.div>
 
-                {active.id === "feedback" ? (
-                  <FeedbackChannelForm source="about" />
-                ) : active.id === "changelog" ? (
-                  <div className="mt-auto pt-10">
-                    <a href="#changelog" className="inline-flex items-center gap-2 rounded-2xl bg-foreground px-5 py-3 text-sm font-black text-background shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]">
-                      <History className="size-4" /> 进入更新记录
-                    </a>
-                  </div>
-                ) : (
-                  <div className="mt-auto grid gap-3 pt-10 sm:grid-cols-3">
-                    {[
-                      ["内容", "放映会 / 图库 / 文章"],
-                      ["管理", "工作台 / 待办 / 监控"],
-                      ["部署", "本地存储 / PostgreSQL / PM2"]
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-2xl border border-border bg-card p-4">
-                        <div className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
-                        <div className="mt-2 text-sm font-black text-foreground">{value}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </main>
-        </div>
-      </section>
+        {/* Card 5: 意见反馈 - Spans 2 cols */}
+        <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.5, delay:0.4}} className="group relative col-span-1 flex flex-col overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm transition hover:shadow-lg md:col-span-2 md:row-span-2 md:p-8">
+           <div className="absolute -right-10 -bottom-10 size-64 rounded-full bg-violet-500/10 blur-3xl transition-colors group-hover:bg-violet-500/20" />
+           <div className="relative z-10 flex flex-col md:flex-row md:items-start md:justify-between">
+             <div>
+               <div className="flex size-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500 backdrop-blur">
+                  <MessageSquareText className="size-6" />
+               </div>
+               <h2 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">意见反馈</h2>
+               <p className="mt-2 text-sm font-bold text-foreground">{aboutData[4].summary}</p>
+               <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">{aboutData[4].body}</p>
+             </div>
+             <span className="absolute right-0 top-0 text-sm font-black text-muted-foreground md:relative">05</span>
+           </div>
+           <div className="relative z-10 mt-8 flex-1 rounded-2xl bg-background/50 p-4 border border-border/50">
+             <FeedbackChannelForm source="about" />
+           </div>
+        </motion.div>
+
+        {/* Card 6: 更新记录 - Spans 2 cols */}
+        <motion.a href="#changelog" initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.5, delay:0.5}} className="group relative col-span-1 flex flex-col overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg lg:col-span-2 md:p-8">
+           <div className="absolute -right-10 -top-10 size-40 rounded-full bg-sky-500/10 blur-3xl transition-colors group-hover:bg-sky-500/20" />
+           <div className="relative z-10 flex items-center justify-between">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-500 backdrop-blur group-hover:scale-110 transition-transform">
+                <History className="size-6" />
+              </div>
+              <ArrowUpRight className="size-6 text-muted-foreground opacity-50 transition-all group-hover:text-sky-500 group-hover:opacity-100" />
+           </div>
+           <div className="relative z-10 mt-8">
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-black tracking-tight sm:text-3xl">更新记录</h2>
+                <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs font-black text-sky-500">06</span>
+              </div>
+              <p className="mt-3 text-lg font-bold text-foreground">{aboutData[5].summary}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{aboutData[5].body}</p>
+           </div>
+        </motion.a>
+
+      </div>
     </div>
   );
 }
