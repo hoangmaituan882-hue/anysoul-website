@@ -795,57 +795,47 @@ export function Talks() {
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {schedules.map((sch, i) => (
-                <div key={i} className="w-[calc(100%-1.5rem)] sm:w-[calc(50%-12px)] md:w-[calc(100%/3-16px)] flex-none snap-start space-y-4">
-                  <div className="flex items-center justify-between text-sm font-bold">
-                    <span>{sch.date}</span>
-                    <span className="bg-black text-white dark:bg-white dark:text-black w-6 h-6 flex items-center justify-center rounded-full text-xs">{sch.day}</span>
-                  </div>
+                <div key={i} className="w-[calc(100%-1.5rem)] sm:w-[calc(50%-12px)] md:w-[calc(100%/3-16px)] flex-none snap-start">
                   <div 
                     onClick={() => setSelectedTalk(sch)}
-                    className={cn(
-                    "bg-[#fcf8f3] dark:bg-[#2d2822] border border-[#f5eade] dark:border-[#3a332a] p-5 rounded-3xl flex flex-col h-[320px] relative cursor-pointer hover:shadow-md transition-shadow",
-                    sch.cover ? "" : "h-[320px]"
-                  )}>
-                     <div className="mb-4">
-                       <span className={cn(
-                          "inline-block text-[11px] font-bold px-2 py-0.5 rounded-md mb-3",
-                          sch.color === "pink" ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300" :
-                          sch.color === "yellow" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-400" :
-                          sch.color === "blue" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300" :
-                          "bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300"
-                       )}>
-                         {sch.cat}
-                       </span>
-                       <h4 className="font-bold text-[15px] leading-tight mb-2">{sch.title}</h4>
-                       <p className="text-[13px] text-muted-foreground line-clamp-3">
-                         {sch.desc}
-                       </p>
-                     </div>
-                     <div className={cn("text-xs font-semibold text-muted-foreground mt-auto pt-4 relative z-10", sch.cover ? "pb-[80px]" : "mb-8")}>
-                        {sch.min > 0 ? `${sch.min} ${t("talks.min")}` : sch.date}
-                     </div>
-                     
-                     {sch.cover ? (
-                       <div className="absolute bottom-0 left-0 right-0 h-28 rounded-b-3xl overflow-hidden mt-4">
-                           <TalkCover src={sch.cover} alt={sch.title} className="w-full h-full object-cover" />
+                    className="group bg-white dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-3 rounded-[2rem] flex flex-col relative cursor-pointer hover:shadow-xl hover:shadow-black/5 transition-all duration-300 h-full"
+                  >
+                    {/* Image Area */}
+                    <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] rounded-[1.5rem] overflow-hidden bg-muted mb-4 shrink-0">
+                       <TalkCover src={sch.cover} alt={sch.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                       <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
+                         {sch.min > 0 ? `${sch.min} ${t("talks.min")}` : sch.date}
                        </div>
-                     ) : (
-                       <div className="absolute bottom-4 left-5 right-5 flex justify-between items-center z-10">
-                         <div className="flex -space-x-2">
-                           {sch.imgs?.map((img, idx) => (
-                             <div key={idx} className="w-8 h-8 rounded-full border-2 border-[#fcf8f3] dark:border-[#2d2822] overflow-hidden bg-muted">
-                                <TalkAvatar src={img} />
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     )}
+                    </div>
 
-                     <div className={cn("absolute bottom-4 right-5 z-20 flex", sch.cover ? "" : "bottom-4 right-5")}>
-                       <button className="w-8 h-8 bg-pink-200 dark:bg-pink-900 text-pink-700 dark:text-pink-300 rounded-full flex items-center justify-center hover:bg-pink-300 transition-colors shadow-sm">
-                         <Plus className="size-4" strokeWidth={3} />
-                       </button>
-                     </div>
+                    {/* Content Area */}
+                    <div className="px-1 flex flex-col flex-1">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h4 className="font-bold text-[18px] leading-tight line-clamp-1">{sch.title}</h4>
+                        <span className="text-[13px] font-bold text-muted-foreground shrink-0 mt-0.5">{sch.date.slice(5)}</span>
+                      </div>
+                      
+                      <p className="text-[13px] text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+                        {sch.desc}
+                      </p>
+                      
+                      <div className="flex flex-wrap items-center gap-2 mb-5">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[11px] font-semibold text-foreground">
+                          <Eye className="size-3.5" /> {sch.viewers.toLocaleString()}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[11px] font-semibold text-foreground">
+                          <MessageCircle className="size-3.5" /> {sch.danmaku.toLocaleString()}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[11px] font-semibold text-foreground">
+                          <Tag className="size-3.5" /> {sch.cat}
+                        </span>
+                      </div>
+
+                      <div className="w-full mt-auto h-12 rounded-full bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] flex items-center justify-center font-bold text-sm gap-2 transition-transform group-hover:scale-[1.02]">
+                         立即播放 <ArrowUpRight className="size-4" strokeWidth={2.5} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

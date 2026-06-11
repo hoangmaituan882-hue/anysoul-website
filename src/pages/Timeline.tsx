@@ -124,6 +124,7 @@ const defaultTimelineItems: TimelineJourneyItem[] = [
 
 export function Timeline() {
   const [items] = useState<TimelineJourneyItem[]>(defaultTimelineItems);
+  const [tab, setTab] = useState<"journey" | "archive">("journey");
 
   const archivePosts = useMemo<ArchiveTimelinePost[]>(() =>
     items.map((item) => ({
@@ -140,7 +141,7 @@ export function Timeline() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-10"
+        className="mb-8"
       >
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-black text-muted-foreground mb-4">
           <CalendarIcon className="size-3.5 text-primary" /> 人生时间线
@@ -154,24 +155,49 @@ export function Timeline() {
         </p>
       </motion.div>
 
-      <TimelineJourney items={items} showStats />
-
-      <div className="mt-16 pt-8 border-t border-border/50">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-8"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-black text-muted-foreground mb-4">
-            <Archive className="size-3.5 text-primary" /> 简洁历史
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-foreground">
-            时间归档
-          </h2>
-        </motion.div>
-        <ArchiveTimeline posts={archivePosts} categories={["全部", "教育", "工作", "项目", "成就"]} />
+      <div className="flex rounded-xl border border-border bg-muted/50 p-0.5 w-fit mb-8">
+        {[
+          { id: "journey" as const, label: "旅程时间线", icon: CalendarIcon },
+          { id: "archive" as const, label: "简洁历史", icon: Archive }
+        ].map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={cn(
+              "relative z-10 flex items-center gap-1.5 h-8 rounded-lg px-3 text-xs font-bold transition-colors",
+              tab === id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {tab === id && <motion.div layoutId="timelineTab" className="absolute inset-0 rounded-lg bg-background shadow-sm" transition={{ type: "spring", stiffness: 400, damping: 25 }} />}
+            <Icon className="relative size-3.5" />
+            <span className="relative">{label}</span>
+          </button>
+        ))}
       </div>
+
+      <AnimatePresence mode="wait">
+        {tab === "journey" ? (
+          <motion.div
+            key="journey"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TimelineJourney items={items} showStats />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="archive"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ArchiveTimeline posts={archivePosts} categories={["全部", "教育", "工作", "项目", "成就"]} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
