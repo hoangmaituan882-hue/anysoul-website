@@ -4,6 +4,7 @@ import type {
   AnimatedIconProps,
   IconEasing,
 } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 type CustomStyleProps = {
@@ -34,6 +35,11 @@ const AlarmClockPlusIcon = forwardRef<
     ref,
   ) => {
     const [scope, animate] = useAnimate();
+    const animateIcon = animate as unknown as (
+      selector: string,
+      keyframes: Record<string, unknown>,
+      options?: Record<string, unknown>,
+    ) => ReturnType<typeof animate>;
     const animationControls = useRef<Array<ReturnType<typeof animate>>>([]);
 
     const start = async () => {
@@ -41,39 +47,31 @@ const AlarmClockPlusIcon = forwardRef<
       animationControls.current = [];
 
       animationControls.current.push(
-        animate(
+        animateIcon(
           ".clock",
           {
-            y: -1.5,
+            y: [-1.5],
             x: [-1, 1, -1, 1, -1, 0],
           },
           {
-            y: {
-              duration: durationY,
-              type: "spring",
-              stiffness: stiffness,
-              damping: damping,
-            },
-            x: { duration: durationX, repeat: Infinity, ease: ease },
+            duration: durationX,
+            repeat: Infinity,
+            ease: ease,
           },
         ),
       );
 
       animationControls.current.push(
-        animate(
+        animateIcon(
           ".bells",
           {
-            y: -2.5,
+            y: [-2.5],
             x: [-2, 2, -2, 2, -2, 0],
           },
           {
-            y: {
-              duration: durationY,
-              type: "spring",
-              stiffness: stiffness,
-              damping: damping,
-            },
-            x: { duration: durationX, repeat: Infinity, ease: ease },
+            duration: durationX,
+            repeat: Infinity,
+            ease: ease,
           },
         ),
       );

@@ -98,7 +98,7 @@ const TrashIcon = forwardRef<AnimatedIconHandle, TrashIconProps>(
       }
     }, [shakeOnClick, keepOpenOnDelete, animate, openLid]);
 
-    useIconHover(scope, start, stop);
+    useIconHover(scope, hoverAnimation, hoverEndAnimation);
     useImperativeHandle(ref, () => ({
       startAnimation: openLid,
       stopAnimation: closeLid,
