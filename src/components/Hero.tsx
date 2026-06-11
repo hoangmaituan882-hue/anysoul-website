@@ -107,7 +107,7 @@ export function Hero() {
           {hero.titlePrefix}
         </motion.h1>
 
-        <div className="relative flex justify-center items-center py-4 w-full h-[120px] md:h-[160px]">
+        <div className="relative flex justify-center items-center -mt-2 md:-mt-6 w-full h-[80px] md:h-[110px]">
           {/* Cursive Background Text */}
           <motion.div 
             className="absolute -z-10 h-full w-[min(92vw,620px)] flex items-center justify-center pointer-events-none opacity-80 mix-blend-multiply dark:mix-blend-screen md:w-[900px]"
@@ -168,7 +168,7 @@ export function Hero() {
         </div>
 
         <motion.p 
-          className="text-lg md:text-xl text-foreground font-medium pt-8 pb-4"
+          className="text-lg md:text-xl text-foreground font-medium pt-2 pb-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 2.6, ease: "easeOut" }}
