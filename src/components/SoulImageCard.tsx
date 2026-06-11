@@ -116,8 +116,8 @@ export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCard
                 <OptimizedImage
                   src={imageProps.src}
                   alt={name}
-                  className="w-full"
-                  aspectRatio="1/1"
+                  className="w-full h-auto"
+                  aspectRatio="auto"
                   fallbackColor={bannerColor}
                   fallbackText={avatarInitials}
                   srcSet={imageProps.srcSet}
@@ -125,7 +125,7 @@ export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCard
                   fetchPriority={fetchPriority}
                 />
               ) : (
-                <div className="w-full aspect-square flex items-center justify-center bg-primary/10">
+                <div className="w-full min-h-[200px] flex items-center justify-center bg-primary/10">
                   <span className="text-4xl font-semibold text-primary">{avatarInitials}</span>
                 </div>
               )}

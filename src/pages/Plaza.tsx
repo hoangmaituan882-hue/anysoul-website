@@ -186,7 +186,7 @@ export function Plaza() {
 
       <PlazaContributionPanel visibleSouls={visibleSouls} />
 
-      <div className="columns-1 gap-4 space-y-4 sm:columns-2 md:columns-3 xl:columns-4">
+      <div className="columns-1 gap-4 [&>*]:mb-4 sm:columns-2 md:columns-3 xl:columns-4">
         {visibleSoulsSlice.map((soul, idx) => (
           <SoulImageCard key={soul.id} soul={soul} infoFilter={infoFilter} fetchPriority={idx < 6 ? "high" : "auto"} />
         ))}

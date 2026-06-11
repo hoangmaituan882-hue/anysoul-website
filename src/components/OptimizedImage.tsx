@@ -40,7 +40,7 @@ export function OptimizedImage({
   return (
     <div
       className={cn("relative overflow-hidden bg-muted/30", className)}
-      style={placeholderAspect ? { aspectRatio: placeholderAspect } : undefined}
+      style={placeholderAspect ? { aspectRatio: placeholderAspect } : { minHeight: 200 }}
     >
       {state === "loading" && (
         <div className="absolute inset-0 animate-pulse bg-muted/50" />
