@@ -12,6 +12,7 @@ import MoreHorizontal from "./icons/dots-horizontal-icon";
 import Newspaper from "./icons/file-description-icon";
 import ShieldCheck from "./icons/shield-check";
 import Sun from "./icons/brightness-down-icon";
+import { Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
@@ -189,6 +190,10 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
           <a href="#changelog" className={moreItemClass} role="menuitem">
             <History className="size-4 text-primary" />
             <span>更新记录</span>
+          </a>
+          <a href="#timeline" className={moreItemClass} role="menuitem">
+            <Clock className="size-4 text-primary" />
+            <span>人生时间线</span>
           </a>
           <button onClick={handleWorkspaceClick} className={moreItemClass} role="menuitem">
             <LayoutDashboard className="size-4 text-primary" />

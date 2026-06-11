@@ -23,6 +23,7 @@ import { Gaming } from "./pages/Gaming";
 import { GameLibrary } from "./pages/GameLibrary";
 import { Posts } from "./pages/Posts";
 import { Talks } from "./pages/Talks";
+import { Timeline } from "./pages/Timeline";
 import { ThemeLanguageProvider } from "./contexts/ThemeLanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./contexts/AuthContext";
@@ -39,7 +40,8 @@ const routeTitles: Record<string, string> = {
   "#workspace": "管理后台",
   "#games": "游戏回",
   "#game-library": "游戏库",
-  "#about": "关于"
+  "#about": "关于",
+  "#timeline": "人生时间线"
 };
 
 const pageShellClass = "relative min-h-screen bg-background text-foreground antialiased selection:bg-primary/30 font-sans flex flex-col overflow-x-hidden transition-colors duration-300";
@@ -196,6 +198,14 @@ export default function App() {
     return (
       <StandardPage>
         <About />
+      </StandardPage>
+    );
+  }
+
+  if (routeKey === "#timeline") {
+    return (
+      <StandardPage mainClassName="flex-1 flex flex-col pt-16">
+        <Timeline />
       </StandardPage>
     );
   }

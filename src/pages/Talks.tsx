@@ -586,6 +586,9 @@ export function Talks() {
     : latestYearTalks.slice(1);
   const weeklyDisplay = (talksContent.weekly.length ? talksContent.weekly : defaultTalksContent.weekly).slice(0, 7);
   if (showAllArchive) {
+    if (selectedTalk) {
+      return <TalkDetail talk={selectedTalk} onBack={() => setSelectedTalk(null)} t={t} />;
+    }
     return (
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12 animate-in fade-in duration-700 bg-background text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
@@ -702,10 +705,12 @@ export function Talks() {
             没有匹配杂谈录像
           </div>
         ) : null}
-        
-        {selectedTalk && <TalkDetail talk={selectedTalk} onBack={() => setSelectedTalk(null)} t={t} />}
       </div>
     );
+  }
+
+  if (selectedTalk) {
+    return <TalkDetail talk={selectedTalk} onBack={() => setSelectedTalk(null)} t={t} />;
   }
 
   return (
@@ -1078,7 +1083,6 @@ export function Talks() {
         </div>
       </div>
       
-      {selectedTalk && <TalkDetail talk={selectedTalk} onBack={() => setSelectedTalk(null)} t={t} />}
       <TopicsModal isOpen={showTopicsModal} onClose={() => setShowTopicsModal(false)} t={t} initialTopicId={activeTopicId} topics={[...talksContent.recentUpdates, ...talksContent.topics]} />
       
     </div>
