@@ -1,13 +1,13 @@
 import express from "express";
 import multer from "multer";
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, rename, statfs, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, statfs, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { Pool } from "pg";
-import { generateThumbnails, getThumbnailUrls, detectBestFormat } from "./image-store";
+import { generateThumbnails, getThumbnailUrls, detectBestFormat, thumbnailFilePathStatic } from "./image-store";
 import { loadRuntimeConfig } from "./config/runtime";
 import { broadcast } from "./store/content-events";
 import { registerContentRoutes } from "./routes/content";
@@ -20,7 +20,7 @@ import { defaultSiteAnnouncements } from "../src/content/seeds/siteAnnouncements
 import { defaultFeedbackSubmissions } from "../src/content/seeds/feedback";
 import { defaultSiteAnalytics } from "../src/content/seeds/analytics";
 import { defaultScreeningLibrary } from "../src/content/seeds/screeningLibrary";
-import type { FeedbackSubmission, FeedbackSubmissionsContent, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalkTranscriptItem } from "../src/content/types";
+import type { FeedbackSubmission, FeedbackSubmissionsContent, MediaAssetRecord, PlazaContent, PlazaSoulItem, PlazaVisibility, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalkTranscriptItem } from "../src/content/types";
 import {
   defaultScreeningsAnime,
   defaultScreeningsClassics,
@@ -991,6 +991,7 @@ async function searchBangumiCandidates(request: MediaScrapeRequest, settings: Me
     const images = item.images as { large?: string; common?: string; medium?: string } | undefined;
     const ratingData = item.rating as { score?: number } | undefined;
     const title = String(item.name_cn || item.name || query);
+    const subjectId = item.id === undefined || item.id === null ? "" : String(item.id);
     const originalTitle = String(item.name || "") || undefined;
     const airDate = String(item.air_date || "");
     const rating = typeof ratingData?.score === "number" ? Number(ratingData.score.toFixed(1)) : undefined;
@@ -1005,6 +1006,7 @@ async function searchBangumiCandidates(request: MediaScrapeRequest, settings: Me
 
     return {
       id: slugifyTitle(`${title}-${airDate || index}`),
+      providerId: subjectId ? `bangumi_${subjectId}` : undefined,
       title,
       originalTitle: originalTitle === title ? undefined : originalTitle,
       type: "anime" as const,
@@ -2007,6 +2009,88 @@ function normalizeFeedbackSubmissions(value: unknown): FeedbackSubmissionsConten
   return { items: Array.isArray(content?.items) ? content.items : [] };
 }
 
+function normalizePlazaSoulItem(value: unknown, index: number): PlazaSoulItem {
+  const item = value as Partial<PlazaSoulItem> | null;
+  const visibility = ["visible", "hidden", "pending", "rejected"].includes(String(item?.visibility))
+    ? item!.visibility as PlazaVisibility
+    : "visible";
+
+  return {
+    id: trimText(item?.id, 140) || `plaza-${index}`,
+    name: trimText(item?.name, 160) || "未命名作品",
+    author: trimText(item?.author, 100),
+    tags: cleanPostTags(item?.tags),
+    likes: typeof item?.likes === "number" && Number.isFinite(item.likes) ? Math.max(0, item.likes) : 0,
+    createdAt: trimText(item?.createdAt || item?.importDate, 40),
+    views: typeof item?.views === "number" && Number.isFinite(item.views) ? Math.max(0, item.views) : 0,
+    activeDaysAgo: typeof item?.activeDaysAgo === "number" && Number.isFinite(item.activeDaysAgo) ? item.activeDaysAgo : null,
+    avatarSrc: trimText(item?.avatarSrc, 800),
+    avatarInitials: trimText(item?.avatarInitials, 12) || trimText(item?.name, 160).slice(0, 1),
+    bannerColor: trimText(item?.bannerColor, 120) || "from-primary/20 to-primary/10",
+    featured: Boolean(item?.featured),
+    visibility,
+    desc: trimText(item?.desc, 1200),
+    importBatchId: trimText(item?.importBatchId, 140) || undefined,
+    importYear: typeof item?.importYear === "number" ? item.importYear : undefined,
+    importWeek: typeof item?.importWeek === "number" ? item.importWeek : undefined,
+    importDate: trimText(item?.importDate, 40) || undefined,
+    seriesName: trimText(item?.seriesName, 120) || undefined,
+    seriesIndex: typeof item?.seriesIndex === "number" ? item.seriesIndex : undefined,
+    itemIndex: typeof item?.itemIndex === "number" ? item.itemIndex : undefined,
+    mediaAssetId: trimText(item?.mediaAssetId, 140) || undefined,
+    sourceAnimeTitle: trimText(item?.sourceAnimeTitle, 160) || undefined,
+    sourceAnimeId: trimText(item?.sourceAnimeId, 140) || undefined,
+    sourceAnimeUrl: trimText(item?.sourceAnimeUrl, 500) || undefined,
+    submittedByUserId: trimText(item?.submittedByUserId, 140) || undefined,
+    submittedByName: trimText(item?.submittedByName, 120) || undefined,
+    submittedAt: trimText(item?.submittedAt, 80) || undefined,
+    reviewedAt: trimText(item?.reviewedAt, 80) || undefined,
+    reviewedBy: trimText(item?.reviewedBy, 120) || undefined,
+    reviewNote: trimText(item?.reviewNote, 500) || undefined,
+    submissionBatchId: trimText(item?.submissionBatchId, 140) || undefined,
+    submissionKind: item?.submissionKind === "user-single" || item?.submissionKind === "user-batch" || item?.submissionKind === "admin-weekly" ? item.submissionKind : undefined
+  };
+}
+
+function normalizePlazaContent(value: unknown): PlazaContent {
+  const content = value as Partial<PlazaContent> | null;
+  const tags = cleanPostTags(content?.tags);
+  return {
+    souls: Array.isArray(content?.souls) ? content.souls.map((item, index) => normalizePlazaSoulItem(item, index)) : defaultPlazaContent.souls,
+    moments: Array.isArray(content?.moments) ? content.moments : defaultPlazaContent.moments,
+    groups: Array.isArray(content?.groups) ? content.groups : defaultPlazaContent.groups,
+    tags: tags.length ? tags : defaultPlazaContent.tags
+  };
+}
+
+function normalizeDateKey(value: unknown) {
+  const text = trimText(value, 20);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  return new Date().toISOString().slice(0, 10);
+}
+
+function plazaWeekFromDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map((part) => Number(part));
+  const date = new Date(year, (month || 1) - 1, day || 1);
+  const start = new Date(year, 0, 1);
+  const diffDays = Math.floor((date.getTime() - start.getTime()) / 86400000);
+  return Math.max(1, Math.floor(diffDays / 7) + 1);
+}
+
+function uniquePlazaName(baseName: string, usedNames: Set<string>) {
+  const cleanBase = trimText(baseName, 120) || "用户投稿";
+  if (!usedNames.has(cleanBase)) {
+    usedNames.add(cleanBase);
+    return cleanBase;
+  }
+
+  let index = 1;
+  while (usedNames.has(`${cleanBase} ${index}`)) index += 1;
+  const name = `${cleanBase} ${index}`;
+  usedNames.add(name);
+  return name;
+}
+
 const bannedFeedbackWords = [
   "博彩",
   "赌博",
@@ -2287,6 +2371,60 @@ async function putS3CompatibleObject(key: string, body: Buffer, contentType: str
   return `${publicBase.replace(/\/$/, "")}/${encodedKey}`;
 }
 
+async function deleteS3CompatibleObject(key: string) {
+  const endpoint = runtimeConfig.objectStorageEndpoint;
+  const bucket = runtimeConfig.objectStorageBucket;
+  const region = runtimeConfig.objectStorageRegion || "auto";
+  const accessKeyId = runtimeConfig.objectStorageAccessKeyId;
+  const secretAccessKey = runtimeConfig.objectStorageSecretAccessKey;
+
+  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return;
+
+  const endpointUrl = new URL(endpoint);
+  const encodedKey = s3EncodePath(key);
+  const host = runtimeConfig.objectStorageForcePathStyle ? endpointUrl.host : `${bucket}.${endpointUrl.host}`;
+  const canonicalUri = runtimeConfig.objectStorageForcePathStyle ? `/${bucket}/${encodedKey}` : `/${encodedKey}`;
+  const targetUrl = `${endpointUrl.protocol}//${host}${canonicalUri}`;
+  const payloadHash = sha256Hex("");
+  const { amzDate, dateStamp } = awsDateParts();
+  const credentialScope = `${dateStamp}/${region}/s3/aws4_request`;
+  const canonicalHeaders = [
+    `host:${host}`,
+    `x-amz-content-sha256:${payloadHash}`,
+    `x-amz-date:${amzDate}`
+  ].join("\n") + "\n";
+  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+  const canonicalRequest = [
+    "DELETE",
+    canonicalUri,
+    "",
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash
+  ].join("\n");
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest)
+  ].join("\n");
+  const signature = createHmac("sha256", s3SigningKey(secretAccessKey, dateStamp, region)).update(stringToSign).digest("hex");
+  const authorization = `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  const response = await fetch(targetUrl, {
+    method: "DELETE",
+    headers: {
+      Authorization: authorization,
+      "x-amz-content-sha256": payloadHash,
+      "x-amz-date": amzDate
+    }
+  });
+
+  if (!response.ok && response.status !== 404) {
+    const message = await response.text().catch(() => "");
+    throw new Error(`Object storage delete failed: ${response.status}${message ? ` ${message.slice(0, 200)}` : ""}`);
+  }
+}
+
 async function storeImageObject(file: Express.Multer.File, scope: string) {
   const detectedMimeType = detectImageMimeType(file.buffer);
   if (!detectedMimeType || !allowedImageMimeTypes.has(detectedMimeType)) {
@@ -2311,10 +2449,11 @@ async function storeImageObject(file: Express.Multer.File, scope: string) {
   return { key, url: `${publicBase.replace(/\/$/, "")}/uploads/${s3EncodePath(key)}`, storage: "local" as const, mimeType: detectedMimeType };
 }
 
-async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContext | null, scope: string) {
+async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContext | null, scope: string, options: { status?: MediaAssetRecord["status"] } = {}) {
   const stored = await storeImageObject(file, scope);
   const now = new Date().toISOString();
   const assetId = `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const status = options.status || "published";
 
   let thumbnailUrls: Record<string, string> = {};
   try {
@@ -2335,7 +2474,7 @@ async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContex
     mimeType: stored.mimeType,
     fileSize: file.size,
     hash: sha256Hex(file.buffer),
-    status: "published" as const,
+    status,
     metadata: {
       storage: stored.storage,
       objectKey: stored.key,
@@ -2357,6 +2496,97 @@ async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContex
   }
 
   return asset;
+}
+
+function safeLocalUploadPathFromKey(key: string) {
+  const targetPath = path.resolve(localUploadDir, ...key.split("/"));
+  const rootPath = path.resolve(localUploadDir);
+  return targetPath === rootPath || targetPath.startsWith(`${rootPath}${path.sep}`) ? targetPath : null;
+}
+
+function safeLocalUploadPathFromUrl(value?: string) {
+  if (!value) return null;
+  try {
+    const url = value.startsWith("http") ? new URL(value) : null;
+    const pathname = url ? url.pathname : value;
+    const marker = "/uploads/";
+    const index = pathname.indexOf(marker);
+    if (index < 0) return null;
+    const rawKey = pathname.slice(index + marker.length);
+    const key = decodeURIComponent(rawKey).replace(/^\/+/, "");
+    return safeLocalUploadPathFromKey(key);
+  } catch {
+    return null;
+  }
+}
+
+async function deleteStoredMediaFiles(assetId: string | undefined, url: string | undefined, metadata: Record<string, unknown> = {}) {
+  const objectKey = typeof metadata.objectKey === "string" ? metadata.objectKey : "";
+  const storage = typeof metadata.storage === "string" ? metadata.storage : "";
+  const operations: Array<Promise<unknown>> = [];
+
+  if (storage === "object" && objectKey) {
+    operations.push(deleteS3CompatibleObject(objectKey));
+  } else {
+    const localPath = objectKey ? safeLocalUploadPathFromKey(objectKey) : safeLocalUploadPathFromUrl(url);
+    if (localPath) operations.push(rm(localPath, { force: true }));
+  }
+
+  if (assetId) {
+    for (const width of [150, 400, 800]) {
+      operations.push(rm(thumbnailFilePathStatic(dataDir, assetId, width), { force: true }));
+    }
+  }
+
+  const results = await Promise.allSettled(operations);
+  const rejected = results.find((result) => result.status === "rejected") as PromiseRejectedResult | undefined;
+  if (rejected) throw rejected.reason;
+}
+
+async function markMediaAssetStatus(assetId: string | undefined, status: MediaAssetRecord["status"], metadataPatch: Record<string, unknown> = {}) {
+  if (!assetId || !db) return;
+  await ensureDatabaseSchema();
+  const database = requireDatabase();
+  await database.query(
+    "update media_assets set status = $1, metadata = metadata || $2::jsonb, updated_at = $3 where id = $4",
+    [status, JSON.stringify(metadataPatch), new Date().toISOString(), assetId]
+  );
+}
+
+async function readMediaAssetForOwner(assetId: string, ownerId: string) {
+  if (!db) return null;
+  await ensureDatabaseSchema();
+  const database = requireDatabase();
+  const result = await database.query("select id, owner_id, url, thumbnail_url, status, metadata from media_assets where id = $1 limit 1", [assetId]);
+  const row = result.rows[0];
+  if (!row || row.owner_id !== ownerId) return null;
+  return {
+    id: row.id as string,
+    url: row.url as string,
+    thumbnailUrl: row.thumbnail_url as string | undefined,
+    status: row.status as MediaAssetRecord["status"],
+    metadata: typeof row.metadata === "object" && row.metadata ? row.metadata as Record<string, unknown> : {}
+  };
+}
+
+async function hardDeleteMediaAsset(assetId?: string, fallbackUrl?: string) {
+  if (!assetId) {
+    await deleteStoredMediaFiles(undefined, fallbackUrl, {});
+    return;
+  }
+
+  if (!db) {
+    await deleteStoredMediaFiles(assetId, fallbackUrl, {});
+    return;
+  }
+
+  await ensureDatabaseSchema();
+  const database = requireDatabase();
+  const result = await database.query("select id, url, metadata from media_assets where id = $1 limit 1", [assetId]);
+  const row = result.rows[0];
+  const metadata = typeof row?.metadata === "object" && row.metadata ? row.metadata as Record<string, unknown> : {};
+  await deleteStoredMediaFiles(assetId, row?.url || fallbackUrl, metadata);
+  await database.query("update media_assets set status = 'deleted', updated_at = $1 where id = $2", [new Date().toISOString(), assetId]);
 }
 
 function sendUploadFailure(res: express.Response, error: unknown) {
@@ -3497,11 +3727,192 @@ app.post("/api/me/media/upload", requireSignedInMiddleware, publicWriteLimit, up
 
   const scope = trimText(req.body?.scope, 80) || "user";
   try {
-    const asset = await saveMediaAsset(file, auth, scope);
+    const asset = await saveMediaAsset(file, auth, scope, { status: scope === "plaza-submission" ? "pending" : "published" });
     res.json({ asset, storage: asset.metadata.storage });
   } catch (error) {
     sendUploadFailure(res, error);
   }
+});
+
+app.get("/api/me/bangumi/search", requireSignedInMiddleware, publicWriteLimit, async (req, res) => {
+  const auth = await requireSignedIn(req, res);
+  if (!auth) return;
+
+  const query = trimText(req.query.q, 120);
+  if (query.length < 2) {
+    res.json({ items: [] });
+    return;
+  }
+
+  const settings = await loadMediaScraperSettings();
+  const candidates = await searchBangumiCandidates({ query, mediaType: "anime", providers: ["bangumi"] }, settings).catch(() => []);
+  const items = candidates.slice(0, 8).map((candidate) => {
+    const bangumiId = candidate.providerId?.startsWith("bangumi_") ? candidate.providerId.slice("bangumi_".length) : candidate.id;
+    return {
+      id: bangumiId,
+      title: candidate.title,
+      originalTitle: candidate.originalTitle,
+      year: candidate.year,
+      posterUrl: candidate.posterUrl,
+      url: /^\d+$/.test(bangumiId) ? `https://bgm.tv/subject/${bangumiId}` : undefined
+    };
+  });
+
+  res.json({ items });
+});
+
+app.post("/api/me/plaza/submissions", requireSignedInMiddleware, publicWriteLimit, async (req, res) => {
+  const auth = await requireSignedIn(req, res);
+  if (!auth) return;
+
+  const rawItems = Array.isArray(req.body?.items) ? req.body.items.slice(0, 24) : [];
+  if (rawItems.length === 0) {
+    res.status(400).json({ error: "At least one image item is required" });
+    return;
+  }
+
+  const batchDate = normalizeDateKey(req.body?.batchDate);
+  const batchWeek = plazaWeekFromDateKey(batchDate);
+  const batchYear = Number(batchDate.slice(0, 4));
+  const paddedWeek = String(batchWeek).padStart(2, "0");
+  const batchId = `plaza-submission-${batchDate}-w${paddedWeek}-${Date.now().toString(36)}`;
+  const mode = rawItems.length > 1 ? "user-batch" : "user-single";
+  const submittedAt = new Date().toISOString();
+  const gradients = [
+    "from-sky-500/20 to-purple-500/20",
+    "from-cyan-500/20 to-blue-500/20",
+    "from-indigo-500/20 to-violet-500/20",
+    "from-fuchsia-500/20 to-rose-500/20",
+    "from-amber-500/20 to-orange-500/20",
+    "from-emerald-500/20 to-teal-500/20"
+  ];
+
+  const verifiedItems: Array<{
+    mediaAssetId?: string;
+    imageUrl: string;
+    author: string;
+    sourceAnimeTitle: string;
+    sourceAnimeId?: string;
+    sourceAnimeUrl?: string;
+    creationDate: string;
+  }> = [];
+
+  for (const raw of rawItems) {
+    const mediaAssetId = trimText(raw?.mediaAssetId, 140) || undefined;
+    const sourceAnimeTitle = trimText(raw?.sourceAnimeTitle, 160);
+    const imageUrl = trimText(raw?.imageUrl, 800);
+    if (!imageUrl && !mediaAssetId) {
+      res.status(400).json({ error: "Every submission item needs an uploaded image" });
+      return;
+    }
+    if (!sourceAnimeTitle) {
+      res.status(400).json({ error: "Every submission item needs an anime title" });
+      return;
+    }
+
+    let resolvedImageUrl = imageUrl;
+    if (mediaAssetId && db) {
+      const asset = await readMediaAssetForOwner(mediaAssetId, auth.user.id);
+      if (!asset) {
+        res.status(403).json({ error: "Uploaded image does not belong to the current user" });
+        return;
+      }
+      if (asset.status === "deleted") {
+        res.status(400).json({ error: "Uploaded image has been deleted" });
+        return;
+      }
+      resolvedImageUrl = asset.url;
+    }
+
+    verifiedItems.push({
+      mediaAssetId,
+      imageUrl: resolvedImageUrl,
+      author: trimText(raw?.author, 100) || auth.user.name,
+      sourceAnimeTitle,
+      sourceAnimeId: trimText(raw?.sourceAnimeId, 140) || undefined,
+      sourceAnimeUrl: trimText(raw?.sourceAnimeUrl, 500) || undefined,
+      creationDate: normalizeDateKey(raw?.creationDate || batchDate)
+    });
+  }
+
+  const result = await mutateStore((store) => {
+    const entry = store.entries["plaza.main"];
+    if (!entry) return { status: 500, error: "Plaza store is not configured" };
+
+    const current = normalizePlazaContent(entry.draft);
+    const usedNames = new Set(current.souls.map((item) => item.name).filter(Boolean));
+    const existingMaxIndex = current.souls
+      .filter((item) => item.submissionBatchId === batchId || item.importBatchId === batchId)
+      .reduce((max, item) => Math.max(max, item.itemIndex || 0), 0);
+
+    const newSouls = verifiedItems.map((item, index): PlazaSoulItem => {
+      const itemIndex = existingMaxIndex + index + 1;
+      const name = uniquePlazaName(item.sourceAnimeTitle, usedNames);
+      const tags = Array.from(new Set(["用户投稿", item.sourceAnimeTitle].filter(Boolean)));
+      return {
+        id: `${batchId}-${String(itemIndex).padStart(2, "0")}-${randomBytes(3).toString("hex")}`,
+        name,
+        author: item.author,
+        tags,
+        likes: 0,
+        createdAt: item.creationDate,
+        views: 0,
+        activeDaysAgo: null,
+        avatarSrc: item.imageUrl,
+        avatarInitials: name.slice(0, 1),
+        bannerColor: gradients[index % gradients.length],
+        featured: false,
+        visibility: "pending",
+        desc: `由 ${auth.user.name} 投稿，等待后台审核。`,
+        importBatchId: batchId,
+        importYear: batchYear,
+        importWeek: batchWeek,
+        importDate: batchDate,
+        seriesName: "用户图库投稿",
+        seriesIndex: batchWeek,
+        itemIndex,
+        mediaAssetId: item.mediaAssetId,
+        sourceAnimeTitle: item.sourceAnimeTitle,
+        sourceAnimeId: item.sourceAnimeId,
+        sourceAnimeUrl: item.sourceAnimeUrl,
+        submittedByUserId: auth.user.id,
+        submittedByName: auth.user.name,
+        submittedAt,
+        submissionBatchId: batchId,
+        submissionKind: mode
+      };
+    });
+
+    const nextTags = Array.from(new Set([...current.tags, "用户投稿", ...newSouls.flatMap((item) => item.tags)]));
+    entry.draft = { ...current, souls: [...newSouls, ...current.souls], tags: nextTags } satisfies PlazaContent;
+    entry.status = "draft";
+    entry.version += 1;
+    entry.updatedAt = submittedAt;
+
+    const event = {
+      id: `evt_${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: "content.draft.updated",
+      keys: ["plaza.main"],
+      version: store.siteVersion,
+      message: `New plaza submission from ${auth.user.name}`,
+      ...authEventActor(auth),
+      createdAt: submittedAt
+    };
+    store.events.unshift(event);
+    store.events = store.events.slice(0, 100);
+    return { status: 200, souls: newSouls, entry, event };
+  });
+
+  if (result.status !== 200) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+
+  await Promise.all(result.souls.map((item) => markMediaAssetStatus(item.mediaAssetId, "pending", { plazaSubmissionId: item.id, plazaSubmissionBatchId: batchId }))).catch((error) => {
+    console.error("Failed to annotate plaza submission media assets", error);
+  });
+  broadcast("content.draft.updated", result.event);
+  res.json({ ok: true, items: result.souls, entry: result.entry });
 });
 
 app.get("/api/public/image-proxy", async (req, res) => {
@@ -4322,10 +4733,15 @@ app.post("/api/public/feedback-submissions", publicWriteLimit, async (req, res) 
     ? req.body.submitterRole as NonNullable<FeedbackSubmission["submitterRole"]>
     : "visitor";
   const submitterRole: NonNullable<FeedbackSubmission["submitterRole"]> = auth?.user.role || requestedRole;
-  const source = (["about", "screening_nomination", "workspace", "other"].includes(req.body?.source) ? req.body.source : "about") as NonNullable<FeedbackSubmission["source"]>;
+  const source = (["about", "screening_nomination", "workspace", "plaza", "other"].includes(req.body?.source) ? req.body.source : "about") as NonNullable<FeedbackSubmission["source"]>;
   const imageUrls = normalizeFeedbackImageUrls(req.body?.imageUrls);
   const metadata = normalizeFeedbackMetadata(req.body?.metadata);
   const bannedWord = findBannedFeedbackWord(title, content, req.body?.contact);
+
+  if (source === "plaza" && !auth) {
+    res.status(401).json({ error: "登录后可以提交图库反馈" });
+    return;
+  }
 
   if (!title || content.length < 6) {
     res.status(400).json({ error: "title and content are required" });
@@ -4481,6 +4897,94 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
   if (kind === "source") {
     broadcast("content.published", { keys: result.event.keys });
   }
+  res.json({ entry: result.entry, event: result.event });
+});
+
+app.patch("/api/admin/plaza/items/:id/review", async (req, res) => {
+  const auth = await requireWorkspaceAdmin(req, res);
+  if (!auth) return;
+
+  const itemId = trimText(req.params.id, 160);
+  const decision = req.body?.decision;
+  if (decision !== "approve" && decision !== "reject") {
+    res.status(400).json({ error: "Decision must be approve or reject" });
+    return;
+  }
+
+  const reviewedAt = new Date().toISOString();
+  const reviewNote = trimText(req.body?.reviewNote, 500) || undefined;
+
+  const result = await mutateStore((store) => {
+    const entry = store.entries["plaza.main"];
+    if (!entry) return { status: 500, error: "Plaza store is not configured" };
+
+    const draft = normalizePlazaContent(entry.draft);
+    const published = normalizePlazaContent(entry.published);
+    const existing = draft.souls.find((item) => item.id === itemId) || published.souls.find((item) => item.id === itemId);
+    if (!existing) return { status: 404, error: "Plaza item not found" };
+
+    let nextDraft: PlazaContent;
+    let nextPublished: PlazaContent;
+    const isUserSubmission = Boolean(existing.submittedByUserId || existing.submissionKind === "user-single" || existing.submissionKind === "user-batch");
+
+    if (decision === "approve") {
+      const approved: PlazaSoulItem = {
+        ...existing,
+        visibility: "visible",
+        reviewedAt,
+        reviewedBy: auth.user.name,
+        reviewNote
+      };
+      const draftSouls = draft.souls.map((item) => item.id === itemId ? approved : item);
+      const publishedSouls = [approved, ...published.souls.filter((item) => item.id !== itemId)];
+      const tags = Array.from(new Set([...draft.tags, ...published.tags, ...approved.tags]));
+      nextDraft = { ...draft, souls: draftSouls, tags };
+      nextPublished = { ...published, souls: publishedSouls, tags };
+    } else {
+      nextDraft = { ...draft, souls: draft.souls.filter((item) => item.id !== itemId) };
+      nextPublished = { ...published, souls: published.souls.filter((item) => item.id !== itemId) };
+    }
+
+    store.siteVersion += 1;
+    entry.draft = nextDraft;
+    entry.published = nextPublished;
+    entry.status = "published";
+    entry.version += 1;
+    entry.updatedAt = reviewedAt;
+    entry.publishedAt = reviewedAt;
+
+    const event = {
+      id: `evt_${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: "content.published",
+      keys: ["plaza.main"],
+      version: store.siteVersion,
+      message: decision === "approve" ? `Approved plaza submission: ${existing.name}` : `Rejected plaza submission: ${existing.name}`,
+      ...authEventActor(auth),
+      createdAt: reviewedAt
+    };
+    store.events.unshift(event);
+    store.events = store.events.slice(0, 100);
+    return { status: 200, entry, event, item: existing, deleteAsset: decision === "reject" && isUserSubmission };
+  });
+
+  if (result.status !== 200) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+
+  try {
+    if (decision === "approve") {
+      await markMediaAssetStatus(result.item.mediaAssetId, "published", { reviewedAt, reviewedBy: auth.user.name });
+    } else if (result.deleteAsset) {
+      await hardDeleteMediaAsset(result.item.mediaAssetId, result.item.avatarSrc);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Media asset update failed";
+    res.status(500).json({ error: message, entry: result.entry });
+    return;
+  }
+
+  broadcast("content.published", result.event);
   res.json({ entry: result.entry, event: result.event });
 });
 

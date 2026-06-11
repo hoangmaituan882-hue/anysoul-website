@@ -255,7 +255,7 @@ export type FeedbackSubmission = {
   contact?: string;
   submitter?: string;
   submitterRole?: "visitor" | "user" | "admin" | "owner";
-  source?: "about" | "screening_nomination" | "workspace" | "other";
+  source?: "about" | "screening_nomination" | "workspace" | "plaza" | "other";
   imageUrls?: string[];
   metadata?: Record<string, string>;
   status: FeedbackSubmissionStatus;
@@ -567,6 +567,18 @@ export type PlazaSoulItem = {
   seriesName?: string;
   seriesIndex?: number;
   itemIndex?: number;
+  mediaAssetId?: string;
+  sourceAnimeTitle?: string;
+  sourceAnimeId?: string;
+  sourceAnimeUrl?: string;
+  submittedByUserId?: string;
+  submittedByName?: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+  submissionBatchId?: string;
+  submissionKind?: "user-single" | "user-batch" | "admin-weekly";
 };
 
 export type PlazaMomentItem = {

@@ -7,6 +7,7 @@ import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { motion } from "motion/react";
 import { SoulImageCard } from "../components/SoulImageCard";
+import { PlazaContributionPanel } from "../components/PlazaContributionPanel";
 import { useContent } from "../content/useContent";
 import { defaultPlazaContent } from "../content/defaults/plaza";
 import type { PlazaContent, PlazaSoulItem } from "../content/types";
@@ -152,6 +153,8 @@ export function Plaza() {
           ))}
         </div>
       </div>
+
+      <PlazaContributionPanel visibleSouls={visibleSouls} />
 
       <div className="columns-1 gap-4 space-y-4 sm:columns-2 md:columns-3 xl:columns-4">
         {sortedSouls.map(soul => (

@@ -126,7 +126,19 @@ function normalizePlazaSoulItem(item: unknown, index: number): PlazaSoulItem {
     importDate: typeof s?.importDate === "string" ? s.importDate : undefined,
     seriesName: typeof s?.seriesName === "string" ? s.seriesName : undefined,
     seriesIndex: typeof s?.seriesIndex === "number" ? s.seriesIndex : undefined,
-    itemIndex: typeof s?.itemIndex === "number" ? s.itemIndex : undefined
+    itemIndex: typeof s?.itemIndex === "number" ? s.itemIndex : undefined,
+    mediaAssetId: typeof s?.mediaAssetId === "string" ? s.mediaAssetId : undefined,
+    sourceAnimeTitle: typeof s?.sourceAnimeTitle === "string" ? s.sourceAnimeTitle : undefined,
+    sourceAnimeId: typeof s?.sourceAnimeId === "string" ? s.sourceAnimeId : undefined,
+    sourceAnimeUrl: typeof s?.sourceAnimeUrl === "string" ? s.sourceAnimeUrl : undefined,
+    submittedByUserId: typeof s?.submittedByUserId === "string" ? s.submittedByUserId : undefined,
+    submittedByName: typeof s?.submittedByName === "string" ? s.submittedByName : undefined,
+    submittedAt: typeof s?.submittedAt === "string" ? s.submittedAt : undefined,
+    reviewedAt: typeof s?.reviewedAt === "string" ? s.reviewedAt : undefined,
+    reviewedBy: typeof s?.reviewedBy === "string" ? s.reviewedBy : undefined,
+    reviewNote: typeof s?.reviewNote === "string" ? s.reviewNote : undefined,
+    submissionBatchId: typeof s?.submissionBatchId === "string" ? s.submissionBatchId : undefined,
+    submissionKind: s?.submissionKind === "user-single" || s?.submissionKind === "user-batch" || s?.submissionKind === "admin-weekly" ? s.submissionKind : undefined
   };
 }
 
@@ -316,6 +328,34 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       setStatus("作品已删除并发布");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "作品删除发布失败");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const reviewSubmittedSoul = async (id: string, decision: "approve" | "reject") => {
+    if (readOnly) {
+      setStatus("只读模式无法审核图库投稿");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await authFetch(`${CONTENT_API_BASE}/api/admin/plaza/items/${encodeURIComponent(id)}/review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      });
+      if (!response.ok) throw new Error(await readContentError(response, decision === "approve" ? "通过投稿失败" : "拒绝投稿失败"));
+      const data = await response.json() as { entry?: AdminContentEntry };
+      const draft = normalizePlaza(data.entry?.draft);
+      setPlaza(draft);
+      setSelectedId(draft.souls[0]?.id || "");
+      setIsSoulEditorOpen(false);
+      if (data.entry) setEntryMeta({ version: data.entry.version, updatedAt: data.entry.updatedAt });
+      setStatus(decision === "approve" ? "投稿已通过并发布到前台图库" : "投稿已拒绝，上传图片已删除");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : decision === "approve" ? "通过投稿失败" : "拒绝投稿失败");
     } finally {
       setIsSaving(false);
     }
@@ -567,6 +607,9 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   {(soul.importWeek ? [`第${soul.importWeek}周`] : soul.tags.slice(0, 2)).map((tag) => <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{tag}</span>)}
                 </div>
                 <div className="text-[11px] font-bold text-muted-foreground">{soul.importDate || soul.createdAt || "未设置日期"}</div>
+                {soul.submittedByName && (
+                  <div className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-black text-primary">投稿：{soul.submittedByName}</div>
+                )}
               </div>
             </button>
           ))}
@@ -708,6 +751,28 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <button onClick={() => updateSoul(selectedSoul.id, { featured: !selectedSoul.featured })} className={cn("rounded-full border px-4 py-2 text-sm font-bold transition-colors", selectedSoul.featured ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted")}>设为精选</button>
                 </div>
 
+                {selectedSoul.submittedByName && (
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-xs font-bold text-muted-foreground">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-black text-foreground"><Upload className="size-4 text-primary" /> 用户投稿信息</div>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <div>投稿用户：<span className="text-foreground">{selectedSoul.submittedByName}</span></div>
+                      <div>投稿时间：<span className="text-foreground">{selectedSoul.submittedAt || "-"}</span></div>
+                      <div>来源动画：<span className="text-foreground">{selectedSoul.sourceAnimeTitle || "-"}</span></div>
+                      <div>资源 ID：<span className="text-foreground">{selectedSoul.mediaAssetId || "-"}</span></div>
+                    </div>
+                    {selectedSoul.visibility === "pending" && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button disabled={readOnly || isSaving} onClick={() => { void reviewSubmittedSoul(selectedSoul.id, "approve"); }} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50">
+                          <Rocket className="size-3.5" /> 通过并发布
+                        </button>
+                        <button disabled={readOnly || isSaving} onClick={() => { void reviewSubmittedSoul(selectedSoul.id, "reject"); }} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-500/15 disabled:opacity-50">
+                          <Trash2 className="size-3.5" /> 拒绝并删除
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {(selectedSoul.importBatchId || selectedSoul.seriesName || selectedSoul.importWeek) && (
                   <div className="rounded-2xl border border-border bg-card p-4 text-xs font-bold text-muted-foreground">
                     <div className="mb-2 flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="size-4 text-primary" /> 每周导入信息</div>
@@ -726,8 +791,8 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
 
             <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t border-border bg-background/95 px-5 py-4 backdrop-blur">
               <button onClick={() => setIsSoulEditorOpen(false)} className="rounded-xl border border-border bg-card px-4 py-2 text-sm font-bold hover:bg-muted">取消</button>
-              <button disabled={readOnly || isSaving} onClick={() => { void deleteSoulAndPublish(selectedSoul.id); }} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-500/15 disabled:opacity-50">
-                <Trash2 className="size-4" /> 删除并发布
+              <button disabled={readOnly || isSaving} onClick={() => { void (selectedSoul.submittedByUserId && selectedSoul.visibility === "pending" ? reviewSubmittedSoul(selectedSoul.id, "reject") : deleteSoulAndPublish(selectedSoul.id)); }} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-500/15 disabled:opacity-50">
+                <Trash2 className="size-4" /> {selectedSoul.submittedByUserId && selectedSoul.visibility === "pending" ? "拒绝并删除" : "删除并发布"}
               </button>
               <button disabled={isSaving || readOnly} onClick={() => { setIsSoulEditorOpen(false); void save(true); }} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50">
                 <Rocket className="size-4" /> 保存并发布
