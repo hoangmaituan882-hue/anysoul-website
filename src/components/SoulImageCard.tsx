@@ -7,12 +7,12 @@ import X from "./icons/x-icon";
 import Download from "./icons/download-icon";
 import Expand from "./icons/expand-icon";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { OptimizedImage } from "./OptimizedImage";
-import { extractAssetIdFromUrl, getImageSrcSet, getImageUrl } from "../content/client";
+import { extractAssetIdFromUrl, getImageSrcSet, getImageUrl, likePlazaItem, recordPlazaView } from "../content/client";
 import type { PlazaSoulItem } from "../content/types";
 
 interface SoulImageCardProps {
@@ -39,6 +39,33 @@ export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCard
   const activeDaysAgo = typeof soul.activeDaysAgo === "number" && !Number.isNaN(soul.activeDaysAgo) ? soul.activeDaysAgo : null;
   const featured = Boolean(soul.featured);
 
+  const [liked, setLiked] = useState(false);
+  const [displayLikes, setDisplayLikes] = useState(likes);
+  const [displayViews, setDisplayViews] = useState(views);
+  const viewedRef = useRef(false);
+
+  const recordView = useCallback(() => {
+    if (viewedRef.current) return;
+    viewedRef.current = true;
+    setDisplayViews((prev) => prev + 1);
+    recordPlazaView(soul.id).catch(() => {});
+  }, [soul.id]);
+
+  const handleLike = useCallback((e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    recordView();
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setDisplayLikes((prev) => Math.max(0, prev + (nextLiked ? 1 : -1)));
+    likePlazaItem(soul.id).then((result) => {
+      setLiked(result.liked);
+      setDisplayLikes(result.likes);
+    }).catch(() => {
+      setLiked(!nextLiked);
+      setDisplayLikes((prev) => Math.max(0, prev + (nextLiked ? -1 : 1)));
+    });
+  }, [liked, soul.id, recordView]);
+
   const imageProps = useMemo(() => {
     const assetId = soul.mediaAssetId || extractAssetIdFromUrl(avatarSrc);
     if (assetId) {
@@ -55,6 +82,11 @@ export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCard
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    setDisplayLikes(likes);
+    setDisplayViews(views);
+  }, [likes, views]);
 
   const handleDownload = useCallback(async () => {
     if (!avatarSrc) return;
@@ -89,8 +121,9 @@ export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCard
 
   const openLightbox = useCallback(() => {
     if (!avatarSrc) return;
+    recordView();
     setLightboxOpen(true);
-  }, [avatarSrc]);
+  }, [avatarSrc, recordView]);
 
   return (
     <div
@@ -174,17 +207,15 @@ export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCard
                   <span className="truncate hover:text-foreground">by {author}</span>
                   <div className="flex items-center gap-3 ml-auto shrink-0">
                     <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
+                      onClick={handleLike}
                       type="button"
-                      aria-label={`赞 ${likes}`}
+                      aria-label={`赞 ${displayLikes}`}
                       className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors z-20 font-medium bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-full text-sm"
                     >
-                      <Heart className="size-4 fill-red-500/20" />
-                      <span>{likes}</span>
+                      <Heart className={cn("size-4", liked ? "fill-red-500" : "fill-red-500/20")} />
+                      <span>{displayLikes}</span>
                     </button>
-                    <span className="flex items-center gap-0.5"><Eye className="size-4" />{views}</span>
+                    <span className="flex items-center gap-0.5"><Eye className="size-4" />{displayViews}</span>
                   </div>
                 </div>
               </div>
@@ -215,18 +246,20 @@ export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCard
       <AnimatePresence>
         {lightboxOpen && avatarSrc && (
           <motion.div
+            key="lightbox-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
             onClick={() => setLightboxOpen(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              key="lightbox-content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="relative max-h-[90vh] max-w-[90vw] flex flex-col items-center"
               onClick={(e) => e.stopPropagation()}
             >

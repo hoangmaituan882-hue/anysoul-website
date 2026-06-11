@@ -223,6 +223,23 @@ export async function uploadPublicImageAsset(file: File, options: { scope?: stri
   return response.json() as Promise<{ asset: MediaAssetRecord; storage: "local" | "object" }>;
 }
 
+export async function likePlazaItem(id: string) {
+  const response = await fetch(`${CONTENT_API_BASE}/api/public/plaza/items/${encodeURIComponent(id)}/like`, { method: "POST" });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(data.error || `Like failed: ${response.status}`);
+  }
+  return response.json() as Promise<{ liked: boolean; likes: number }>;
+}
+
+export async function recordPlazaView(id: string) {
+  const response = await fetch(`${CONTENT_API_BASE}/api/public/plaza/items/${encodeURIComponent(id)}/view`, { method: "POST" });
+  if (!response.ok) {
+    return { views: 0 };
+  }
+  return response.json() as Promise<{ views: number }>;
+}
+
 const LOCAL_SOURCE_SUBMISSIONS_KEY = "anysoul-local-source-submissions";
 const LOCAL_FEEDBACK_SUBMISSIONS_KEY = "anysoul-local-feedback-submissions";
 

@@ -4988,6 +4988,111 @@ app.patch("/api/admin/plaza/items/:id/review", async (req, res) => {
   res.json({ entry: result.entry, event: result.event });
 });
 
+const plazaLikes = new Map<string, boolean>();
+
+app.post("/api/public/plaza/items/:id/like", async (req, res) => {
+  const itemId = trimText(req.params.id, 140);
+  if (!itemId) {
+    res.status(400).json({ error: "Item ID is required" });
+    return;
+  }
+
+  const ipFingerprint = sha256Hex(`${req.ip || "0.0.0.0"}|${req.headers["user-agent"] || ""}|${itemId}`);
+  const alreadyLiked = plazaLikes.has(ipFingerprint);
+
+  const result = await mutateStore((store) => {
+    const entry = store.entries["plaza.main"];
+    if (!entry) return { status: 404, error: "Plaza content not found" };
+
+    const draft = (entry.draft || {}) as Partial<PlazaContent>;
+    const published = (entry.published || {}) as Partial<PlazaContent>;
+
+    const updateSouls = (souls: PlazaSoulItem[]) =>
+      souls.map((s) => {
+        if (s.id !== itemId) return s;
+        return { ...s, likes: Math.max(0, (s.likes || 0) + (alreadyLiked ? -1 : 1)) };
+      });
+
+    const nextDraft = draft.souls ? { ...draft, souls: updateSouls(draft.souls as PlazaSoulItem[]) } : draft;
+    const nextPublished = published.souls ? { ...published, souls: updateSouls(published.souls as PlazaSoulItem[]) } : published;
+
+    entry.draft = nextDraft;
+    entry.published = nextPublished;
+    entry.version += 1;
+    entry.updatedAt = new Date().toISOString();
+
+    return {
+      status: 200,
+      liked: !alreadyLiked,
+      likes: (draft.souls as PlazaSoulItem[])?.find((s) => s.id === itemId)?.likes ?? 0
+    };
+  });
+
+  if (result.status !== 200) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+
+  if (alreadyLiked) {
+    plazaLikes.delete(ipFingerprint);
+  } else {
+    plazaLikes.set(ipFingerprint, true);
+  }
+
+  res.json({ liked: result.liked, likes: result.likes + (result.liked ? 1 : -1) });
+});
+
+const plazaViewTimestamps = new Map<string, number>();
+
+app.post("/api/public/plaza/items/:id/view", async (req, res) => {
+  const itemId = trimText(req.params.id, 140);
+  if (!itemId) {
+    res.status(400).json({ error: "Item ID is required" });
+    return;
+  }
+
+  const ipFingerprint = sha256Hex(`${req.ip || "0.0.0.0"}|${req.headers["user-agent"] || ""}|${itemId}`);
+  const lastView = plazaViewTimestamps.get(ipFingerprint) || 0;
+  const now = Date.now();
+
+  if (now - lastView < 3600000) {
+    res.json({ views: 0, skipped: true });
+    return;
+  }
+
+  const result = await mutateStore((store) => {
+    const entry = store.entries["plaza.main"];
+    if (!entry) return { status: 404, error: "Plaza content not found" };
+
+    const draft = (entry.draft || {}) as Partial<PlazaContent>;
+    const published = (entry.published || {}) as Partial<PlazaContent>;
+
+    const updateSouls = (souls: PlazaSoulItem[]) =>
+      souls.map((s) => {
+        if (s.id !== itemId) return s;
+        return { ...s, views: (s.views || 0) + 1 };
+      });
+
+    const nextDraft = draft.souls ? { ...draft, souls: updateSouls(draft.souls as PlazaSoulItem[]) } : draft;
+    const nextPublished = published.souls ? { ...published, souls: updateSouls(published.souls as PlazaSoulItem[]) } : published;
+
+    entry.draft = nextDraft;
+    entry.published = nextPublished;
+    entry.version += 1;
+    entry.updatedAt = new Date().toISOString();
+
+    return { status: 200 };
+  });
+
+  if (result.status !== 200) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+
+  plazaViewTimestamps.set(ipFingerprint, now);
+  res.json({ views: 1, skipped: false });
+});
+
 app.get("/api/admin/content", async (req, res) => {
   const auth = await requireWorkspaceAdmin(req, res);
   if (!auth) return;
