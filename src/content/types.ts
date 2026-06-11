@@ -532,6 +532,9 @@ export type GamingLibraryItem = {
   heroImage?: string;
   rating?: string;
   totalHours?: string;
+  recordingCount?: number;
+  totalViewers?: number;
+  totalDanmaku?: number;
   lastPlayedAt?: string;
   streamUrl?: string;
   videoUrl?: string;

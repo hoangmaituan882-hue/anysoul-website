@@ -118,6 +118,43 @@ function parseCount(value: unknown) {
   return Math.round(number);
 }
 
+function durationToSeconds(value: unknown) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  const parts = text.split(":").map((part) => Number(part));
+  if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0] * 60 + parts[1];
+  const hour = text.match(/(\d+(?:\.\d+)?)\s*(?:h|小时|時|时)/i);
+  const minute = text.match(/(\d+(?:\.\d+)?)\s*(?:m|分钟|分)/i);
+  if (hour || minute) return Number(hour?.[1] || 0) * 3600 + Number(minute?.[1] || 0) * 60;
+  const number = text.match(/\d+(?:\.\d+)?/);
+  return number ? Number(number[0]) * 3600 : 0;
+}
+
+function formatTotalHours(seconds: number) {
+  if (!seconds) return "0h";
+  const hours = seconds / 3600;
+  const rounded = hours >= 10 ? Math.round(hours) : Math.round(hours * 10) / 10;
+  return `${rounded}h`;
+}
+
+function recordingBelongsToGame(recording: GamingRecordingItem, game: GamingLibraryItem) {
+  return recording.gameId === game.id || recording.gameTitle === game.title;
+}
+
+function cleanRecordingTitle(title: string, fragments: string[]) {
+  let next = title;
+  fragments.forEach((fragment) => {
+    if (!fragment) return;
+    next = next.split(fragment).join("");
+  });
+  return next
+    .replace(/\s+/g, " ")
+    .replace(/[|｜·・]{2,}/g, "·")
+    .replace(/^[\s|｜·・:：,，、-]+|[\s|｜·・:：,，、-]+$/g, "")
+    .trim();
+}
+
 function extractBvid(value: unknown) {
   const text = String(value || "");
   const match = text.match(/BV[a-zA-Z0-9]+/);
@@ -168,11 +205,35 @@ function importedRecordingToItem(source: Record<string, unknown>, game: GamingLi
   };
 }
 
+function summarizeGameFromRecordings(game: GamingLibraryItem, recordings: GamingRecordingItem[]): GamingLibraryItem {
+  const gameRecordings = recordings.filter((recording) => recordingBelongsToGame(recording, game));
+  if (!gameRecordings.length) return game;
+  const totalSeconds = gameRecordings.reduce((sum, recording) => sum + durationToSeconds(recording.duration), 0);
+  const sortedByDate = [...gameRecordings].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const latestDate = sortedByDate.find((recording) => recording.date)?.date || game.lastPlayedAt;
+  return {
+    ...game,
+    totalHours: formatTotalHours(totalSeconds),
+    lastPlayedAt: latestDate,
+    recordingCount: gameRecordings.length,
+    totalViewers: gameRecordings.reduce((sum, recording) => sum + Number(recording.viewers || 0), 0),
+    totalDanmaku: gameRecordings.reduce((sum, recording) => sum + Number(recording.danmaku || 0), 0),
+    playRecords: sortedByDate.map((recording) => ({
+      date: recording.date || "",
+      durationHours: Math.round((durationToSeconds(recording.duration) / 3600) * 100) / 100,
+      note: recording.title,
+      href: recording.videoUrl || recording.sourceUrl
+    })).filter((record) => record.date || record.note)
+  };
+}
+
 function normalizeForPublish(draft: GamingMainContent): GamingMainContent {
-  const library = draft.library || [];
+  const recordings = draft.recordings || [];
+  const library = (draft.library || []).map((game) => summarizeGameFromRecordings(game, recordings));
   return {
     ...draft,
-    recordings: draft.recordings || [],
+    recordings,
+    library,
     currentGameTitle: library.find((game) => game.id === draft.currentGameId)?.title || draft.currentGameTitle,
     streamTitle: library.find((game) => game.id === draft.streamGameId)?.title || draft.streamTitle,
     streamImage: library.find((game) => game.id === draft.streamGameId)?.coverUrl || draft.streamImage,
@@ -206,6 +267,8 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [recordingGameId, setRecordingGameId] = useState<string>("");
   const [recordingQuery, setRecordingQuery] = useState("");
   const [recordingImportJson, setRecordingImportJson] = useState("");
+  const [selectedRecordingIds, setSelectedRecordingIds] = useState<string[]>([]);
+  const [titleCleanupText, setTitleCleanupText] = useState("");
   const [entryMeta, setEntryMeta] = useState<ContentEntryMeta | null>(null);
 
   const library = draft.library || [];
@@ -232,6 +295,8 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       return matchesGame && (!keyword || haystack.includes(keyword));
     });
   }, [recordingGame, recordingQuery, recordings]);
+  const filteredRecordingIds = useMemo(() => filteredRecordings.map((recording) => recording.id), [filteredRecordings]);
+  const selectedFilteredCount = selectedRecordingIds.filter((id) => filteredRecordingIds.includes(id)).length;
 
   const load = async () => {
     const response = await authFetch(`${CONTENT_API_BASE}/api/admin/content`);
@@ -345,6 +410,55 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
 
   const deleteRecording = (id: string) => {
     setDraft((current) => ({ ...current, recordings: (current.recordings || []).filter((recording) => recording.id !== id) }));
+    setSelectedRecordingIds((current) => current.filter((item) => item !== id));
+  };
+
+  const toggleRecordingSelection = (id: string) => {
+    setSelectedRecordingIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  };
+
+  const selectFilteredRecordings = () => {
+    setSelectedRecordingIds((current) => Array.from(new Set([...current, ...filteredRecordingIds])));
+  };
+
+  const clearRecordingSelection = () => {
+    setSelectedRecordingIds([]);
+  };
+
+  const deleteSelectedRecordings = () => {
+    const selected = new Set(selectedRecordingIds);
+    const deletable = new Set(filteredRecordingIds.filter((id) => selected.has(id)));
+    if (!deletable.size) {
+      setStatus("请先选择要删除的录像");
+      return;
+    }
+    setDraft((current) => ({ ...current, recordings: (current.recordings || []).filter((recording) => !deletable.has(recording.id)) }));
+    setSelectedRecordingIds((current) => current.filter((id) => !deletable.has(id)));
+    setStatus(`已删除 ${deletable.size} 条当前筛选范围内的录像，确认后点击保存并发布`);
+  };
+
+  const cleanupCurrentGameTitles = () => {
+    if (!recordingGame) {
+      setStatus("请先选择要清洗标题的游戏");
+      return;
+    }
+    const fragments = parseTextList(titleCleanupText);
+    if (!fragments.length) {
+      setStatus("请输入要清洗的重复字段");
+      return;
+    }
+    let changed = 0;
+    setDraft((current) => ({
+      ...current,
+      recordings: (current.recordings || []).map((recording) => {
+        if (!recordingBelongsToGame(recording, recordingGame)) return recording;
+        const title = cleanRecordingTitle(recording.title, fragments);
+        if (title === recording.title) return recording;
+        changed += 1;
+        return { ...recording, title };
+      })
+    }));
+    setStatus(`已清洗 ${changed} 条 ${recordingGame.title} 录像标题，确认后点击保存并发布`);
   };
 
   const importRecordings = () => {
@@ -488,6 +602,24 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
               })}
             </div>
 
+            <div className="mt-4 grid gap-3 rounded-2xl border border-border bg-card p-3 lg:grid-cols-[1fr_auto]">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[12px] font-bold text-muted-foreground">输入要清洗的重复字段</span>
+                <input
+                  value={titleCleanupText}
+                  onChange={(event) => setTitleCleanupText(event.target.value)}
+                  placeholder="例如：【泛式/录播】, 太空狼人杀联动！"
+                  className="h-10 rounded-lg border border-border bg-background px-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+                />
+              </label>
+              <div className="flex flex-wrap items-end gap-2">
+                <button onClick={cleanupCurrentGameTitles} disabled={readOnly || !recordingGame || !titleCleanupText.trim()} className="rounded-xl border border-border px-3 py-2 text-xs font-black hover:bg-muted disabled:opacity-50">清洗当前游戏标题</button>
+                <button onClick={selectFilteredRecordings} disabled={readOnly || !filteredRecordingIds.length} className="rounded-xl border border-border px-3 py-2 text-xs font-black hover:bg-muted disabled:opacity-50">全选当前筛选结果</button>
+                <button onClick={clearRecordingSelection} disabled={!selectedRecordingIds.length} className="rounded-xl border border-border px-3 py-2 text-xs font-black hover:bg-muted disabled:opacity-50">取消选择</button>
+                <button onClick={deleteSelectedRecordings} disabled={readOnly || !selectedFilteredCount} className="rounded-xl border border-rose-500/20 px-3 py-2 text-xs font-black text-rose-500 disabled:opacity-50">批量删除 {selectedFilteredCount || ""}</button>
+              </div>
+            </div>
+
             <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
               <div className="space-y-3">
                 <div className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-3">
@@ -498,6 +630,15 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   <div className="space-y-3">
                     {filteredRecordings.map((recording) => (
                       <div key={recording.id} className="rounded-2xl border border-border bg-card p-3">
+                        <label className="mb-3 flex items-center gap-2 text-xs font-black text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={selectedRecordingIds.includes(recording.id)}
+                            onChange={() => toggleRecordingSelection(recording.id)}
+                            className="size-4 rounded border-border accent-primary"
+                          />
+                          选择此录像
+                        </label>
                         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                           <Field label="标题" value={recording.title} onChange={(value) => updateRecording(recording.id, { title: value })} />
                           <Field label="BV号 / 链接" value={recording.videoUrl || recording.sourceUrl || ""} onChange={(value) => updateRecording(recording.id, { videoUrl: value, sourceUrl: value, videoProvider: value.includes("bilibili.com") || extractBvid(value) ? "bilibili" : "web" })} />

@@ -2,10 +2,12 @@ import ArrowDownUp from "../components/icons/dots-vertical-icon";
 import ArrowUpRight from "../components/icons/external-link-icon";
 import Calendar from "../components/icons/clock-icon";
 import Clock from "../components/icons/clock-icon";
+import Eye from "../components/icons/eye-icon";
 import ExternalLink from "../components/icons/external-link-icon";
 import Filter from "../components/icons/filter-icon";
 import Gamepad2 from "../components/icons/gamepad-icon";
 import LinkIcon from "../components/icons/link-icon";
+import MessageCircle from "../components/icons/message-circle-icon";
 import Search from "../components/icons/magnifier-icon";
 import Star from "../components/icons/star-icon";
 import Tag from "../components/icons/hashtag-icon";
@@ -69,6 +71,12 @@ function getGameImage(game: GamingLibraryItem) {
 function numberFromText(value?: string) {
   const match = `${value || ""}`.match(/\d+(\.\d+)?/);
   return match ? Number(match[0]) : 0;
+}
+
+function formatStatCount(value?: number) {
+  const count = Number(value || 0);
+  if (count >= 10000) return `${Math.round(count / 1000) / 10}万`;
+  return count.toLocaleString();
 }
 
 function sortPlayRecords(records: GamingPlayRecord[]) {
@@ -217,7 +225,7 @@ export function GameLibrary({ route }: { route: string }) {
                 <div className="mt-auto grid grid-cols-3 gap-2 border-t border-[#f5eade] pt-3 text-[11px] font-bold text-muted-foreground dark:border-[#3a332a]">
                   <span>{game.totalHours || "0h"}</span>
                   <span>{game.rating || "待评分"}</span>
-                  <span>{game.playRecords?.length || 0} 记录</span>
+                  <span>{game.recordingCount ?? game.playRecords?.length ?? 0} 录像</span>
                 </div>
               </div>
             </button>
@@ -253,9 +261,12 @@ export function GameLibrary({ route }: { route: string }) {
                 </div>
                 <div className="grid gap-6 p-5 lg:grid-cols-[1fr_320px]">
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                       <InfoCard icon={<Clock className="size-3.5" />} label="最近记录" value={selectedGame.status === "planned" ? "待玩" : selectedGame.lastPlayedAt || "待记录"} />
                       <InfoCard icon={<Calendar className="size-3.5" />} label="累计时长" value={selectedGame.totalHours || "0h"} />
+                      <InfoCard icon={<Gamepad2 className="size-3.5" />} label="录像数" value={`${selectedGame.recordingCount ?? selectedGame.playRecords?.length ?? 0}`} />
+                      <InfoCard icon={<Eye className="size-3.5" />} label="播放量" value={formatStatCount(selectedGame.totalViewers)} />
+                      <InfoCard icon={<MessageCircle className="size-3.5" />} label="弹幕数" value={formatStatCount(selectedGame.totalDanmaku)} />
                       <InfoCard icon={<Star className="size-3.5" />} label="评分" value={selectedGame.rating || "待评分"} />
                       <InfoCard icon={<Gamepad2 className="size-3.5" />} label="平台" value={selectedGame.platform} />
                     </div>
