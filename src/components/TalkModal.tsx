@@ -23,6 +23,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import type { TalkItem } from "../content/types";
+import { DEFAULT_TALK_COVER_URL } from "../content/talkAssets";
 
 type TalkCard = {
   id: string;
@@ -103,6 +104,16 @@ function EmptyBlock({ text = "暂无内容，等待后台补充。" }: { text?: 
   return (
     <div className="rounded-2xl border border-dashed border-border bg-background/60 px-4 py-5 text-center text-xs font-bold text-muted-foreground">
       {text}
+    </div>
+  );
+}
+
+function TalkAvatar({ src }: { src?: string }) {
+  if (src) return <img src={src} className="h-full w-full object-cover" alt="" />;
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] font-black text-muted-foreground">
+      AS
     </div>
   );
 }
@@ -343,6 +354,7 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
   }, []);
 
   if (!talk) return null;
+  const coverUrl = talk.cover || DEFAULT_TALK_COVER_URL;
   
   return (
     <AnimatePresence>
@@ -539,9 +551,9 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                        <ChevronLeft className="size-4 rotate-90" />
                      </button>
                   </div>
-                  {talk.cover ? (
+                  {coverUrl ? (
                     <div className="w-full h-40 sm:h-56 md:h-64 overflow-hidden relative shrink-0">
-                       <img src={talk.cover} alt={talk.title} className="w-full h-full object-cover" />
+                       <img src={coverUrl} alt={talk.title} className="w-full h-full object-cover" />
                        <div className="absolute inset-0 bg-gradient-to-t from-[#fcf8f3] dark:from-[#2d2822] to-transparent pointer-events-none" />
                     </div>
                   ) : (
@@ -615,7 +627,7 @@ export function TalkModal({ talk, onClose, t }: { talk: TalkCard; onClose: () =>
                              {talk.imgs.map((img: string, idx: number) => (
                                <div key={idx} className="flex items-center gap-1.5 bg-background/50 border border-[#f5eade] dark:border-[#3a332a] p-1 md:p-1.5 pr-2 md:pr-3 rounded-full">
                                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full border border-[#fcf8f3] dark:border-[#2d2822] overflow-hidden bg-muted">
-                                   <img src={img} className="w-full h-full object-cover" />
+                                   <TalkAvatar src={img} />
                                  </div>
                                  <span className="text-[10px] md:text-xs font-bold">嘉宾 {idx + 1}</span>
                                </div>

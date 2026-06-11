@@ -22,6 +22,7 @@ import { TalkModal } from "../components/TalkModal";
 import { TopicsModal } from "../components/TopicsModal";
 import { useContent } from "../content/useContent";
 import { defaultTalksContent } from "../content/defaults/talks";
+import { DEFAULT_TALK_COVER_URL } from "../content/talkAssets";
 import type { TalkItem, TalkScheduleItem, TalksContent } from "../content/types";
 
 type TalkCard = {
@@ -58,7 +59,7 @@ type TalkCard = {
   videoProvider?: TalkItem["videoProvider"];
 };
 
-const fallbackCover = "";
+const fallbackCover = DEFAULT_TALK_COVER_URL;
 
 function makeAvatarSlots(count: number) {
   return Array.from({ length: count }, () => "");

@@ -1,4 +1,5 @@
 import type { TalkItem, TalksContent } from "../types";
+import { DEFAULT_TALK_COVER_URL } from "../talkAssets";
 
 const fallbackTalk: TalkItem = {
   id: "talk-placeholder",
@@ -7,7 +8,7 @@ const fallbackTalk: TalkItem = {
   date: "",
   time: "",
   duration: "0 min",
-  coverUrl: "",
+  coverUrl: DEFAULT_TALK_COVER_URL,
   status: "archived",
   category: "talk",
   host: "",
@@ -28,7 +29,7 @@ export const defaultTalksContent: TalksContent = {
     title: "杂谈",
     subtitle: "内容服务暂时不可用，后台发布后会显示真实内容。"
   },
-  defaultCoverUrl: "",
+  defaultCoverUrl: DEFAULT_TALK_COVER_URL,
   liveTalkId: "",
   live: fallbackTalk,
   upcoming: [],

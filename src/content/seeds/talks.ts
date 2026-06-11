@@ -1,4 +1,5 @@
 import type { TalkItem, TalksContent } from "../types";
+import { DEFAULT_TALK_COVER_URL } from "../talkAssets";
 
 const defaultTranscript = [
   { time: "00:00", speaker: "主持人：", text: "晚上好，欢迎来到本周杂谈回。今天从放映会、录像归档和站点更新聊起。" },
@@ -40,7 +41,7 @@ function createTalk(overrides: Partial<TalkItem>): TalkItem {
     date: "2026-06-09",
     time: "20:30",
     duration: "48 min",
-    coverUrl: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80",
+    coverUrl: DEFAULT_TALK_COVER_URL,
     status: "archived",
     category: "talk",
     host: "Linze",
@@ -88,7 +89,7 @@ export const defaultTalksContent: TalksContent = {
     title: "杂谈回",
     subtitle: "把每周讨论、站点更新和内容线索整理成可以检索、回看和继续补充的长期记录。"
   },
-  defaultCoverUrl: "",
+  defaultCoverUrl: DEFAULT_TALK_COVER_URL,
   liveTalkId: "talk-2026-06-02",
   live: createTalk({
     id: "talk-live-2026-06-09",
