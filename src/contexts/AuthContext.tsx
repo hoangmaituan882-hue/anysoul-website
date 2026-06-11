@@ -161,12 +161,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (token.startsWith("demo-")) {
-      const demoUser = localStorage.getItem(DEMO_USER_KEY);
-      const parsedDemoUser = demoUser ? promoteConfiguredOwner(JSON.parse(demoUser) as AuthUser) : null;
-      if (parsedDemoUser) localStorage.setItem(DEMO_USER_KEY, JSON.stringify(parsedDemoUser));
-      cacheUser(parsedDemoUser);
-      setUser(parsedDemoUser);
-      setIsLoading(false);
+      try {
+        const response = await fetch(`${CONTENT_API_BASE}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json() as { user: AuthUser | null };
+        if (response.ok && data.user) {
+          const nextUser = promoteConfiguredOwner(data.user);
+          cacheUser(nextUser);
+          setUser(nextUser);
+          return;
+        }
+
+        localStorage.removeItem(TOKEN_KEY);
+        cacheUser(null);
+        setToken("");
+        setUser(null);
+      } catch {
+        const demoUser = localStorage.getItem(DEMO_USER_KEY);
+        const parsedDemoUser = demoUser ? promoteConfiguredOwner(JSON.parse(demoUser) as AuthUser) : null;
+        if (parsedDemoUser) localStorage.setItem(DEMO_USER_KEY, JSON.stringify(parsedDemoUser));
+        cacheUser(parsedDemoUser);
+        setUser(parsedDemoUser);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 

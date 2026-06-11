@@ -186,7 +186,7 @@ function BangumiSearchCapsule({
 }
 
 export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSoulItem[] }) {
-  const { user, authFetch } = useAuth();
+  const { user, authFetch, isLoading } = useAuth();
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const feedbackInputRef = useRef<HTMLInputElement | null>(null);
   const [mode, setMode] = useState<PanelMode>(null);
@@ -208,6 +208,11 @@ export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSo
   const selectedFeedbackItem = visibleSouls.find((item) => item.id === feedbackItemId);
 
   const requireUser = () => {
+    if (isLoading) {
+      setUploadStatus("正在确认登录状态，请稍后再选择图片");
+      setFeedbackStatus("正在确认登录状态，请稍后再提交反馈");
+      return false;
+    }
     if (user) return true;
     setIsAuthOpen(true);
     return false;
