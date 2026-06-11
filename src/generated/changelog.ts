@@ -31,6 +31,30 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "62c43db",
+    "hash": "62c43db449298d5c3670028ed6883b44b646dca2",
+    "date": "2026-06-12",
+    "title": "UI: Make 'More' dropdown adaptively follow the trigger capsule",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 2。",
+    "files": [
+      "src/components/Header.tsx",
+      "src/components/ui/timeline/ArchiveTimeline.tsx",
+      "src/generated/changelog.ts"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "UI: Make 'More' dropdown adaptively follow the trigger capsule",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "fc01682",
     "hash": "fc01682ccf9a0c3c2e1840af86aa88b28e57d9d4",
     "date": "2026-06-12",
@@ -1997,32 +2021,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "c031a77",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add game recording library",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、内容数据 3。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、内容数据 3",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "f76671b",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -2042,7 +2046,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -2062,7 +2066,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -2082,7 +2086,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -2102,7 +2106,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -2122,7 +2126,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-12",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -2142,7 +2146,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-12",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -2152,6 +2156,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、工作台 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "62c43db",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "UI: Make 'More' dropdown adaptively follow the trigger capsule",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "组件 2",
         "description": ""
       }
     ]

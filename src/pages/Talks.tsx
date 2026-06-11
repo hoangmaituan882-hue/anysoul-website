@@ -798,42 +798,42 @@ export function Talks() {
                 <div key={i} className="w-[calc(100%-1.5rem)] sm:w-[calc(50%-12px)] md:w-[calc(100%/3-16px)] flex-none snap-start">
                   <div 
                     onClick={() => setSelectedTalk(sch)}
-                    className="group bg-white dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-3 rounded-[2rem] flex flex-col relative cursor-pointer hover:shadow-xl hover:shadow-black/5 transition-all duration-300 h-full"
+                    className="group bg-white dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-2.5 md:p-3 rounded-3xl md:rounded-[2rem] flex flex-col relative cursor-pointer hover:shadow-xl hover:shadow-black/5 transition-all duration-300 h-full"
                   >
                     {/* Image Area */}
-                    <div className="relative w-full aspect-[4/3] sm:aspect-[3/2] rounded-[1.5rem] overflow-hidden bg-muted mb-4 shrink-0">
+                    <div className="relative w-full aspect-video sm:aspect-[3/2] rounded-2xl md:rounded-[1.5rem] overflow-hidden bg-muted mb-3 md:mb-4 shrink-0">
                        <TalkCover src={sch.cover} alt={sch.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                       <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
+                       <div className="absolute top-2 right-2 md:top-3 md:right-3 bg-black/60 backdrop-blur-md text-white text-[10px] md:text-[11px] font-bold px-2 py-0.5 md:px-2.5 md:py-1 rounded-full">
                          {sch.min > 0 ? `${sch.min} ${t("talks.min")}` : sch.date}
                        </div>
                     </div>
 
                     {/* Content Area */}
-                    <div className="px-1 flex flex-col flex-1">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <h4 className="font-bold text-[18px] leading-tight line-clamp-1">{sch.title}</h4>
-                        <span className="text-[13px] font-bold text-muted-foreground shrink-0 mt-0.5">{sch.date.slice(5)}</span>
+                    <div className="px-1 md:px-1.5 flex flex-col flex-1">
+                      <div className="flex items-start justify-between gap-2 md:gap-3 mb-1.5 md:mb-2">
+                        <h4 className="font-bold text-[16px] md:text-[18px] leading-tight line-clamp-1">{sch.title}</h4>
+                        <span className="text-[12px] md:text-[13px] font-bold text-muted-foreground shrink-0 mt-0.5">{sch.date.slice(5)}</span>
                       </div>
                       
-                      <p className="text-[13px] text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+                      <p className="text-[12px] md:text-[13px] text-muted-foreground line-clamp-2 mb-3 md:mb-4 leading-relaxed">
                         {sch.desc}
                       </p>
                       
-                      <div className="flex flex-wrap items-center gap-2 mb-5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[11px] font-semibold text-foreground">
-                          <Eye className="size-3.5" /> {sch.viewers.toLocaleString()}
+                      <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-4 md:mb-5">
+                        <span className="inline-flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-2.5 md:py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[10px] md:text-[11px] font-semibold text-foreground">
+                          <Eye className="size-3 md:size-3.5" /> {sch.viewers.toLocaleString()}
                         </span>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[11px] font-semibold text-foreground">
-                          <MessageCircle className="size-3.5" /> {sch.danmaku.toLocaleString()}
+                        <span className="inline-flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-2.5 md:py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[10px] md:text-[11px] font-semibold text-foreground">
+                          <MessageCircle className="size-3 md:size-3.5" /> {sch.danmaku.toLocaleString()}
                         </span>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[11px] font-semibold text-foreground">
-                          <Tag className="size-3.5" /> {sch.cat}
+                        <span className="inline-flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-2.5 md:py-1.5 rounded-full bg-black/5 dark:bg-white/10 text-[10px] md:text-[11px] font-semibold text-foreground">
+                          <Tag className="size-3 md:size-3.5" /> {sch.cat}
                         </span>
                       </div>
 
-                      <div className="w-full mt-auto h-12 rounded-full bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] flex items-center justify-center font-bold text-sm gap-2 transition-transform group-hover:scale-[1.02]">
-                         立即播放 <ArrowUpRight className="size-4" strokeWidth={2.5} />
+                      <div className="w-full mt-auto h-10 md:h-12 rounded-full bg-[#1a1a1a] dark:bg-white text-white dark:text-[#1a1a1a] flex items-center justify-center font-bold text-xs md:text-sm gap-1.5 md:gap-2 transition-transform group-hover:scale-[1.02]">
+                         立即播放 <ArrowUpRight className="size-3.5 md:size-4" strokeWidth={2.5} />
                       </div>
                     </div>
                   </div>
