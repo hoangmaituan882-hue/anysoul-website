@@ -19,6 +19,7 @@ import { defaultTalksContent } from "../content/defaults/talks";
 import { defaultTimelinePlans } from "../content/defaults/timeline";
 import type { AdminContentEntry, FaqContent, HomeHeroContent, SiteAnnouncementsContent, TalksContent, TimelinePlansContent } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";
+import { DateTimePicker } from "../components/DateTimePicker";
 import { cn } from "../lib/utils";
 
 type AdminContentResponse = {
@@ -539,10 +540,10 @@ export function ContentAdminPanel({ readOnly = false }: { readOnly?: boolean }) 
                     ...c, plans: c.plans.map((p, i) => i === index ? { ...p, title: value } : p)
                   }))}
                 />
-                <TextField
+                <DateTimePicker
                   label="目标时间"
+                  mode="date"
                   value={plan.targetDate || ""}
-                  placeholder="2026-07-01"
                   onChange={(value) => updatePlans((c) => ({
                     ...c, plans: c.plans.map((p, i) => i === index ? { ...p, targetDate: value } : p)
                   }))}
