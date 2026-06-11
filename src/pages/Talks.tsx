@@ -127,6 +127,72 @@ function categoryMeta(category?: TalkItem["category"], tags: string[] = []) {
   return { label: "杂谈", color: "blue" as const };
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function asText(value: unknown, fallback = "") {
+  if (value === undefined || value === null) return fallback;
+  return String(value);
+}
+
+function asTextArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => asText(item).trim()).filter(Boolean);
+  if (typeof value === "string") return value.split(/[,，\n]/).map((item) => item.trim()).filter(Boolean);
+  return [];
+}
+
+function asTranscriptItems(value: unknown): TalkCard["transcript"] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const row = asObject(item);
+    return {
+      time: asText(row.time),
+      speaker: asText(row.speaker),
+      text: asText(row.text)
+    };
+  }).filter((item) => item.time || item.speaker || item.text);
+}
+
+function asHighlightItems(value: unknown): TalkCard["highlights"] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const row = asObject(item);
+    return {
+      time: asText(row.time),
+      desc: asText(row.desc)
+    };
+  }).filter((item) => item.time || item.desc);
+}
+
+function asQuoteItems(value: unknown): TalkCard["quotes"] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const row = asObject(item);
+    return {
+      time: row.time === undefined ? undefined : asText(row.time),
+      speaker: row.speaker === undefined ? undefined : asText(row.speaker),
+      text: asText(row.text)
+    };
+  }).filter((item) => item.time || item.speaker || item.text);
+}
+
+function asCommentTextItems(value: unknown): string[] {
+  if (!Array.isArray(value)) return asTextArray(value);
+  return value.map((item) => {
+    if (typeof item === "string") return item;
+    return asText(asObject(item).content);
+  }).map((item) => item.trim()).filter(Boolean);
+}
+
+function asMentionTitles(value: unknown): string[] {
+  if (!Array.isArray(value)) return asTextArray(value);
+  return value.map((item) => {
+    if (typeof item === "string") return item;
+    return asText(asObject(item).title);
+  }).map((item) => item.trim()).filter(Boolean);
+}
+
 function normalizeTalksContent(value: TalksContent): TalksContent {
   return {
     ...defaultTalksContent,
@@ -144,10 +210,19 @@ function normalizeTalksContent(value: TalksContent): TalksContent {
   };
 }
 
-function talkToCard(talk: TalkItem, defaultCoverUrl = ""): TalkCard {
+function talkToCard(value: TalkItem, defaultCoverUrl = ""): TalkCard {
+  const talk = { ...defaultTalksContent.live, ...asObject(value) } as TalkItem;
   const parsed = parseTalkDate(talk.date);
-  const meta = categoryMeta(talk.category, talk.tags);
-  const mentions = Array.isArray(talk.mentions) ? talk.mentions : [];
+  const tags = asTextArray(talk.tags);
+  const guests = asTextArray(talk.guests);
+  const summaryBullets = asTextArray(talk.summaryBullets);
+  const transcript = asTranscriptItems(talk.transcript);
+  const highlights = asHighlightItems(talk.highlights);
+  const reviewPoints = asTextArray(talk.reviewPoints);
+  const quotes = asQuoteItems(talk.quotes);
+  const comments = asCommentTextItems(talk.comments);
+  const animes = asMentionTitles(talk.mentions);
+  const meta = categoryMeta(talk.category, tags);
   return {
     id: talk.id,
     timestamp: parsed.getTime(),
@@ -162,30 +237,32 @@ function talkToCard(talk: TalkItem, defaultCoverUrl = ""): TalkCard {
     min: durationToMinutes(talk.duration),
     color: meta.color,
     cover: talk.coverUrl || defaultCoverUrl || fallbackCover,
-    imgs: makeAvatarSlots(Math.max(1, Math.min(3, (talk.guests?.length || 1) + 1))),
-    hasAiSummary: Boolean(talk.summary || talk.summaryBullets?.length || talk.highlights?.length),
+    imgs: makeAvatarSlots(Math.max(1, Math.min(3, (guests.length || 1) + 1))),
+    hasAiSummary: Boolean(talk.summary || summaryBullets.length || highlights.length),
     viewers: Number(talk.viewers || 0),
     danmaku: Number(talk.danmaku || 0),
-    animeMentions: Number(talk.animeMentions || mentions.length || 0),
+    animeMentions: Number(talk.animeMentions || animes.length || 0),
     summaryText: talk.summary || "",
-    summaryBullets: talk.summaryBullets || [],
-    transcript: talk.transcript || [],
-    animes: mentions.map((item) => item.title),
-    tags: talk.tags || [],
-    highlights: talk.highlights || [],
-    reviewPoints: talk.reviewPoints || [],
-    quotes: talk.quotes || [],
+    summaryBullets,
+    transcript,
+    animes,
+    tags,
+    highlights,
+    reviewPoints,
+    quotes,
     watchAdvice: talk.watchAdvice || "",
-    comments: (talk.comments || []).map((comment) => typeof comment === "string" ? comment : comment.content),
+    comments,
     biliUrl: talk.videoUrl || talk.sourceUrl,
     videoUrl: talk.videoUrl || talk.sourceUrl,
     videoProvider: talk.videoProvider
   };
 }
 
-function scheduleToCard(item: TalkScheduleItem, index: number): TalkCard {
+function scheduleToCard(value: TalkScheduleItem, index: number): TalkCard {
+  const item = { id: `schedule-${index}`, date: "", time: "", title: "", topic: "", tags: [], ...asObject(value) } as TalkScheduleItem;
   const date = parseTalkDate(item.date);
-  const meta = categoryMeta(index % 2 === 0 ? "talk" : "notice", item.tags);
+  const tags = asTextArray(item.tags);
+  const meta = categoryMeta(index % 2 === 0 ? "talk" : "notice", tags);
   return {
     id: item.id,
     timestamp: date.getTime(),
@@ -203,12 +280,12 @@ function scheduleToCard(item: TalkScheduleItem, index: number): TalkCard {
     hasAiSummary: false,
     viewers: 0,
     danmaku: 0,
-    animeMentions: item.tags.length,
+    animeMentions: tags.length,
     summaryText: item.topic,
-    summaryBullets: item.tags,
+    summaryBullets: tags,
     transcript: [],
     animes: [],
-    tags: item.tags,
+    tags,
     highlights: [],
     reviewPoints: [],
     quotes: [],
