@@ -14,6 +14,7 @@ type OptimizedImageProps = {
   sizes?: string;
   decoding?: "sync" | "async" | "auto";
   loading?: "lazy" | "eager";
+  fetchPriority?: "high" | "low" | "auto";
 };
 
 export function OptimizedImage({
@@ -28,7 +29,8 @@ export function OptimizedImage({
   srcSet,
   sizes,
   decoding = "async",
-  loading = "lazy"
+  loading = "lazy",
+  fetchPriority
 }: OptimizedImageProps) {
   const [state, setState] = useState<"loading" | "loaded" | "error">("loading");
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -65,6 +67,7 @@ export function OptimizedImage({
           height={height}
           loading={loading}
           decoding={decoding}
+          fetchPriority={fetchPriority}
           srcSet={srcSet}
           sizes={sizes}
           className={cn(

@@ -1,6 +1,6 @@
 import Search from "../components/icons/magnifier-icon";
 import Sparkles from "../components/icons/sparkles-icon";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
@@ -91,6 +91,36 @@ export function Plaza() {
     setActiveTag("all");
   }
 
+  const BATCH_SIZE = 24;
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const visibleSoulsSlice = useMemo(() => sortedSouls.slice(0, visibleCount), [sortedSouls, visibleCount]);
+  const hasMore = visibleCount < sortedSouls.length;
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, sortedSouls.length));
+  }, [sortedSouls.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
+
+  // reset visibleCount when filter/sort/search changes
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [searchQuery, activeSort, activeTag]);
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -157,9 +187,20 @@ export function Plaza() {
       <PlazaContributionPanel visibleSouls={visibleSouls} />
 
       <div className="columns-1 gap-4 space-y-4 sm:columns-2 md:columns-3 xl:columns-4">
-        {sortedSouls.map(soul => (
-          <SoulImageCard key={soul.id} soul={soul} infoFilter={infoFilter} />
+        {visibleSoulsSlice.map((soul, idx) => (
+          <SoulImageCard key={soul.id} soul={soul} infoFilter={infoFilter} fetchPriority={idx < 6 ? "high" : "auto"} />
         ))}
+      </div>
+
+      <div ref={sentinelRef} className="flex items-center justify-center py-8">
+        {hasMore ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+            <span className="text-xs font-bold text-muted-foreground">加载更多...</span>
+          </div>
+        ) : sortedSouls.length > 0 ? (
+          <span className="text-xs font-bold text-muted-foreground">已展示全部 {sortedSouls.length} 张作品</span>
+        ) : null}
       </div>
     </div>
   );

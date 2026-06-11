@@ -19,11 +19,12 @@ interface SoulImageCardProps {
   key?: string | number;
   soul: PlazaSoulItem;
   infoFilter: string;
+  fetchPriority?: "high" | "low" | "auto";
 }
 
 const safeString = (value: unknown, fallback = "") => (typeof value === "string" ? value : fallback);
 
-export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
+export function SoulImageCard({ soul, infoFilter, fetchPriority }: SoulImageCardProps) {
   const { t } = useThemeLanguage();
   const name = safeString(soul.name);
   const author = safeString(soul.author);
@@ -121,6 +122,7 @@ export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
                   fallbackText={avatarInitials}
                   srcSet={imageProps.srcSet}
                   sizes={imageProps.sizes}
+                  fetchPriority={fetchPriority}
                 />
               ) : (
                 <div className="w-full aspect-square flex items-center justify-center bg-primary/10">
