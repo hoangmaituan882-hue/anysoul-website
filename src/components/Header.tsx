@@ -80,7 +80,7 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
   if (isWorkspace) return null;
 
   const navButtonClass = (extra = "ml-0.5") => cn(
-    "inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm font-bold text-foreground transition-all duration-300",
+    "group inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm font-bold text-foreground transition-all duration-300",
     extra,
     isScrolled ? "border-border bg-card shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:bg-muted" : "border-transparent bg-transparent shadow-none hover:bg-black/5 dark:hover:bg-white/5"
   );
@@ -135,42 +135,42 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
         </a>
 
         <nav className="z-50 hidden h-full shrink-0 items-center gap-1 md:flex">
-          <a href="#" className={navButtonClass("ml-1")}><Home className="size-4" /><span>首页</span></a>
+          <a href="#" className={navButtonClass("ml-1")}><Home className="size-4 transition-colors group-hover:text-primary" /><span>首页</span></a>
           <a href="#screenings" className={navButtonClass()}>
-            <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+            <svg className="size-4 transition-colors group-hover:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
             <span>放映</span>
           </a>
-          <a href="#games" className={navButtonClass()}><Gamepad2 className="size-4" /><span>游戏</span></a>
-          <a href="#plaza" className={navButtonClass()}><Compass className="size-4" /><span>图库</span></a>
-          <a href="#talks" className={navButtonClass()}><Mic className="size-4" /><span>杂谈</span></a>
+          <a href="#games" className={navButtonClass()}><Gamepad2 className="size-4 transition-colors group-hover:text-primary" /><span>游戏</span></a>
+          <a href="#plaza" className={navButtonClass()}><Compass className="size-4 transition-colors group-hover:text-primary" /><span>图库</span></a>
+          <a href="#talks" className={navButtonClass()}><Mic className="size-4 transition-colors group-hover:text-primary" /><span>杂谈</span></a>
           <button data-more-trigger="true" onClick={toggleMore} className={cn(navButtonClass(), isMoreOpen && "border-border bg-card shadow-sm")} aria-expanded={isMoreOpen} aria-haspopup="menu">
-            <MoreHorizontal className="size-4" /><span>更多</span>
+            <MoreHorizontal className="size-4 transition-colors group-hover:text-primary" /><span>更多</span>
           </button>
         </nav>
 
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain rounded-full border border-border/70 bg-card/80 px-1 py-1 shadow-sm no-scrollbar md:hidden">
-          <a href="#" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="首页">
-            <Home className="size-4" strokeWidth={2} />
+          <a href="#" className="group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="首页">
+            <Home className="size-4 transition-colors group-hover:text-primary" strokeWidth={2} />
             <span>首页</span>
           </a>
-          <a href="#screenings" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="放映">
-            <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+          <a href="#screenings" className="group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="放映">
+            <svg className="size-4 transition-colors group-hover:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
             <span>放映</span>
           </a>
-          <a href="#games" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="游戏">
-            <Gamepad2 className="size-4" strokeWidth={2} />
+          <a href="#games" className="group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="游戏">
+            <Gamepad2 className="size-4 transition-colors group-hover:text-primary" strokeWidth={2} />
             <span>游戏</span>
           </a>
-          <a href="#plaza" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="图库">
-            <Compass className="size-4" strokeWidth={2} />
+          <a href="#plaza" className="group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="图库">
+            <Compass className="size-4 transition-colors group-hover:text-primary" strokeWidth={2} />
             <span>图库</span>
           </a>
-          <a href="#talks" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="杂谈">
-            <Mic className="size-4" strokeWidth={2} />
+          <a href="#talks" className="group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="杂谈">
+            <Mic className="size-4 transition-colors group-hover:text-primary" strokeWidth={2} />
             <span>杂谈</span>
           </a>
-          <button data-more-trigger="true" onClick={toggleMore} className={cn("inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5", isMoreOpen && "bg-muted")} title="更多" aria-expanded={isMoreOpen} aria-haspopup="menu">
-            <MoreHorizontal className="size-4" strokeWidth={2} />
+          <button data-more-trigger="true" onClick={toggleMore} className={cn("group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5", isMoreOpen && "bg-muted")} title="更多" aria-expanded={isMoreOpen} aria-haspopup="menu">
+            <MoreHorizontal className="size-4 transition-colors group-hover:text-primary" strokeWidth={2} />
             <span>更多</span>
           </button>
         </nav>

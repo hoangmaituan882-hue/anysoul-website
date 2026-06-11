@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const Stack3Icon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -38,6 +39,7 @@ const Stack3Icon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".layer-3", { y: 0, opacity: 1 }, { duration: 0.25 });
     }, [animate]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

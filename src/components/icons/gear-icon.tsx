@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const GearIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -31,6 +32,7 @@ const GearIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".gear-body", { scale: 1 }, { duration: 0.2 });
     };
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

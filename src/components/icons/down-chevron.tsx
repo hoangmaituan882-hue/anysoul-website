@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const DownChevron = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -26,6 +27,7 @@ const DownChevron = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".chevron-down", { y: 0 }, { duration: 0.2, ease: "easeInOut" });
     }, [animate]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

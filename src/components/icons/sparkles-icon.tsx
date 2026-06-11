@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const SparklesIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -54,6 +55,7 @@ const SparklesIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       );
     }, [animate]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

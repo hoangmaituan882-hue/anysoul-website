@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const SimpleCheckedIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -26,6 +27,7 @@ const SimpleCheckedIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".check-path", { pathLength: 1 }, { duration: 0.2 });
     }, [animate]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

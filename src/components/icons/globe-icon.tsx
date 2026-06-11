@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const GlobeIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -30,6 +31,7 @@ const GlobeIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".globe-circle", { rotate: 0 }, { duration: 0.5 });
     };
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

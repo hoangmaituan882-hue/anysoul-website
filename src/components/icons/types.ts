@@ -43,3 +43,21 @@ export interface AnimatedIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }
+
+import { useEffect, type RefObject } from "react";
+export function useIconHover(scope: RefObject<HTMLElement | null>, start: () => void, stop: () => void) {
+  useEffect(() => {
+    if (!scope.current) return;
+    // We look for any closest interactive or grouped parent element
+    const parent = scope.current.closest('button, a, .group, label, .hover-trigger');
+    if (parent) {
+      parent.addEventListener('mouseenter', start);
+      parent.addEventListener('mouseleave', stop);
+      return () => {
+        parent.removeEventListener('mouseenter', start);
+        parent.removeEventListener('mouseleave', stop);
+      };
+    }
+  }, [scope, start, stop]);
+}
+

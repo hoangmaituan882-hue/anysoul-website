@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const SendIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -39,6 +40,7 @@ const SendIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".send-icon", { x: 0, y: 0, opacity: 1 }, { duration: 0.2 });
     }, [animate]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

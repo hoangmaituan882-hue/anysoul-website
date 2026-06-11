@@ -31,6 +31,133 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "95fb36f",
+    "hash": "95fb36f905eef502e5ed6cd4bf6c4b520254876a",
+    "date": "2026-06-11",
+    "title": "UI: Replace lucide-react icons with itshover animated icons",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 10、组件 85、工作台 7、脚本配置 1。",
+    "files": [
+      "DESIGN_REFERENCE.md",
+      "package-lock.json",
+      "package.json",
+      "src/components/AuthModal.tsx",
+      "src/components/DateTimePicker.tsx",
+      "src/components/FAQSection.tsx",
+      "src/components/FeaturesBento.tsx",
+      "src/components/FeedbackChannelForm.tsx",
+      "src/components/GrowWithYouSection.tsx",
+      "src/components/Header.tsx",
+      "src/components/Hero.tsx",
+      "src/components/ImageUploadField.tsx",
+      "src/components/OptionCapsule.tsx",
+      "src/components/Pricing.tsx",
+      "src/components/ScenariosMarquee.tsx",
+      "src/components/SoulImageCard.tsx",
+      "src/components/TalkModal.tsx",
+      "src/components/TopicsModal.tsx",
+      "src/components/icons/alarm-clock-plus-icon.tsx",
+      "src/components/icons/brightness-down-icon.tsx",
+      "src/components/icons/bulb-svg.tsx",
+      "src/components/icons/camera-icon.tsx",
+      "src/components/icons/chart-bar-icon.tsx",
+      "src/components/icons/chart-line-icon.tsx",
+      "src/components/icons/checked-icon.tsx",
+      "src/components/icons/clock-icon.tsx",
+      "src/components/icons/cpu-icon.tsx",
+      "src/components/icons/dots-horizontal-icon.tsx",
+      "src/components/icons/dots-vertical-icon.tsx",
+      "src/components/icons/down-chevron.tsx",
+      "src/components/icons/download-icon.tsx",
+      "src/components/icons/expand-icon.tsx",
+      "src/components/icons/external-link-icon.tsx",
+      "src/components/icons/eye-icon.tsx",
+      "src/components/icons/eye-off-icon.tsx",
+      "src/components/icons/file-description-icon.tsx",
+      "src/components/icons/filled-bell-icon.tsx",
+      "src/components/icons/filter-icon.tsx",
+      "src/components/icons/flame-icon.tsx",
+      "src/components/icons/gamepad-icon.tsx",
+      "src/components/icons/gear-icon.tsx",
+      "src/components/icons/github-copilot-icon.tsx",
+      "src/components/icons/globe-icon.tsx",
+      "src/components/icons/hashtag-icon.tsx",
+      "src/components/icons/heart-icon.tsx",
+      "src/components/icons/history-circle-icon.tsx",
+      "src/components/icons/home-icon.tsx",
+      "src/components/icons/info-circle-icon.tsx",
+      "src/components/icons/layout-dashboard-icon.tsx",
+      "src/components/icons/library-icon.tsx",
+      "src/components/icons/like-icon.tsx",
+      "src/components/icons/link-icon.tsx",
+      "src/components/icons/locate-icon.tsx",
+      "src/components/icons/lock-icon.tsx",
+      "src/components/icons/magnifier-icon.tsx",
+      "src/components/icons/mail-filled-icon.tsx",
+      "src/components/icons/message-circle-icon.tsx",
+      "src/components/icons/moon-icon.tsx",
+      "src/components/icons/paint-icon.tsx",
+      "src/components/icons/party-popper-icon.tsx",
+      "src/components/icons/pen-icon.tsx",
+      "src/components/icons/player-icon.tsx",
+      "src/components/icons/question-mark.tsx",
+      "src/components/icons/radio-icon.tsx",
+      "src/components/icons/refresh-icon.tsx",
+      "src/components/icons/right-chevron.tsx",
+      "src/components/icons/rocket-icon.tsx",
+      "src/components/icons/save-icon.tsx",
+      "src/components/icons/scan-heart-icon.tsx",
+      "src/components/icons/send-icon.tsx",
+      "src/components/icons/shield-check.tsx",
+      "src/components/icons/simple-checked-icon.tsx",
+      "src/components/icons/sparkles-icon.tsx",
+      "src/components/icons/stack-3-icon.tsx",
+      "src/components/icons/star-icon.tsx",
+      "src/components/icons/telephone-icon.tsx",
+      "src/components/icons/trash-icon.tsx",
+      "src/components/icons/triangle-alert-icon.tsx",
+      "src/components/icons/trophy-icon.tsx",
+      "src/components/icons/types.ts",
+      "src/components/icons/unlink-icon.tsx",
+      "src/components/icons/unordered-list-icon.tsx",
+      "src/components/icons/upload-icon.tsx",
+      "src/components/icons/user-icon.tsx",
+      "src/components/icons/users-group-icon.tsx",
+      "src/components/icons/volume-2-icon.tsx",
+      "src/components/icons/volume-x-icon.tsx",
+      "src/components/icons/x-icon.tsx",
+      "src/generated/changelog.ts",
+      "src/pages/About.tsx",
+      "src/pages/Changelog.tsx",
+      "src/pages/GameLibrary.tsx",
+      "src/pages/Gaming.tsx",
+      "src/pages/Plaza.tsx",
+      "src/pages/Posts.tsx",
+      "src/pages/Screenings.tsx",
+      "src/pages/SiteWorkspace.tsx",
+      "src/pages/Talks.tsx",
+      "src/pages/Workspace.tsx",
+      "src/workspace/ContentAdminPanel.tsx",
+      "src/workspace/GamingAdminPanel.tsx",
+      "src/workspace/PlazaAdminPanel.tsx",
+      "src/workspace/PostAdminPanel.tsx",
+      "src/workspace/ScreeningsAdminPanel.tsx",
+      "src/workspace/TalksAdminPanel.tsx",
+      "src/workspace/UserAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "维护",
+        "text": "UI: Replace lucide-react icons with itshover animated icons",
+        "color": "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 10、组件 85、工作台 7、脚本配置 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "0fde746",
     "hash": "0fde746477f6bc1d95a97d0b82170c24bec7733c",
     "date": "2026-06-11",
@@ -1243,32 +1370,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "57d8d50",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "fix: submission审核时广播content.published使SSE实时刷新",
-        "description": "- source submission review (approved/rejected) 后同步广播 content.published\n- 使 ContentProvider SSE 能感知片源库和片源补充的实时更新"
-      },
-      {
-        "type": "影响范围",
-        "title": "后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "0a23431",
     "subtitle": "改进",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -1288,7 +1395,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1308,7 +1415,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -1328,7 +1435,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "修复",
@@ -1348,7 +1455,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -1368,7 +1475,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "维护",
@@ -1388,7 +1495,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-11",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
@@ -1398,6 +1505,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、工作台 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "95fb36f",
+    "subtitle": "维护",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "维护",
+        "title": "UI: Replace lucide-react icons with itshover animated icons",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 10、组件 85、工作台 7、脚本配置 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 10、组件 85、工作台 7、脚本配置 1",
         "description": ""
       }
     ]

@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const CpuIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -35,6 +36,7 @@ const CpuIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       );
     };
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => {
       return {
         startAnimation: start,

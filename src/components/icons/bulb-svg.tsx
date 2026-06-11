@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const BulbSvg = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -50,6 +51,7 @@ const BulbSvg = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".ray-top-right", { opacity: 1 }, { duration: 0.2 });
     };
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => {
       return {
         startAnimation: start,

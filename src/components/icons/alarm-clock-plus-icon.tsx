@@ -93,6 +93,7 @@ const AlarmClockPlusIcon = forwardRef<
       animate(".bells", { y: 0, x: 0 }, { duration: durationY * 2 });
     };
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => {
       return {
         startAnimation: start,

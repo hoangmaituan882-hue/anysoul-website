@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const CameraIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -19,6 +20,7 @@ const CameraIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".body", { scale: 1 }, { duration: 0.2, ease: "easeInOut" });
     };
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => {
       return {
         startAnimation: start,

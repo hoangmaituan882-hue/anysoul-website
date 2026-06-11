@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const HeartIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -21,6 +22,7 @@ const HeartIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".heart", { scale: 1 }, { duration: 0.2, ease: "easeOut" });
     };
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

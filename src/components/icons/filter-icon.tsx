@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback, useRef } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const FilterIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -72,6 +73,7 @@ const FilterIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       );
     }, [animate, strokeWidth]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

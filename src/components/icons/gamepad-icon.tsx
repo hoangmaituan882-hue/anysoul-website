@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const GamepadIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -47,6 +48,7 @@ const GamepadIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".gamepad-dot-2", { opacity: 1, scale: 1 }, { duration: 0.2 });
     }, [animate, scope]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,

@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 export interface TrashIconProps extends AnimatedIconProps {
@@ -97,6 +98,7 @@ const TrashIcon = forwardRef<AnimatedIconHandle, TrashIconProps>(
       }
     }, [shakeOnClick, keepOpenOnDelete, animate, openLid]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: openLid,
       stopAnimation: closeLid,

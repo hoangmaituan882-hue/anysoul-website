@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useCallback } from "react";
 import type { AnimatedIconHandle, AnimatedIconProps } from "./types";
+import { useIconHover } from "./types";
 import { motion, useAnimate } from "motion/react";
 
 const SaveIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
@@ -30,6 +31,7 @@ const SaveIcon = forwardRef<AnimatedIconHandle, AnimatedIconProps>(
       animate(".save-label", { opacity: 1 }, { duration: 0.3 });
     }, [animate, scope]);
 
+    useIconHover(scope, start, stop);
     useImperativeHandle(ref, () => ({
       startAnimation: start,
       stopAnimation: stop,
