@@ -1,6 +1,13 @@
+import GraduationCap from "../components/icons/user-icon";
+import History from "../components/icons/history-circle-icon";
+import MessageSquareText from "../components/icons/message-circle-icon";
+import Search from "../components/icons/magnifier-icon";
+import ShieldAlert from "../components/icons/shield-check";
+import Sparkles from "../components/icons/sparkles-icon";
+import Wrench from "../components/icons/gear-icon";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { GraduationCap, History, MessageSquareText, Search, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+
 import { FeedbackChannelForm } from "../components/FeedbackChannelForm";
 import { cn } from "../lib/utils";
 

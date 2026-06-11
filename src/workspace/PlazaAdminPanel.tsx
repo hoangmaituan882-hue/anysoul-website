@@ -1,5 +1,17 @@
+import CalendarDays from "../components/icons/clock-icon";
+import Eye from "../components/icons/eye-icon";
+import EyeOff from "../components/icons/eye-off-icon";
+import Image from "../components/icons/camera-icon";
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import RefreshCw from "../components/icons/refresh-icon";
+import Rocket from "../components/icons/rocket-icon";
+import Save from "../components/icons/save-icon";
+import Sparkles from "../components/icons/sparkles-icon";
+import Trash2 from "../components/icons/trash-icon";
+import Upload from "../components/icons/upload-icon";
+import X from "../components/icons/x-icon";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, Eye, EyeOff, Image, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2, Upload, X } from "lucide-react";
+
 import { ImageUploadField } from "../components/ImageUploadField";
 import { CONTENT_API_BASE, uploadImageAsset } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";

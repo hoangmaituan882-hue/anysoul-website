@@ -1,6 +1,20 @@
+import CircleUserRound from "./icons/user-icon";
+import Compass from "./icons/locate-icon";
+import Gamepad2 from "./icons/gamepad-icon";
+import History from "./icons/history-circle-icon";
+import Home from "./icons/home-icon";
+import Info from "./icons/info-circle-icon";
+import Languages from "./icons/globe-icon";
+import LayoutDashboard from "./icons/layout-dashboard-icon";
+import Mic from "./icons/radio-icon";
+import Moon from "./icons/moon-icon";
+import MoreHorizontal from "./icons/dots-horizontal-icon";
+import Newspaper from "./icons/file-description-icon";
+import ShieldCheck from "./icons/shield-check";
+import Sun from "./icons/brightness-down-icon";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { CircleUserRound, Compass, Gamepad2, History, Home, Info, Languages, LayoutDashboard, Mic, Moon, MoreHorizontal, Newspaper, ShieldCheck, Sun } from "lucide-react";
+
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useAuth } from "../contexts/AuthContext";

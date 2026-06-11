@@ -1,5 +1,10 @@
+import Calendar from "./icons/clock-icon";
+import Check from "./icons/simple-checked-icon";
+import ChevronLeft from "./icons/right-chevron";
+import ChevronRight from "./icons/right-chevron";
+import Clock from "./icons/clock-icon";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Calendar, Check, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+
 import { cn } from "../lib/utils";
 
 type DateTimePickerMode = "date" | "datetime" | "time";

@@ -1,4 +1,10 @@
-import { Zap, Shield, Blocks, Cpu, Database, BarChart3 } from "lucide-react";
+import Zap from "./icons/flame-icon";
+import Shield from "./icons/shield-check";
+import Blocks from "./icons/stack-3-icon";
+import Cpu from "./icons/cpu-icon";
+import Database from "./icons/stack-3-icon";
+import BarChart3 from "./icons/chart-bar-icon";
+
 import { motion } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 

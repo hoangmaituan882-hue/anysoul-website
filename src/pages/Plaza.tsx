@@ -1,5 +1,7 @@
+import Search from "../components/icons/magnifier-icon";
+import Sparkles from "../components/icons/sparkles-icon";
 import { useState, useMemo } from "react";
-import { Search, Sparkles } from "lucide-react";
+
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";

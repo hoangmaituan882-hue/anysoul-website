@@ -1,5 +1,17 @@
+import ArrowDownUp from "../components/icons/dots-vertical-icon";
+import ArrowUpRight from "../components/icons/external-link-icon";
+import Calendar from "../components/icons/clock-icon";
+import Clock from "../components/icons/clock-icon";
+import ExternalLink from "../components/icons/external-link-icon";
+import Filter from "../components/icons/filter-icon";
+import Gamepad2 from "../components/icons/gamepad-icon";
+import LinkIcon from "../components/icons/link-icon";
+import Search from "../components/icons/magnifier-icon";
+import Star from "../components/icons/star-icon";
+import Tag from "../components/icons/hashtag-icon";
+import X from "../components/icons/x-icon";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowDownUp, ArrowUpRight, Calendar, Clock, ExternalLink, Filter, Gamepad2, Link as LinkIcon, Search, Star, Tag, X } from "lucide-react";
+
 import { AnimatePresence, motion } from "motion/react";
 import { defaultGamingMain } from "../content/defaults/gaming";
 import type { GamingLibraryItem, GamingMainContent, GamingPlayRecord } from "../content/types";

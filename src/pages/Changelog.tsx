@@ -1,6 +1,10 @@
+import ChevronLeft from "../components/icons/right-chevron";
+import ChevronRight from "../components/icons/right-chevron";
+import Sparkles from "../components/icons/sparkles-icon";
+import X from "../components/icons/x-icon";
 import { useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+
 import { cn } from "../lib/utils";
 import { changelogRoadmap, changelogUpdates, type GeneratedChangelogItem, type GeneratedRoadmapNode } from "../generated/changelog";
 

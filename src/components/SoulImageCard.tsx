@@ -1,4 +1,9 @@
-import { Heart, Eye, Crown, HeartPulse, Clock } from "lucide-react";
+import Heart from "./icons/heart-icon";
+import Eye from "./icons/eye-icon";
+import Crown from "./icons/trophy-icon";
+import HeartPulse from "./icons/scan-heart-icon";
+import Clock from "./icons/clock-icon";
+
 import { useMemo } from "react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";

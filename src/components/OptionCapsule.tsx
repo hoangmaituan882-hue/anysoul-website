@@ -1,6 +1,8 @@
+import ChevronDown from "./icons/down-chevron";
+import Check from "./icons/simple-checked-icon";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronDown, Check } from "lucide-react";
+
 import { cn } from "../lib/utils";
 
 interface OptionCapsuleProps {

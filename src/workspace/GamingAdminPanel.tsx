@@ -1,5 +1,12 @@
+import Gamepad2 from "../components/icons/gamepad-icon";
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import RefreshCw from "../components/icons/refresh-icon";
+import Rocket from "../components/icons/rocket-icon";
+import Search from "../components/icons/magnifier-icon";
+import Trash2 from "../components/icons/trash-icon";
+import X from "../components/icons/x-icon";
 import { useEffect, useMemo, useState } from "react";
-import { Gamepad2, Plus, RefreshCw, Rocket, Search, Trash2, X } from "lucide-react";
+
 import { CONTENT_API_BASE } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultGamingMain } from "../content/defaults/gaming";

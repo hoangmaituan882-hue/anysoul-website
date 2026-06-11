@@ -1,5 +1,8 @@
+import ImagePlus from "./icons/camera-icon";
+import Send from "./icons/send-icon";
+import X from "./icons/x-icon";
 import { useState, type FormEvent } from "react";
-import { ImagePlus, Send, X } from "lucide-react";
+
 import { appendLocalFeedbackSubmission, CONTENT_API_BASE, uploadPublicImageAsset } from "../content/client";
 import type { FeedbackSubmission } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";

@@ -1,29 +1,28 @@
+import Activity from "../components/icons/chart-line-icon";
+import ArrowRight from "../components/icons/right-chevron";
+import Bell from "../components/icons/filled-bell-icon";
+import CalendarDays from "../components/icons/clock-icon";
+import CheckCircle2 from "../components/icons/checked-icon";
+import Clapperboard from "../components/icons/player-icon";
+import Clock from "../components/icons/clock-icon";
+import Database from "../components/icons/stack-3-icon";
+import ExternalLink from "../components/icons/external-link-icon";
+import Film from "../components/icons/player-icon";
+import Gamepad2 from "../components/icons/gamepad-icon";
+import Image from "../components/icons/camera-icon";
+import Loader2 from "../components/icons/refresh-icon";
+import Megaphone from "../components/icons/radio-icon";
+import MessageCircle from "../components/icons/message-circle-icon";
+import Newspaper from "../components/icons/file-description-icon";
+import Search from "../components/icons/magnifier-icon";
+import ShieldCheck from "../components/icons/shield-check";
+import Sparkles from "../components/icons/sparkles-icon";
+import Tag from "../components/icons/hashtag-icon";
+import UserRound from "../components/icons/user-icon";
+import Video from "../components/icons/camera-icon";
+import X from "../components/icons/x-icon";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  Activity,
-  ArrowRight,
-  Bell,
-  CalendarDays,
-  CheckCircle2,
-  Clapperboard,
-  Clock,
-  Database,
-  ExternalLink,
-  Film,
-  Gamepad2,
-  Image,
-  Loader2,
-  Megaphone,
-  MessageCircle,
-  Newspaper,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Tag,
-  UserRound,
-  Video,
-  X
-} from "lucide-react";
+
 import { AnimatePresence, motion } from "motion/react";
 import { fetchMyWatchedSources, fetchPublicPost, fetchPublicPosts } from "../content/client";
 import { defaultGamingMain } from "../content/defaults/gaming";

@@ -1,6 +1,9 @@
+import ChevronDown from "./icons/down-chevron";
+import BookOpen from "./icons/library-icon";
+import ArrowRight from "./icons/right-chevron";
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, BookOpen, ArrowRight } from 'lucide-react';
+
 import { cn } from '../lib/utils';
 import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
 import { useContent } from '../content/useContent';

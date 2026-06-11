@@ -1,4 +1,10 @@
-import { MessageSquare, Heart, Share2, Users, Monitor, Bot } from "lucide-react";
+import MessageSquare from "./icons/message-circle-icon";
+import Heart from "./icons/heart-icon";
+import Share2 from "./icons/unlink-icon";
+import Users from "./icons/users-group-icon";
+import Monitor from "./icons/layout-dashboard-icon";
+import Bot from "./icons/github-copilot-icon";
+
 import React from "react";
 import { FollowCursorCard } from "./FollowCursorCard";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";

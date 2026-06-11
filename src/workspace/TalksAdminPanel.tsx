@@ -1,5 +1,21 @@
+import Bot from "../components/icons/github-copilot-icon";
+import Calendar from "../components/icons/clock-icon";
+import Check from "../components/icons/simple-checked-icon";
+import FileText from "../components/icons/file-description-icon";
+import Link from "../components/icons/link-icon";
+import Loader2 from "../components/icons/refresh-icon";
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import RefreshCw from "../components/icons/refresh-icon";
+import Rocket from "../components/icons/rocket-icon";
+import Save from "../components/icons/save-icon";
+import Search from "../components/icons/magnifier-icon";
+import Sparkles from "../components/icons/sparkles-icon";
+import Trash2 from "../components/icons/trash-icon";
+import Upload from "../components/icons/upload-icon";
+import Video from "../components/icons/camera-icon";
+import X from "../components/icons/x-icon";
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Calendar, Check, FileText, Link, Loader2, Plus, RefreshCw, Rocket, Save, Search, Sparkles, Trash2, Upload, Video, X } from "lucide-react";
+
 import { ImageUploadField } from "../components/ImageUploadField";
 import { CONTENT_API_BASE, importTalksJson } from "../content/client";
 import { defaultTalksContent } from "../content/defaults/talks";

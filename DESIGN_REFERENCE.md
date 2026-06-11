@@ -439,11 +439,16 @@ Motion should make the UI feel alive and soft. Avoid aggressive bouncing, long d
 
 ## Iconography And Imagery
 
-The project uses `lucide-react` for most icons. Icons are usually thin and small:
+The project uses `itshover` (https://github.com/itshover/itshover) for all interactive and visual icons, replacing the previously used `lucide-react`. `itshover` provides motion-first, intent-driven animated icons built on `motion/react`.
 
-- Standard nav/control icon: `size-4` or `size-5`.
-- Feature icon: `size-5`, sometimes `size-16` for visual areas.
-- Stroke width: usually `1`, `1.5`, or `2`.
+Key principles for icons:
+- **Location**: All icon components are stored locally in `src/components/icons/`. Do not use npm packages for icons.
+- **Adding new icons**: If a new icon is needed, copy the corresponding `.tsx` component from the open-source `itshover` repository into `src/components/icons/`.
+- **Sizing**: 
+  - Standard nav/control icon: `size-4` or `size-5`.
+  - Feature icon: `size-5`, sometimes `size-16` for visual areas.
+- **Stroke width**: usually `1`, `1.5`, or `2`.
+- **Motion**: Icons will automatically animate on hover. Do not wrap them in additional scale/bounce animations unless explicitly required.
 
 Imagery patterns:
 

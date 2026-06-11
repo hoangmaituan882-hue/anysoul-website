@@ -1,16 +1,56 @@
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import MessageCircle from "../components/icons/message-circle-icon";
+import Activity from "../components/icons/chart-line-icon";
+import Inbox from "../components/icons/mail-filled-icon";
+import ArrowUpDown from "../components/icons/dots-vertical-icon";
+import ListTodo from "../components/icons/unordered-list-icon";
+import ChevronDown from "../components/icons/down-chevron";
+import List from "../components/icons/unordered-list-icon";
+import Calendar from "../components/icons/clock-icon";
+import Circle from "../components/icons/radio-icon";
+import Bell from "../components/icons/filled-bell-icon";
+import Pause from "../components/icons/player-icon";
+import Settings from "../components/icons/gear-icon";
+import X from "../components/icons/x-icon";
+import Database from "../components/icons/stack-3-icon";
+import Navigation from "../components/icons/locate-icon";
+import Sparkles from "../components/icons/sparkles-icon";
+import XCircle from "../components/icons/x-icon";
+import Volume2 from "../components/icons/volume-2-icon";
+import Film from "../components/icons/player-icon";
+import Gamepad2 from "../components/icons/gamepad-icon";
+import Image from "../components/icons/camera-icon";
+import ChevronLeft from "../components/icons/right-chevron";
+import ChevronRight from "../components/icons/right-chevron";
+import Home from "../components/icons/home-icon";
+import Languages from "../components/icons/globe-icon";
+import Moon from "../components/icons/moon-icon";
+import Sun from "../components/icons/brightness-down-icon";
+import Palette from "../components/icons/paint-icon";
+import Smartphone from "../components/icons/telephone-icon";
+import Key from "../components/icons/lock-icon";
+import BarChart2 from "../components/icons/chart-bar-icon";
+import Gift from "../components/icons/party-popper-icon";
+import Trophy from "../components/icons/trophy-icon";
+import GraduationCap from "../components/icons/user-icon";
+import Monitor from "../components/icons/layout-dashboard-icon";
+import FastForward from "../components/icons/player-icon";
+import Rewind from "../components/icons/player-icon";
+import Users from "../components/icons/users-group-icon";
+import Tv from "../components/icons/layout-dashboard-icon";
+import Airplay from "../components/icons/layout-dashboard-icon";
+import VolumeX from "../components/icons/volume-x-icon";
+import Maximize from "../components/icons/expand-icon";
+import Share2 from "../components/icons/unlink-icon";
+import Heart from "../components/icons/heart-icon";
+import Pencil from "../components/icons/pen-icon";
+import CheckCircle2 from "../components/icons/checked-icon";
+import RefreshCw from "../components/icons/refresh-icon";
+import Info from "../components/icons/info-circle-icon";
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "motion/react";
-import {
-  Plus, MessageCircle, Activity,
-  Inbox, ArrowUpDown, ListTodo, ChevronDown, List, Calendar,
-  Circle, Bell, Pause, Settings, X, Database,
-  Navigation, Sparkles, XCircle, Volume2, Film, Gamepad2, Image,
-  ChevronLeft, ChevronRight, Home, Languages, Moon, Sun,
-  Palette, Smartphone, Key, BarChart2, Gift, Trophy, GraduationCap, Monitor,
-  FastForward, Rewind, Users, Tv, Airplay, VolumeX, Maximize, Share2,
-  Heart, Pencil, CheckCircle2, RefreshCw, Info
-} from "lucide-react";
+
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useAuth } from "../contexts/AuthContext";

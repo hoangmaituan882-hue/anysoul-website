@@ -1,5 +1,17 @@
+import Activity from "../components/icons/chart-line-icon";
+import Bell from "../components/icons/filled-bell-icon";
+import Check from "../components/icons/simple-checked-icon";
+import Database from "../components/icons/stack-3-icon";
+import FileText from "../components/icons/file-description-icon";
+import HelpCircle from "../components/icons/question-mark";
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import RefreshCw from "../components/icons/refresh-icon";
+import Rocket from "../components/icons/rocket-icon";
+import Save from "../components/icons/save-icon";
+import Sparkles from "../components/icons/sparkles-icon";
+import Trash2 from "../components/icons/trash-icon";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Bell, Check, Database, FileText, HelpCircle, Plus, RefreshCw, Rocket, Save, Sparkles, Trash2 } from "lucide-react";
+
 import { CONTENT_API_BASE } from "../content/client";
 import { defaultHomeFaq, defaultHomeHero } from "../content/defaults/home";
 import { defaultSiteAnnouncements } from "../content/defaults/siteAnnouncements";

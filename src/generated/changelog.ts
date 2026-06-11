@@ -31,6 +31,97 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "0fde746",
+    "hash": "0fde746477f6bc1d95a97d0b82170c24bec7733c",
+    "date": "2026-06-11",
+    "title": "UI: Fix OptionCapsule styling issues and replace remaining native selects",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1。",
+    "files": [
+      "src/pages/Screenings.tsx",
+      "src/workspace/ScreeningsAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "UI: Fix OptionCapsule styling issues and replace remaining native selects",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、工作台 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "cd34f08",
+    "hash": "cd34f08be1a586211a2d1c205bf99396cea162d2",
+    "date": "2026-06-11",
+    "title": "UI: Replace native selects with OptionCapsule component for better UX",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 7、组件 9、工作台 4、内容数据 20、后端 4、脚本配置 1。",
+    "files": [
+      "scripts/sync-home-content.mjs",
+      "server/config/runtime.ts",
+      "server/image-store.ts",
+      "server/index.ts",
+      "server/routes/content.ts",
+      "src/components/AuthModal.tsx",
+      "src/components/FeaturesBento.tsx",
+      "src/components/Footer.tsx",
+      "src/components/Header.tsx",
+      "src/components/Hero.tsx",
+      "src/components/OptionCapsule.tsx",
+      "src/components/ScenariosMarquee.tsx",
+      "src/components/TalkModal.tsx",
+      "src/components/TopicsModal.tsx",
+      "src/content/client.ts",
+      "src/content/defaults/analytics.ts",
+      "src/content/defaults/feedback.ts",
+      "src/content/defaults/gaming.ts",
+      "src/content/defaults/home.ts",
+      "src/content/defaults/plaza.ts",
+      "src/content/defaults/screeningLibrary.ts",
+      "src/content/defaults/screenings.ts",
+      "src/content/defaults/siteAnnouncements.ts",
+      "src/content/defaults/talks.ts",
+      "src/content/seeds/analytics.ts",
+      "src/content/seeds/feedback.ts",
+      "src/content/seeds/gaming.ts",
+      "src/content/seeds/home.ts",
+      "src/content/seeds/index.ts",
+      "src/content/seeds/plaza.ts",
+      "src/content/seeds/screeningLibrary.ts",
+      "src/content/seeds/screenings.ts",
+      "src/content/seeds/siteAnnouncements.ts",
+      "src/content/seeds/talks.ts",
+      "src/generated/changelog.ts",
+      "src/pages/Gaming.tsx",
+      "src/pages/Plaza.tsx",
+      "src/pages/Posts.tsx",
+      "src/pages/Screenings.tsx",
+      "src/pages/SiteWorkspace.tsx",
+      "src/pages/Talks.tsx",
+      "src/pages/Workspace.tsx",
+      "src/workspace/GamingAdminPanel.tsx",
+      "src/workspace/PlazaAdminPanel.tsx",
+      "src/workspace/ScreeningsAdminPanel.tsx",
+      "src/workspace/TalksAdminPanel.tsx",
+      "tsconfig.json"
+    ],
+    "items": [
+      {
+        "type": "维护",
+        "text": "UI: Replace native selects with OptionCapsule component for better UX",
+        "color": "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 7、组件 9、工作台 4、内容数据 20、后端 4、脚本配置 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "2316bb9",
     "hash": "2316bb99ad0f67fe3bbf1b12689ec8a25b701145",
     "date": "2026-06-10",
@@ -1152,46 +1243,6 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "7e775df",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "fix: 杂谈系统类型强化+硬编码日期动态化+导入SSE实时刷新",
-        "description": "- TalkModal: talk: any → TalkCard 强类型\n- Talks.tsx: 硬编码 2026 日期 → new Date().getFullYear() 动态取值\n- server: 导入接口广播 content.published 使 SSE 推送前台自动刷新\n- ContentProvider: 新增 talks.imported 事件监听"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、组件 1、内容数据 1、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "3439c0a",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "refactor: 片源库状态文案统一+审核回写library+增强去重",
-        "description": "- 新增 src/content/screeningUtils.ts 共享纯函数\n- 统一状态文案: 已看→已归档, 待放映→可排播, 已计划→已排期\n- 审核通过 source submission 时回写 library 主数据\n- mergeLibraryItems 补全空字段(posterUrl/sourceUrl/rating/status等)\n- public submission 相同 sourceId+field+content 去重"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、工作台 1、内容数据 1、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "57d8d50",
     "subtitle": "修复",
     "status": "published",
@@ -1307,6 +1358,46 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "页面 1、组件 1、工作台 1、内容数据 2、后端 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "cd34f08",
+    "subtitle": "维护",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "维护",
+        "title": "UI: Replace native selects with OptionCapsule component for better UX",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 7、组件 9、工作台 4、内容数据 20、后端 4、脚本配置 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 7、组件 9、工作台 4、内容数据 20、后端 4、脚本配置 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "0fde746",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-11",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "UI: Fix OptionCapsule styling issues and replace remaining native selects",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、工作台 1",
         "description": ""
       }
     ]

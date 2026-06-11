@@ -1,6 +1,9 @@
+import X from "./icons/x-icon";
+import FileText from "./icons/file-description-icon";
+import Bell from "./icons/filled-bell-icon";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, FileText, Bell } from "lucide-react";
+
 import { cn } from "../lib/utils";
 import type { TalkSidebarItem } from "../content/types";
 

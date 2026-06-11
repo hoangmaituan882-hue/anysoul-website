@@ -1,6 +1,22 @@
+import Play from "../components/icons/player-icon";
+import FileText from "../components/icons/file-description-icon";
+import ArrowUpRight from "../components/icons/external-link-icon";
+import Search from "../components/icons/magnifier-icon";
+import FileDown from "../components/icons/download-icon";
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import Calendar from "../components/icons/clock-icon";
+import Folder from "../components/icons/library-icon";
+import Archive from "../components/icons/library-icon";
+import Clock from "../components/icons/clock-icon";
+import Tag from "../components/icons/hashtag-icon";
+import Sparkles from "../components/icons/sparkles-icon";
+import Filter from "../components/icons/filter-icon";
+import Eye from "../components/icons/eye-icon";
+import MessageCircle from "../components/icons/message-circle-icon";
+import ArrowDownUp from "../components/icons/dots-vertical-icon";
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
-import { Play, FileText, ArrowUpRight, Search, FileDown, Plus, Calendar, Folder, Archive, Clock, Tag, Sparkles, Filter, Eye, MessageCircle, ArrowDownUp } from "lucide-react";
+
 import { cn } from "../lib/utils";
 import { TalkModal } from "../components/TalkModal";
 import { TopicsModal } from "../components/TopicsModal";

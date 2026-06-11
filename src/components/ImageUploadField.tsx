@@ -1,6 +1,10 @@
+import Image from "./icons/camera-icon";
+import Link from "./icons/link-icon";
+import Loader2 from "./icons/refresh-icon";
+import Upload from "./icons/upload-icon";
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
-import { Image, Link, Loader2, Upload } from "lucide-react";
+
 import { uploadImageAsset } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";

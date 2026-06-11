@@ -1,5 +1,23 @@
+import Search from "../components/icons/magnifier-icon";
+import Bell from "../components/icons/filled-bell-icon";
+import ChevronDown from "../components/icons/down-chevron";
+import Play from "../components/icons/player-icon";
+import ArrowRight from "../components/icons/right-chevron";
+import Flame from "../components/icons/flame-icon";
+import ChevronLeft from "../components/icons/right-chevron";
+import ChevronRight from "../components/icons/right-chevron";
+import Clock from "../components/icons/clock-icon";
+import User from "../components/icons/user-icon";
+import X from "../components/icons/x-icon";
+import BookOpen from "../components/icons/library-icon";
+import Star from "../components/icons/star-icon";
+import Eye from "../components/icons/eye-icon";
+import Crown from "../components/icons/trophy-icon";
+import LayoutGrid from "../components/icons/layout-dashboard-icon";
+import Heart from "../components/icons/heart-icon";
+import ExternalLink from "../components/icons/external-link-icon";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Bell, ChevronDown, Play, ArrowRight, Flame, ChevronLeft, ChevronRight, Clock, User, X, BookOpen, Star, Eye, Crown, LayoutGrid, Heart, ExternalLink } from "lucide-react";
+
 import { motion, AnimatePresence } from "motion/react";
 import { useContent } from "../content/useContent";
 import { defaultGamingMain } from "../content/defaults/gaming";

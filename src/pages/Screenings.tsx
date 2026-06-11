@@ -1,8 +1,26 @@
+import ChevronLeft from "../components/icons/right-chevron";
+import ChevronRight from "../components/icons/right-chevron";
+import Star from "../components/icons/star-icon";
+import AlertTriangle from "../components/icons/triangle-alert-icon";
+import MonitorPlay from "../components/icons/layout-dashboard-icon";
+import Clock from "../components/icons/clock-icon";
+import History from "../components/icons/history-circle-icon";
+import Film from "../components/icons/player-icon";
+import Activity from "../components/icons/chart-line-icon";
+import Users from "../components/icons/users-group-icon";
+import ListTodo from "../components/icons/unordered-list-icon";
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import CheckCircle2 from "../components/icons/checked-icon";
+import ThumbsUp from "../components/icons/like-icon";
+import X from "../components/icons/x-icon";
+import Database from "../components/icons/stack-3-icon";
+import Search from "../components/icons/magnifier-icon";
+import Shuffle from "../components/icons/refresh-icon";
 import { OptionCapsule } from '../components/OptionCapsule';
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import { useState, useRef, useEffect, useMemo, type UIEvent } from "react";
-import { ChevronLeft, ChevronRight, Star, AlertTriangle, MonitorPlay, Clock, History, Film, Activity, Users, ListTodo, Plus, CheckCircle2, ThumbsUp, X, Database, Search, Shuffle } from "lucide-react";
+
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { appendLocalSourceSubmission, CONTENT_API_BASE } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";

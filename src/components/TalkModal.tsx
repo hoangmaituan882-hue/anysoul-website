@@ -1,5 +1,25 @@
+import Play from "./icons/player-icon";
+import FileText from "./icons/file-description-icon";
+import Search from "./icons/magnifier-icon";
+import Users from "./icons/users-group-icon";
+import Heart from "./icons/heart-icon";
+import Bot from "./icons/github-copilot-icon";
+import Tag from "./icons/hashtag-icon";
+import List from "./icons/unordered-list-icon";
+import MessageSquare from "./icons/message-circle-icon";
+import Sparkles from "./icons/sparkles-icon";
+import Clock from "./icons/clock-icon";
+import Eye from "./icons/eye-icon";
+import MessageCircle from "./icons/message-circle-icon";
+import ChevronLeft from "./icons/right-chevron";
+import ChevronRight from "./icons/right-chevron";
+import X from "./icons/x-icon";
+import Star from "./icons/star-icon";
+import Zap from "./icons/flame-icon";
+import Quote from "./icons/message-circle-icon";
+import Lightbulb from "./icons/bulb-svg";
 import React, { useRef, useState, useEffect } from "react";
-import { Play, FileText, Search, Users, Heart, Bot, Tag, List, MessageSquare, Sparkles, Clock, Eye, MessageCircle, ChevronLeft, ChevronRight, X, Star, Zap, Quote, Lightbulb } from "lucide-react";
+
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import type { TalkItem } from "../content/types";

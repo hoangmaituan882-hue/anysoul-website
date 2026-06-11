@@ -1,4 +1,5 @@
-import { ArrowRight } from "lucide-react";
+import ArrowRight from "./icons/right-chevron";
+
 import { motion } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useContent } from "../content/useContent";

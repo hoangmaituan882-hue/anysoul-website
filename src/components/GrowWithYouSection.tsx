@@ -1,6 +1,11 @@
+import MessageSquare from "./icons/message-circle-icon";
+import Search from "./icons/magnifier-icon";
+import Activity from "./icons/chart-line-icon";
+import Users from "./icons/users-group-icon";
+import Send from "./icons/send-icon";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { MessageSquare, Search, Activity, Users, Send } from "lucide-react";
+
 import { cn } from "../lib/utils";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 

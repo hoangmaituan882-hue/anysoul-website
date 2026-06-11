@@ -1,5 +1,9 @@
+import CheckCircle2 from "./icons/checked-icon";
+import Loader2 from "./icons/refresh-icon";
+import ShieldCheck from "./icons/shield-check";
+import X from "./icons/x-icon";
 import React, { useState, useEffect } from "react";
-import { CheckCircle2, Loader2, ShieldCheck, X } from "lucide-react";
+
 import { motion, AnimatePresence } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useAuth } from "../contexts/AuthContext";

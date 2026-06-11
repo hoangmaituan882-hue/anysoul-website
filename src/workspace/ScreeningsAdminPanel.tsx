@@ -1,6 +1,21 @@
+import Bot from "../components/icons/github-copilot-icon";
+import CalendarClock from "../components/icons/clock-icon";
+import CheckCircle2 from "../components/icons/checked-icon";
+import Database from "../components/icons/stack-3-icon";
+import Film from "../components/icons/player-icon";
+import KeyRound from "../components/icons/lock-icon";
+import Plus from "../components/icons/alarm-clock-plus-icon";
+import RefreshCw from "../components/icons/refresh-icon";
+import Rocket from "../components/icons/rocket-icon";
+import Save from "../components/icons/save-icon";
+import Search from "../components/icons/magnifier-icon";
+import Settings from "../components/icons/gear-icon";
+import Sparkles from "../components/icons/sparkles-icon";
+import Trash2 from "../components/icons/trash-icon";
+import X from "../components/icons/x-icon";
 import { OptionCapsule } from '../components/OptionCapsule';
 import { useEffect, useMemo, useState } from "react";
-import { Bot, CalendarClock, CheckCircle2, Database, Film, KeyRound, Plus, RefreshCw, Rocket, Save, Search, Settings, Sparkles, Trash2, X } from "lucide-react";
+
 import { CONTENT_API_BASE, fetchPublishedContent } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultScreeningLibrary } from "../content/defaults/screeningLibrary";

@@ -1,5 +1,6 @@
+import Check from "./icons/simple-checked-icon";
 import { cn } from "../lib/utils";
-import { Check } from "lucide-react";
+
 import { motion } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 
