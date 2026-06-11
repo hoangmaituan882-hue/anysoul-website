@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useContent } from "../content/useContent";
 import { defaultGamingMain } from "../content/defaults/gaming";
 import type { GamingCategory, GamingExploreItem, GamingHeroGame, GamingLibraryItem, GamingMainContent, GamingPlayRecord, GamingRecentGame, GamingRecordingChapter, GamingRecordingItem } from "../content/types";
+import { cn } from "../lib/utils";
 
 const tagPalette = [
   "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400",
