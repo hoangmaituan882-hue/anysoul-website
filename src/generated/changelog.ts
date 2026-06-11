@@ -31,6 +31,116 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "2883018",
+    "hash": "2883018c19ee20d4f8cf4cc4e869450152745edf",
+    "date": "2026-06-12",
+    "title": "ensure mobile nav displays all items without horizontal scrolling",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1。",
+    "files": [
+      "src/components/Header.tsx"
+    ],
+    "items": [
+      {
+        "type": "修复",
+        "text": "fix: ensure mobile nav displays all items without horizontal scrolling",
+        "color": "bg-rose-100 text-rose-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "组件 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "cc54ce9",
+    "hash": "cc54ce9d9000b771ba31da4834db25c84b3adbd8",
+    "date": "2026-06-12",
+    "title": "style: beautify global scrollbar to match bento design",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：涉及 1 个文件。",
+    "files": [
+      "src/index.css"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "style: beautify global scrollbar to match bento design",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "涉及 1 个文件",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "6527734",
+    "hash": "65277346311a9ddfb7af2ba46559ccb5f01580dd",
+    "date": "2026-06-12",
+    "title": "style: optimize GameRecordings mobile layout without breaking desktop",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。",
+    "files": [
+      "src/pages/GameRecordings.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "style: optimize GameRecordings mobile layout without breaking desktop",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "33e0fd3",
+    "hash": "33e0fd3fcc9318ccbd86ac0c80808365226b2d6f",
+    "date": "2026-06-12",
+    "title": "update generated changelog",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：涉及 1 个文件。",
+    "files": [
+      "src/generated/changelog.ts"
+    ],
+    "items": [
+      {
+        "type": "维护",
+        "text": "chore: update generated changelog",
+        "color": "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+      },
+      {
+        "type": "影响范围",
+        "text": "涉及 1 个文件",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "8418142",
+    "hash": "8418142c6b05890fbebc6f0e0dd50ca75c19cbd6",
+    "date": "2026-06-12",
+    "title": "optimize timeline ui and add auto-scroll",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。",
+    "files": [
+      "src/pages/Screenings.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "feat: optimize timeline ui and add auto-scroll",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "75e61a8",
     "hash": "75e61a8be469b865e20c6963236579bcb7e8cb3b",
     "date": "2026-06-12",
@@ -2115,112 +2225,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "1303431",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add game recording admin controls",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：工作台 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "工作台 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "109f67a",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-12",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add game recording bulk admin stats",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1、内容数据 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、工作台 1、内容数据 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "fc01682",
-    "subtitle": "新功能",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-12",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "新功能",
-        "title": "Add 64 precise commit entries to timeline and date picker for future plans",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、工作台 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1、工作台 1",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "62c43db",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-12",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "UI: Make 'More' dropdown adaptively follow the trigger capsule",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 2。"
-      },
-      {
-        "type": "影响范围",
-        "title": "组件 2",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "06b6bf0",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-12",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "UI: Optimize mobile responsiveness for Recent Talks cards",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "efb2334",
     "subtitle": "新功能",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-12",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "新功能",
@@ -2240,7 +2250,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-12",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -2260,11 +2270,111 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-12",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "改进",
         "title": "Remove home nav capsule, logo already links to home",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "组件 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "8418142",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "feat: optimize timeline ui and add auto-scroll",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "33e0fd3",
+    "subtitle": "维护",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "维护",
+        "title": "chore: update generated changelog",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：涉及 1 个文件。"
+      },
+      {
+        "type": "影响范围",
+        "title": "涉及 1 个文件",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "6527734",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "style: optimize GameRecordings mobile layout without breaking desktop",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "cc54ce9",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "style: beautify global scrollbar to match bento design",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：涉及 1 个文件。"
+      },
+      {
+        "type": "影响范围",
+        "title": "涉及 1 个文件",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "2883018",
+    "subtitle": "修复",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "修复",
+        "title": "fix: ensure mobile nav displays all items without horizontal scrolling",
         "description": "本次提交更新了相关功能与页面体验，影响范围：组件 1。"
       },
       {
