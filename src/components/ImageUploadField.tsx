@@ -14,6 +14,7 @@ type ImageUploadFieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onAssetMetadata?: (info: { url: string; assetId: string }) => void;
   admin?: boolean;
   readOnly?: boolean;
   scope?: string;
@@ -36,7 +37,7 @@ function looksLikeSupportedImage(file: File) {
   return supportedExtensions.test(file.name);
 }
 
-export function ImageUploadField({ label, value, onChange, admin = false, readOnly = false, scope = "media", compact = false }: ImageUploadFieldProps) {
+export function ImageUploadField({ label, value, onChange, onAssetMetadata, admin = false, readOnly = false, scope = "media", compact = false }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { authFetch } = useAuth();
   const [status, setStatus] = useState("");
@@ -67,6 +68,7 @@ export function ImageUploadField({ label, value, onChange, admin = false, readOn
     try {
       const result = await uploadImageAsset(authFetch, file, { admin, scope });
       onChange(result.asset.url);
+      onAssetMetadata?.({ url: result.asset.url, assetId: result.asset.id });
       setStatusTone("success");
       setStatus(result.storage === "object" ? "已上传到对象存储。" : "已上传到服务器本地存储。");
     } catch (error) {

@@ -3,8 +3,11 @@ import Eye from "./icons/eye-icon";
 import Crown from "./icons/trophy-icon";
 import HeartPulse from "./icons/scan-heart-icon";
 import Clock from "./icons/clock-icon";
+import X from "./icons/x-icon";
+import Download from "./icons/download-icon";
+import Expand from "./icons/expand-icon";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
@@ -36,9 +39,7 @@ export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
   const featured = Boolean(soul.featured);
 
   const imageProps = useMemo(() => {
-    if (!avatarSrc) return null;
-
-    const assetId = extractAssetIdFromUrl(avatarSrc);
+    const assetId = soul.mediaAssetId || extractAssetIdFromUrl(avatarSrc);
     if (assetId) {
       return {
         src: getImageUrl(assetId, { w: 400 }),
@@ -47,11 +48,53 @@ export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
       };
     }
 
+    if (!avatarSrc) return null;
     return { src: avatarSrc };
+  }, [avatarSrc, soul.mediaAssetId]);
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = useCallback(async () => {
+    if (!avatarSrc) return;
+    setIsDownloading(true);
+    try {
+      const response = await fetch(avatarSrc);
+      if (!response.ok) throw new Error("Download failed");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = name ? `${name}.${blob.type.split("/")[1] || "jpg"}` : "image";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(avatarSrc, "_blank");
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [avatarSrc, name]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen]);
+
+  const openLightbox = useCallback(() => {
+    if (!avatarSrc) return;
+    setLightboxOpen(true);
   }, [avatarSrc]);
 
   return (
-    <div className={cn(
+    <div
+      onClick={openLightbox}
+      className={cn(
       "break-inside-avoid group flex w-full flex-col rounded-xl border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer overflow-hidden",
       featured && "ring-1 ring-primary/40 border-primary/30"
     )}>
@@ -85,7 +128,13 @@ export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
                 </div>
               )}
             </div>
-            
+
+            {avatarSrc && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/20 group-hover:opacity-100 pointer-events-none">
+                <Expand className="size-8 text-white drop-shadow-lg" />
+              </div>
+            )}
+
             {activeDaysAgo !== null && (
               <span className="inline-flex items-center justify-center rounded-full absolute bottom-2 left-2 whitespace-nowrap gap-1 bg-background/90 backdrop-blur-sm shadow-sm px-2 py-1 text-[10px] text-muted-foreground border">
                 <HeartPulse className="size-2.5 text-red-500" />
@@ -157,6 +206,58 @@ export function SoulImageCard({ soul, infoFilter }: SoulImageCardProps) {
                 </div>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {lightboxOpen && avatarSrc && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative max-h-[90vh] max-w-[90vw] flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(false)}
+                className="absolute -top-12 right-0 z-10 inline-flex size-9 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
+              >
+                <X className="size-5" />
+              </button>
+
+              <img
+                src={avatarSrc}
+                alt={name}
+                className="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl"
+              />
+
+              <div className="mt-4 flex w-full items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-bold text-white">{name}</div>
+                  {author && <div className="truncate text-xs text-white/60">by {author}</div>}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 disabled:opacity-50"
+                >
+                  <Download className="size-4" />
+                  {isDownloading ? "下载中..." : "下载原图"}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

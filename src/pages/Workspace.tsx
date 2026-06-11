@@ -62,7 +62,7 @@ import { UserAdminPanel } from "../workspace/UserAdminPanel";
 import { PostAdminPanel } from "../workspace/PostAdminPanel";
 import { TalksAdminPanel } from "../workspace/TalksAdminPanel";
 import { GamingAdminPanel } from "../workspace/GamingAdminPanel";
-import type { AdminContentEntry, FeedbackSubmission, FeedbackSubmissionsContent, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ServerAlert, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint } from "../content/types";
+import type { AdminContentEntry, FeedbackSubmission, FeedbackSubmissionsContent, PlazaContent, PlazaSoulItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ServerAlert, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint } from "../content/types";
 import { CONTENT_API_BASE, getLocalFeedbackSubmissions, getLocalSourceSubmissions, saveLocalFeedbackSubmissions, saveLocalSourceSubmissions } from "../content/client";
 import { defaultScreeningSourceSubmissions } from "../content/defaults/screenings";
 import { defaultFeedbackSubmissions } from "../content/defaults/feedback";
@@ -323,6 +323,8 @@ export function Workspace() {
   const [isAiBusy, setIsAiBusy] = useState(false);
   const [sourceSubmissions, setSourceSubmissions] = useState<ScreeningSourceSubmissionsContent>(defaultScreeningSourceSubmissions);
   const [feedbackSubmissions, setFeedbackSubmissions] = useState<FeedbackSubmissionsContent>(defaultFeedbackSubmissions);
+  const [plazaSouls, setPlazaSouls] = useState<PlazaSoulItem[]>([]);
+  const [isReviewingPlaza, setIsReviewingPlaza] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<PendingUserSubmission | null>(null);
   const [todoStatus, setTodoStatus] = useState("待办同步中...");
   const [isReviewingSubmission, setIsReviewingSubmission] = useState(false);
@@ -422,13 +424,15 @@ export function Workspace() {
       : activeTab === "screenings" || activeTab === "plaza" || activeTab === "talks" || activeTab === "games"
         ? "columns"
         : "system";
+  const pendingPlazaSouls = useMemo(() => plazaSouls.filter((s) => s.visibility === "pending"), [plazaSouls]);
   const reviewStats = useMemo(() => ({
     pending: allUserSubmissions.filter((submission) => submission.status === "pending").length,
     approved: allUserSubmissions.filter((submission) => submission.status === "approved").length,
     rejected: allUserSubmissions.filter((submission) => submission.status === "rejected").length,
     feedback: allUserSubmissions.filter((submission) => submission.kind === "feedback").length,
-    source: allUserSubmissions.filter((submission) => submission.kind === "source").length
-  }), [allUserSubmissions]);
+    source: allUserSubmissions.filter((submission) => submission.kind === "source").length,
+    plaza: pendingPlazaSouls.length
+  }), [allUserSubmissions, pendingPlazaSouls]);
 
   function startLayoutResize(event: ReactPointerEvent<HTMLDivElement>, area: "columns" | "leftStack" | "rightStack") {
     event.preventDefault();
@@ -481,6 +485,7 @@ export function Workspace() {
     if (!canEditWorkspace) return;
 
     void loadSourceSubmissions();
+    void loadPlazaDraft();
     void loadWorkspaceEvents();
     void loadSiteAnalytics();
     void loadServerMonitoring();
@@ -679,6 +684,47 @@ export function Workspace() {
     }
   }
 
+  async function loadPlazaDraft() {
+    try {
+      const response = await authFetch(`${CONTENT_API_BASE}/api/admin/content`);
+      if (!response.ok) throw new Error("图库内容加载失败");
+      const data = await response.json() as AdminContentResponse;
+      const entry = data.entries.find((e) => e.key === "plaza.main");
+      const draft = (entry?.draft || {}) as Partial<PlazaContent>;
+      const souls = Array.isArray(draft.souls) ? draft.souls : [];
+      setPlazaSouls(souls);
+    } catch {
+      // best-effort
+    }
+  }
+
+  async function reviewPlazaSoul(id: string, decision: "approve" | "reject") {
+    if (readOnly) {
+      setTodoStatus("只读模式无法审核图库投稿");
+      return;
+    }
+
+    setIsReviewingPlaza(true);
+    try {
+      const response = await authFetch(`${CONTENT_API_BASE}/api/admin/plaza/items/${encodeURIComponent(id)}/review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error || `审核失败: ${response.status}`);
+      }
+      setPlazaSouls((current) => current.map((s) => s.id === id ? { ...s, visibility: decision === "approve" ? "visible" : "rejected" } : s));
+      setTodoStatus(decision === "approve" ? "图库投稿已通过并发布" : "图库投稿已拒绝，图片已删除");
+      void loadWorkspaceEvents();
+    } catch (error) {
+      setTodoStatus(error instanceof Error ? error.message : "图库审核失败");
+    } finally {
+      setIsReviewingPlaza(false);
+    }
+  }
+
   async function saveAiSettings() {
     if (readOnly) {
       setAiStatus("只读模式无法保存 AI 设置");
@@ -827,9 +873,80 @@ export function Workspace() {
               </div>
 
             </div>
-          </div>
-        </div>
-      </motion.div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-border bg-background shadow-sm">
+                        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <h3 className="inline-flex items-center gap-2 text-sm font-black text-foreground">
+                              <Image className="size-4 text-primary" /> 图库投稿审核
+                            </h3>
+                            <p className="mt-1 text-xs font-bold text-muted-foreground">用户提交的图库图片，通过后发布到前台图库，拒绝会删除上传文件。</p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={readOnly}
+                            onClick={() => { void loadPlazaDraft(); }}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                          >
+                            <RefreshCw className="size-3.5" /> 刷新
+                          </button>
+                        </div>
+                        <div>
+                          {pendingPlazaSouls.length > 0 ? (
+                            <div className="divide-y divide-border">
+                              {pendingPlazaSouls.map((soul) => (
+                                <div key={soul.id} className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs font-black text-amber-600">待审核</span>
+                                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">图库投稿</span>
+                                      {soul.submittedAt && (
+                                        <span className="text-xs font-bold text-muted-foreground">{new Date(soul.submittedAt).toLocaleDateString()}</span>
+                                      )}
+                                    </div>
+                                    <div className="mt-2 truncate text-sm font-black text-foreground">{soul.name}</div>
+                                    <p className="mt-1 text-xs font-medium text-muted-foreground">
+                                      by {soul.author || "未知作者"}
+                                      {soul.submittedByName && ` · 投稿：${soul.submittedByName}`}
+                                      {soul.sourceAnimeTitle && ` · 动画：${soul.sourceAnimeTitle}`}
+                                    </p>
+                                    {soul.mediaAssetId && (
+                                      <div className="mt-1 text-[10px] font-bold text-muted-foreground">
+                                        媒体ID：{soul.mediaAssetId}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
+                                    <button
+                                      disabled={isReviewingPlaza || readOnly}
+                                      onClick={() => { void reviewPlazaSoul(soul.id, "approve"); }}
+                                      className="h-8 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50"
+                                    >
+                                      通过并发布
+                                    </button>
+                                    <button
+                                      disabled={isReviewingPlaza || readOnly}
+                                      onClick={() => { void reviewPlazaSoul(soul.id, "reject"); }}
+                                      className="h-8 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/15 disabled:opacity-50"
+                                    >
+                                      拒绝并删除
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-8 text-center">
+                              <CheckCircle2 className="mx-auto size-6 text-emerald-400" />
+                              <div className="mt-2 text-sm font-black text-foreground">暂无待审核图库投稿</div>
+                              <p className="mt-1 text-xs font-bold text-muted-foreground">用户投稿会显示在这里，或前往图库中心查看全部状态。</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
 
       {/* 2. Main content area (Resizable panel group conceptually) */}
       <motion.div
@@ -1334,13 +1451,14 @@ export function Workspace() {
                         <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground">{todoStatus}</div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
                         {[
                           { label: "待审核", value: reviewStats.pending, tone: "text-amber-500" },
                           { label: "已通过", value: reviewStats.approved, tone: "text-emerald-500" },
                           { label: "已拒绝", value: reviewStats.rejected, tone: "text-rose-500" },
                           { label: "反馈", value: reviewStats.feedback, tone: "text-foreground" },
-                          { label: "片源补充", value: reviewStats.source, tone: "text-foreground" }
+                          { label: "片源补充", value: reviewStats.source, tone: "text-foreground" },
+                          { label: "图库投稿", value: reviewStats.plaza, tone: "text-primary" }
                         ].map((item) => (
                           <div key={item.label} className="rounded-2xl border border-border bg-background p-4 shadow-sm">
                             <div className="text-xs font-bold text-muted-foreground">{item.label}</div>

@@ -13,7 +13,7 @@ import X from "../components/icons/x-icon";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ImageUploadField } from "../components/ImageUploadField";
-import { CONTENT_API_BASE, uploadImageAsset } from "../content/client";
+import { CONTENT_API_BASE, getImageUrl, uploadImageAsset } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultPlazaContent } from "../content/defaults/plaza";
 import type { AdminContentEntry, PlazaContent, PlazaSoulItem, PlazaVisibility } from "../content/types";
@@ -361,22 +361,22 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     }
   };
 
-  const publishWeeklyUrls = async (urls: string[]) => {
+  const publishWeeklyUrls = async (items: { url: string; mediaAssetId?: string }[]) => {
     if (readOnly) {
       setStatus("只读模式无法批量导入图库作品");
       return;
     }
 
-    if (urls.length === 0) {
+    if (items.length === 0) {
       setStatus("请先点击上传多图，从相册或文件管理选择图片");
       return;
     }
 
     const existingImageUrls = new Set(plaza.souls.map((soul) => soul.avatarSrc).filter(Boolean));
-    const candidateUrls = urls.filter((url) => !existingImageUrls.has(url));
-    const skippedCount = urls.length - candidateUrls.length;
+    const candidateItems = items.filter((item) => !existingImageUrls.has(item.url));
+    const skippedCount = items.length - candidateItems.length;
 
-    if (candidateUrls.length === 0) {
+    if (candidateItems.length === 0) {
       setStatus("本次输入的图片地址均已存在，未生成新图库卡片");
       return;
     }
@@ -388,7 +388,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       .reduce((max, soul) => Math.max(max, soul.itemIndex || 0), 0);
 
     const createdAt = Date.now();
-    const newSouls: PlazaSoulItem[] = candidateUrls.map((url, index) => {
+    const newSouls: PlazaSoulItem[] = candidateItems.map((item, index) => {
       const itemIndex = existingBatchMaxIndex + index + 1;
       const paddedIndex = String(itemIndex).padStart(2, "0");
 
@@ -401,7 +401,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         createdAt: weeklyMeta.dateKey,
         views: 0,
         activeDaysAgo: null,
-        avatarSrc: url,
+        avatarSrc: item.url,
         bannerColor: weeklyImportGradients[index % weeklyImportGradients.length],
         featured: false,
         visibility: "visible",
@@ -412,7 +412,8 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         importDate: weeklyMeta.dateKey,
         seriesName: weeklyMeta.seriesName,
         seriesIndex: weeklyMeta.week,
-        itemIndex
+        itemIndex,
+        mediaAssetId: item.mediaAssetId
       };
     });
 
@@ -436,7 +437,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   };
 
   const importWeeklySouls = () => {
-    void publishWeeklyUrls(uniqueLines(weeklyImportText));
+    void publishWeeklyUrls(uniqueLines(weeklyImportText).map((url) => ({ url })));
   };
 
   const uploadWeeklyImages = async (files?: FileList | File[] | null) => {
@@ -466,13 +467,13 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     setStatus(`正在上传 ${selectedFiles.length} 张图片，完成后会自动发布到图库...`);
 
     try {
-      const uploadedUrls: string[] = [];
+      const uploadedItems: { url: string; mediaAssetId: string }[] = [];
       for (const file of selectedFiles) {
         const result = await uploadImageAsset(authFetch, file, { admin: true, scope: "plaza-weekly" });
-        uploadedUrls.push(result.asset.url);
+        uploadedItems.push({ url: result.asset.url, mediaAssetId: result.asset.id });
       }
 
-      await publishWeeklyUrls(uploadedUrls);
+      await publishWeeklyUrls(uploadedItems);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "批量上传失败");
     } finally {
@@ -596,7 +597,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
               className={cn("group overflow-hidden rounded-2xl border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md", selectedId === soul.id ? "border-primary/40 ring-2 ring-primary/10" : "border-border")}
             >
               <div className="relative aspect-[4/5] bg-muted">
-                {soul.avatarSrc ? <OptimizedImage src={soul.avatarSrc} alt={soul.name} className="h-full w-full" /> : <div className="flex h-full items-center justify-center text-4xl font-black text-primary">{soul.avatarInitials || soul.name.slice(0, 1)}</div>}
+                {soul.avatarSrc ? <OptimizedImage src={soul.mediaAssetId ? getImageUrl(soul.mediaAssetId, { w: 300 }) : soul.avatarSrc} alt={soul.name} className="h-full w-full" /> : <div className="flex h-full items-center justify-center text-4xl font-black text-primary">{soul.avatarInitials || soul.name.slice(0, 1)}</div>}
                 <span className={cn("absolute left-2 top-2 rounded-full px-2 py-1 text-[10px] font-black shadow-sm", soul.visibility === "visible" ? "bg-emerald-500 text-white" : "bg-background/90 text-foreground")}>{soul.visibility === "visible" ? "可见" : soul.visibility}</span>
                 {soul.featured && <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-black text-primary-foreground shadow-sm">精选</span>}
               </div>
@@ -666,7 +667,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <Field label="作品名" value={selectedSoul.name} onChange={(value) => updateSoul(selectedSoul.id, { name: value })} />
                   <Field label="作者" value={selectedSoul.author} onChange={(value) => updateSoul(selectedSoul.id, { author: value })} />
-                  <ImageUploadField label="图片地址" value={selectedSoul.avatarSrc || ""} onChange={(value) => updateSoul(selectedSoul.id, { avatarSrc: value })} admin readOnly={readOnly} scope="plaza-item" compact />
+                  <ImageUploadField label="图片地址" value={selectedSoul.avatarSrc || ""} onChange={(value) => updateSoul(selectedSoul.id, { avatarSrc: value })} onAssetMetadata={(info) => updateSoul(selectedSoul.id, { mediaAssetId: info.assetId })} admin readOnly={readOnly} scope="plaza-item" compact />
                   <Field label="渐变背景 class" value={selectedSoul.bannerColor} onChange={(value) => updateSoul(selectedSoul.id, { bannerColor: value })} />
                   <Field label="点赞数" type="number" value={selectedSoul.likes} onChange={(value) => updateSoul(selectedSoul.id, { likes: Number(value) || 0 })} />
                   <Field label="浏览量" type="number" value={selectedSoul.views} onChange={(value) => updateSoul(selectedSoul.id, { views: Number(value) || 0 })} />
@@ -720,11 +721,11 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
               <div className="space-y-3">
                 <div className="overflow-hidden rounded-3xl border border-border bg-card">
                   <div className={cn("relative min-h-[320px] bg-gradient-radial", selectedSoul.bannerColor)}>
-                    {selectedSoul.avatarSrc ? <OptimizedImage src={selectedSoul.avatarSrc} alt={selectedSoul.name} className="w-full" /> : <div className="flex aspect-square items-center justify-center text-5xl font-black text-primary">{selectedSoul.avatarInitials || selectedSoul.name.slice(0, 1)}</div>}
+                    {selectedSoul.avatarSrc ? <OptimizedImage src={selectedSoul.mediaAssetId ? getImageUrl(selectedSoul.mediaAssetId, { w: 400 }) : selectedSoul.avatarSrc} alt={selectedSoul.name} className="w-full" /> : <div className="flex aspect-square items-center justify-center text-5xl font-black text-primary">{selectedSoul.avatarInitials || selectedSoul.name.slice(0, 1)}</div>}
                     {selectedSoul.featured && <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground"><Sparkles className="size-3" /> 精选</span>}
                   </div>
                 </div>
-                <ImageUploadField label="图片" value={selectedSoul.avatarSrc || ""} onChange={(value) => updateSoul(selectedSoul.id, { avatarSrc: value })} admin readOnly={readOnly} scope="plaza-item" compact />
+                <ImageUploadField label="图片" value={selectedSoul.avatarSrc || ""} onChange={(value) => updateSoul(selectedSoul.id, { avatarSrc: value })} onAssetMetadata={(info) => updateSoul(selectedSoul.id, { mediaAssetId: info.assetId })} admin readOnly={readOnly} scope="plaza-item" compact />
               </div>
 
               <div className="space-y-4">
