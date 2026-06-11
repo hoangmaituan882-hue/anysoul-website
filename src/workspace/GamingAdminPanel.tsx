@@ -4,13 +4,14 @@ import RefreshCw from "../components/icons/refresh-icon";
 import Rocket from "../components/icons/rocket-icon";
 import Search from "../components/icons/magnifier-icon";
 import Trash2 from "../components/icons/trash-icon";
+import Upload from "../components/icons/upload-icon";
 import X from "../components/icons/x-icon";
 import { useEffect, useMemo, useState } from "react";
 
 import { CONTENT_API_BASE } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultGamingMain } from "../content/defaults/gaming";
-import type { AdminContentEntry, GamingLibraryItem, GamingMainContent } from "../content/types";
+import type { AdminContentEntry, GamingLibraryItem, GamingMainContent, GamingRecordingItem } from "../content/types";
 import { DateTimePicker } from "../components/DateTimePicker";
 import { ImageUploadField } from "../components/ImageUploadField";
 import { cn } from "../lib/utils";
@@ -108,10 +109,70 @@ function parseTextList(value: string) {
   return value.split(/[,，\n]/).map((item) => item.trim()).filter(Boolean);
 }
 
+function parseCount(value: unknown) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  const number = Number(text.replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(number)) return 0;
+  if (text.includes("万")) return Math.round(number * 10000);
+  return Math.round(number);
+}
+
+function extractBvid(value: unknown) {
+  const text = String(value || "");
+  const match = text.match(/BV[a-zA-Z0-9]+/);
+  return match?.[0] || "";
+}
+
+function parseImportJson(value: string): Record<string, unknown>[] {
+  const cleaned = value.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  if (!cleaned) return [];
+  try {
+    const parsed = JSON.parse(cleaned);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    const wrapped = `[${cleaned.replace(/,\s*$/, "")}]`;
+    const parsed = JSON.parse(wrapped);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  }
+}
+
+function importedRecordingToItem(source: Record<string, unknown>, game: GamingLibraryItem, index: number): GamingRecordingItem {
+  const title = String(source["标题"] || source.title || `${game.title} 录像`).trim();
+  const bvid = String(source["BV号"] || source.bvid || extractBvid(source["链接"] || source.link)).trim();
+  const link = String(source["链接"] || source.link || (bvid ? `https://www.bilibili.com/video/${bvid}` : "")).trim();
+  const host = String(source["UP主"] || source.host || "录播组").trim();
+  const duration = String(source["时长"] || source.duration || "").trim();
+  const date = String(source["收藏时间"] || source.date || "").trim();
+  const idSeed = bvid || `${Date.now()}-${index}`;
+
+  return {
+    id: `recording-${game.id}-${idSeed}`,
+    title,
+    gameId: game.id,
+    gameTitle: game.title,
+    date,
+    duration,
+    coverUrl: game.coverUrl || game.heroImage || "",
+    host,
+    videoUrl: link,
+    sourceUrl: link,
+    videoProvider: link.includes("bilibili.com") || bvid ? "bilibili" : "web",
+    tags: Array.from(new Set([game.title, game.genre, ...(game.tags || []), "录播"].filter(Boolean))),
+    summary: bvid ? `${host} / ${bvid}` : host,
+    highlights: [bvid, host, duration].filter(Boolean),
+    chapters: [{ time: "00:00", title: "录播开始", description: title }],
+    viewers: parseCount(source["播放量"] || source.viewers),
+    danmaku: parseCount(source["弹幕数"] || source.danmaku),
+    isFeatured: false
+  };
+}
+
 function normalizeForPublish(draft: GamingMainContent): GamingMainContent {
   const library = draft.library || [];
   return {
     ...draft,
+    recordings: draft.recordings || [],
     currentGameTitle: library.find((game) => game.id === draft.currentGameId)?.title || draft.currentGameTitle,
     streamTitle: library.find((game) => game.id === draft.streamGameId)?.title || draft.streamTitle,
     streamImage: library.find((game) => game.id === draft.streamGameId)?.coverUrl || draft.streamImage,
@@ -142,11 +203,16 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const [query, setQuery] = useState("");
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [streamSearch, setStreamSearch] = useState("");
+  const [recordingGameId, setRecordingGameId] = useState<string>("");
+  const [recordingQuery, setRecordingQuery] = useState("");
+  const [recordingImportJson, setRecordingImportJson] = useState("");
   const [entryMeta, setEntryMeta] = useState<ContentEntryMeta | null>(null);
 
   const library = draft.library || [];
+  const recordings = draft.recordings || [];
   const selectedGame = library.find((game) => game.id === selectedGameId) || null;
   const streamGame = library.find((game) => game.id === draft.streamGameId) || library[0];
+  const recordingGame = library.find((game) => game.id === recordingGameId) || library[0];
   const filteredLibrary = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     if (!keyword) return library;
@@ -158,6 +224,14 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       .filter((game) => !keyword || [game.title, game.platform, game.genre, ...game.tags].join(" ").toLowerCase().includes(keyword))
       .slice(0, keyword ? 10 : 6);
   }, [library, streamSearch]);
+  const filteredRecordings = useMemo(() => {
+    const keyword = recordingQuery.trim().toLowerCase();
+    return recordings.filter((recording) => {
+      const matchesGame = !recordingGame?.id || recording.gameId === recordingGame.id || recording.gameTitle === recordingGame.title || (recording.tags || []).includes(recordingGame.title);
+      const haystack = [recording.title, recording.gameTitle, recording.host, recording.date, recording.duration, ...(recording.tags || [])].filter(Boolean).join(" ").toLowerCase();
+      return matchesGame && (!keyword || haystack.includes(keyword));
+    });
+  }, [recordingGame, recordingQuery, recordings]);
 
   const load = async () => {
     const response = await authFetch(`${CONTENT_API_BASE}/api/admin/content`);
@@ -172,6 +246,10 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   useEffect(() => {
     load().catch((error) => setStatus(error instanceof TypeError ? "内容服务未启动，请运行 npm run server:dev" : error instanceof Error ? error.message : "游戏回内容加载失败"));
   }, []);
+
+  useEffect(() => {
+    if (!recordingGameId && library[0]?.id) setRecordingGameId(library[0].id);
+  }, [library, recordingGameId]);
 
   const publish = async (nextDraft = draft) => {
     if (readOnly) return;
@@ -225,10 +303,71 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       library: nextLibrary,
       currentGameId: draft.currentGameId === id ? nextLibrary[0]?.id : draft.currentGameId,
       streamGameId: draft.streamGameId === id ? nextLibrary[0]?.id : draft.streamGameId,
-      exploreItems: (draft.exploreItems || []).filter((item) => item.gameId !== id)
+      exploreItems: (draft.exploreItems || []).filter((item) => item.gameId !== id),
+      recordings: (draft.recordings || []).filter((item) => item.gameId !== id)
     };
     setDraft(nextDraft);
     setSelectedGameId(null);
+    if (recordingGameId === id) setRecordingGameId(nextLibrary[0]?.id || "");
+  };
+
+  const addRecording = (game = recordingGame) => {
+    if (!game) return;
+    const recording: GamingRecordingItem = {
+      id: `recording-${game.id}-${Date.now()}`,
+      title: `${game.title} 新录像`,
+      gameId: game.id,
+      gameTitle: game.title,
+      date: "",
+      duration: "",
+      coverUrl: game.coverUrl || game.heroImage || "",
+      host: "AnySoul",
+      videoUrl: "",
+      sourceUrl: "",
+      videoProvider: "bilibili",
+      tags: Array.from(new Set([game.title, game.genre, ...(game.tags || []), "录播"].filter(Boolean))),
+      summary: "",
+      highlights: [],
+      chapters: [{ time: "00:00", title: "录播开始", description: "" }],
+      viewers: 0,
+      danmaku: 0,
+      isFeatured: false
+    };
+    setDraft((current) => ({ ...current, recordings: [recording, ...(current.recordings || [])] }));
+  };
+
+  const updateRecording = (id: string, patch: Partial<GamingRecordingItem>) => {
+    setDraft((current) => ({
+      ...current,
+      recordings: (current.recordings || []).map((recording) => recording.id === id ? { ...recording, ...patch } : recording)
+    }));
+  };
+
+  const deleteRecording = (id: string) => {
+    setDraft((current) => ({ ...current, recordings: (current.recordings || []).filter((recording) => recording.id !== id) }));
+  };
+
+  const importRecordings = () => {
+    if (!recordingGame) {
+      setStatus("请先在游戏录像库选择一个游戏标签");
+      return;
+    }
+    try {
+      const imported = parseImportJson(recordingImportJson).map((item, index) => importedRecordingToItem(item, recordingGame, index));
+      if (!imported.length) {
+        setStatus("没有可导入的录像 JSON");
+        return;
+      }
+      setDraft((current) => {
+        const existingIds = new Set((current.recordings || []).map((item) => item.id));
+        const uniqueImported = imported.filter((item) => !existingIds.has(item.id));
+        return { ...current, recordings: [...uniqueImported, ...(current.recordings || [])] };
+      });
+      setRecordingImportJson("");
+      setStatus(`已导入 ${imported.length} 条 ${recordingGame.title} 录像，确认后点击保存并发布`);
+    } catch (error) {
+      setStatus(error instanceof Error ? `录像 JSON 导入失败：${error.message}` : "录像 JSON 导入失败");
+    }
   };
 
   const chooseStreamGame = (id: string) => {
@@ -320,6 +459,83 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h3 className="font-bold">游戏录像库</h3>
+                <p className="mt-1 text-xs font-bold text-muted-foreground">先选择游戏标签，再添加单条录像或批量导入 B 站录播 JSON。</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => addRecording()} disabled={readOnly || !recordingGame} className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3 py-2 text-sm font-bold text-background disabled:opacity-50"><Plus className="size-4" /> 添加录像</button>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {library.map((game) => {
+                const count = recordings.filter((recording) => recording.gameId === game.id || recording.gameTitle === game.title || (recording.tags || []).includes(game.title)).length;
+                return (
+                  <button
+                    key={game.id}
+                    onClick={() => setRecordingGameId(game.id)}
+                    className={cn("rounded-full border border-border bg-card px-3 py-1.5 text-xs font-black transition hover:bg-muted", recordingGame?.id === game.id && "border-primary/40 bg-primary/10 text-primary")}
+                  >
+                    {game.title} <span className="ml-1 text-muted-foreground">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
+              <div className="space-y-3">
+                <div className="flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-3">
+                  <Search className="size-4 text-muted-foreground" />
+                  <input value={recordingQuery} onChange={(event) => setRecordingQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none" placeholder="搜索当前游戏的录像" />
+                </div>
+                {filteredRecordings.length ? (
+                  <div className="space-y-3">
+                    {filteredRecordings.map((recording) => (
+                      <div key={recording.id} className="rounded-2xl border border-border bg-card p-3">
+                        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                          <Field label="标题" value={recording.title} onChange={(value) => updateRecording(recording.id, { title: value })} />
+                          <Field label="BV号 / 链接" value={recording.videoUrl || recording.sourceUrl || ""} onChange={(value) => updateRecording(recording.id, { videoUrl: value, sourceUrl: value, videoProvider: value.includes("bilibili.com") || extractBvid(value) ? "bilibili" : "web" })} />
+                          <Field label="UP主" value={recording.host || ""} onChange={(value) => updateRecording(recording.id, { host: value })} />
+                          <Field label="时长" value={recording.duration} onChange={(value) => updateRecording(recording.id, { duration: value })} />
+                          <Field label="播放量" value={recording.viewers} type="number" onChange={(value) => updateRecording(recording.id, { viewers: Number(value) || 0 })} />
+                          <Field label="弹幕数" value={recording.danmaku} type="number" onChange={(value) => updateRecording(recording.id, { danmaku: Number(value) || 0 })} />
+                          <DateTimePicker label="日期 / 收藏时间" mode="date" value={recording.date || ""} onChange={(value) => updateRecording(recording.id, { date: value })} />
+                          <Field label="标签，逗号分隔" value={toTextList(recording.tags)} onChange={(value) => updateRecording(recording.id, { tags: parseTextList(value) })} />
+                        </div>
+                        <Area label="简介 / 备注" value={recording.summary || ""} onChange={(value) => updateRecording(recording.id, { summary: value })} rows={2} />
+                        <div className="mt-3 flex justify-end">
+                          <button disabled={readOnly} onClick={() => deleteRecording(recording.id)} className="rounded-lg border border-rose-500/20 px-3 py-2 text-xs font-black text-rose-500 disabled:opacity-50"><Trash2 className="inline size-3.5" /> 删除录像</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm font-bold text-muted-foreground">
+                    当前游戏还没有录像。添加游戏后，可在这里选择对应游戏标签并添加录像。
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-3">
+                <h4 className="flex items-center gap-2 text-sm font-black"><Upload className="size-4 text-primary" /> 批量导入 JSON</h4>
+                <p className="mt-1 text-xs font-bold leading-relaxed text-muted-foreground">支持粘贴数组，或直接粘贴多个对象片段。会导入到当前选择的游戏：{recordingGame?.title || "未选择"}</p>
+                <textarea
+                  value={recordingImportJson}
+                  onChange={(event) => setRecordingImportJson(event.target.value)}
+                  rows={10}
+                  placeholder={'[\n  {\n    "标题": "【泛式/录播】太空狼人杀联动！",\n    "弹幕数": "625",\n    "播放量": "5.7万",\n    "时长": "03:27:15",\n    "BV号": "BV1RM4y1f7i2",\n    "链接": "https://www.bilibili.com/video/BV1RM4y1f7i2",\n    "UP主": "下播型泛式录播组",\n    "收藏时间": ""\n  }\n]'}
+                  className="mt-3 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
+                />
+                <button onClick={importRecordings} disabled={readOnly || !recordingGame || !recordingImportJson.trim()} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-black text-primary-foreground disabled:opacity-50">
+                  <Upload className="size-4" /> 导入到当前游戏
+                </button>
+              </div>
             </div>
           </div>
 
