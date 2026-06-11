@@ -53,7 +53,7 @@ export async function importTalksJson(
 }
 
 export async function fetchBootstrap() {
-  const response = await fetch(`${CONTENT_API_BASE}/api/public/bootstrap`);
+  const response = await fetch(`${CONTENT_API_BASE}/api/public/bootstrap`, { cache: "no-store" });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch bootstrap content: ${response.status}`);
@@ -64,7 +64,7 @@ export async function fetchBootstrap() {
 
 export async function fetchPublishedContent(keys: string[]) {
   const query = encodeURIComponent(keys.join(","));
-  const response = await fetch(`${CONTENT_API_BASE}/api/public/content?keys=${query}`);
+  const response = await fetch(`${CONTENT_API_BASE}/api/public/content?keys=${query}`, { cache: "no-store" });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch published content: ${response.status}`);
