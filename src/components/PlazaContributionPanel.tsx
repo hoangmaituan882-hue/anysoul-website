@@ -29,11 +29,14 @@ type UploadDraft = {
   fileName: string;
   mediaAssetId: string;
   imageUrl: string;
+  previewUrl?: string;
   author: string;
   sourceAnimeTitle: string;
   sourceAnimeId?: string;
   sourceAnimeUrl?: string;
   creationDate: string;
+  uploadState: "uploading" | "ready" | "error";
+  uploadError?: string;
 };
 
 type FeedbackIssue = {
@@ -202,10 +205,21 @@ export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSo
   const [feedbackStatus, setFeedbackStatus] = useState("");
   const [isUploadingFeedback, setIsUploadingFeedback] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const uploadDraftsRef = useRef<UploadDraft[]>([]);
   const todayKey = useMemo(() => formatDateKey(), []);
   const batchWeek = useMemo(() => weekFromDateKey(todayKey), [todayKey]);
   const selectedFeedbackIssue = feedbackIssues.find((issue) => issue.id === feedbackIssue) || feedbackIssues[0];
   const selectedFeedbackItem = visibleSouls.find((item) => item.id === feedbackItemId);
+
+  useEffect(() => {
+    uploadDraftsRef.current = uploadDrafts;
+  }, [uploadDrafts]);
+
+  useEffect(() => () => {
+    for (const item of uploadDraftsRef.current) {
+      if (item.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(item.previewUrl);
+    }
+  }, []);
 
   const requireUser = () => {
     if (isLoading) {
@@ -228,39 +242,72 @@ export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSo
   };
 
   const removeUploadDraft = (localId: string) => {
-    setUploadDrafts((current) => current.filter((item) => item.localId !== localId));
+    setUploadDrafts((current) => {
+      const removed = current.find((item) => item.localId === localId);
+      if (removed?.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(removed.previewUrl);
+      return current.filter((item) => item.localId !== localId);
+    });
   };
 
   const handleUploadFiles = async (files?: FileList | null) => {
+    const selectedFiles = Array.from(files || []);
     if (uploadInputRef.current) uploadInputRef.current.value = "";
     if (!requireUser()) return;
 
-    const selectedFiles = Array.from(files || []);
-    if (!selectedFiles.length) return;
+    if (!selectedFiles.length) {
+      setUploadStatus("没有选择图片，请重新点击上传按钮选择文件");
+      return;
+    }
     const validationError = fileError(selectedFiles);
     if (validationError) {
       setUploadStatus(validationError);
       return;
     }
 
+    const placeholders: UploadDraft[] = selectedFiles.map((file, index) => ({
+      localId: `local-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+      fileName: file.name,
+      mediaAssetId: "",
+      imageUrl: "",
+      previewUrl: URL.createObjectURL(file),
+      author: user?.name || "",
+      sourceAnimeTitle: "",
+      creationDate: todayKey,
+      uploadState: "uploading"
+    }));
+
+    setUploadDrafts((current) => [...placeholders, ...current]);
     setIsUploading(true);
-    setUploadStatus(`正在上传 ${selectedFiles.length} 张图片...`);
+    setUploadStatus(`已选择 ${selectedFiles.length} 张图片，正在上传到后台...`);
     try {
-      const uploaded: UploadDraft[] = [];
-      for (const file of selectedFiles) {
-        const result = await uploadImageAsset(authFetch, file, { scope: "plaza-submission" });
-        uploaded.push({
-          localId: `${result.asset.id}-${Math.random().toString(36).slice(2, 6)}`,
-          fileName: file.name,
-          mediaAssetId: result.asset.id,
-          imageUrl: result.asset.url,
-          author: user?.name || "",
-          sourceAnimeTitle: "",
-          creationDate: todayKey
-        });
+      let successCount = 0;
+      for (let index = 0; index < selectedFiles.length; index += 1) {
+        const file = selectedFiles[index];
+        const placeholder = placeholders[index];
+        setUploadStatus(`正在上传 ${index + 1}/${selectedFiles.length}：${file.name}`);
+
+        try {
+          const result = await uploadImageAsset(authFetch, file, { scope: "plaza-submission" });
+          successCount += 1;
+          setUploadDrafts((current) => current.map((item) => item.localId === placeholder.localId ? {
+            ...item,
+            mediaAssetId: result.asset.id,
+            imageUrl: result.asset.url,
+            uploadState: "ready",
+            uploadError: undefined
+          } : item));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "上传失败";
+          setUploadDrafts((current) => current.map((item) => item.localId === placeholder.localId ? {
+            ...item,
+            uploadState: "error",
+            uploadError: message
+          } : item));
+        }
       }
-      setUploadDrafts((current) => [...current, ...uploaded]);
-      setUploadStatus(`已导入 ${uploaded.length} 张图片，继续填写每张图的信息`);
+      setUploadStatus(successCount === selectedFiles.length
+        ? `已上传 ${successCount} 张图片，继续填写每张图的信息`
+        : `已上传 ${successCount}/${selectedFiles.length} 张图片，失败的图片可删除后重新上传`);
     } catch (error) {
       setUploadStatus(error instanceof Error ? error.message : "上传失败");
     } finally {
@@ -272,6 +319,14 @@ export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSo
     if (!requireUser()) return;
     if (!uploadDrafts.length) {
       setUploadStatus("请先上传图片");
+      return;
+    }
+    if (uploadDrafts.some((item) => item.uploadState === "uploading")) {
+      setUploadStatus("图片还在上传中，请等待上传完成");
+      return;
+    }
+    if (uploadDrafts.some((item) => item.uploadState === "error")) {
+      setUploadStatus("有图片上传失败，请删除失败卡片后重新上传");
       return;
     }
     const incomplete = uploadDrafts.find((item) => !item.author.trim() || !item.sourceAnimeTitle.trim());
@@ -311,11 +366,14 @@ export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSo
   };
 
   const handleFeedbackFiles = async (files?: FileList | null) => {
+    const selectedFiles = Array.from(files || []);
     if (feedbackInputRef.current) feedbackInputRef.current.value = "";
     if (!requireUser()) return;
 
-    const selectedFiles = Array.from(files || []);
-    if (!selectedFiles.length) return;
+    if (!selectedFiles.length) {
+      setFeedbackStatus("没有选择截图，请重新点击上传截图");
+      return;
+    }
     const validationError = fileError(selectedFiles);
     if (validationError) {
       setFeedbackStatus(validationError);
@@ -444,19 +502,48 @@ export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSo
                 {uploadDrafts.map((item, index) => (
                   <div key={item.localId} className="overflow-visible rounded-2xl border border-border bg-background p-3">
                     <div className="flex gap-3">
-                      <div className="aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-xl bg-muted">
-                        <img src={item.imageUrl} alt={item.fileName} className="size-full object-cover" />
+                      <div className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-xl bg-muted">
+                        {(item.imageUrl || item.previewUrl) ? (
+                          <img src={item.imageUrl || item.previewUrl} alt={item.fileName} className={cn("size-full object-cover", item.uploadState === "uploading" && "opacity-70")} />
+                        ) : (
+                          <div className="size-full animate-pulse bg-muted-foreground/10" />
+                        )}
+                        {item.uploadState === "uploading" && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/45 backdrop-blur-[1px]">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="size-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                              <span className="rounded-full bg-background/90 px-2 py-1 text-[10px] font-black text-primary">上传中</span>
+                            </div>
+                          </div>
+                        )}
+                        {item.uploadState === "error" && (
+                          <div className="absolute inset-x-2 bottom-2 rounded-full bg-red-500 px-2 py-1 text-center text-[10px] font-black text-white">上传失败</div>
+                        )}
                       </div>
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <div className="line-clamp-1 text-sm font-black text-foreground">{item.sourceAnimeTitle || `待填写图片 ${index + 1}`}</div>
+                            <div className="line-clamp-1 text-sm font-black text-foreground">{item.sourceAnimeTitle || (item.uploadState === "uploading" ? `正在上传图片 ${index + 1}` : `待填写图片 ${index + 1}`)}</div>
                             <div className="line-clamp-1 text-xs font-bold text-muted-foreground">{item.fileName}</div>
                           </div>
                           <button type="button" onClick={() => removeUploadDraft(item.localId)} className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted hover:text-foreground">
                             <X className="size-3.5" />
                           </button>
                         </div>
+                        {item.uploadState === "uploading" && (
+                          <div className="space-y-2">
+                            <div className="h-10 animate-pulse rounded-full bg-muted" />
+                            <div className="h-10 animate-pulse rounded-full bg-muted" />
+                            <div className="h-10 animate-pulse rounded-full bg-muted" />
+                          </div>
+                        )}
+                        {item.uploadState === "error" && (
+                          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-600">
+                            {item.uploadError || "上传失败，请删除后重新选择这张图片"}
+                          </div>
+                        )}
+                        {item.uploadState === "ready" && (
+                          <>
                         <input
                           value={item.author}
                           onChange={(event) => updateUploadDraft(item.localId, { author: event.target.value })}
@@ -478,6 +565,8 @@ export function PlazaContributionPanel({ visibleSouls }: { visibleSouls: PlazaSo
                           onChange={(event) => updateUploadDraft(item.localId, { creationDate: event.target.value })}
                           className="h-10 w-full rounded-full border border-border bg-card px-3 text-xs font-bold outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
                         />
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
