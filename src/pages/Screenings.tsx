@@ -355,6 +355,7 @@ export function Screenings() {
   const [syncedWatchedSourceIds, setSyncedWatchedSourceIds] = useState<string[]>([]);
   const [showTimeline, setShowTimeline] = useLocalStorage('screenings-showTimeline', true);
   const [showHistory, setShowHistory] = useLocalStorage('screenings-showHistory', true);
+  const [activeTimelineCard, setActiveTimelineCard] = useState<string | null>(null);
   const nextScreening = useContent<ScreeningNextContent>("screenings.next", defaultScreeningsNext);
   const scheduleContent = useContent<ScreeningScheduleContent>("screenings.schedule", defaultScreeningsSchedule);
   const todoContent = useContent<ScreeningTodoContent>("screenings.todo", defaultScreeningsTodo);
@@ -1164,10 +1165,10 @@ export function Screenings() {
               {screeningsData.map((node, idx) => (
                 <motion.div
                   key={idx}
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   whileInView={{ opacity: 1, scale: 1, y: 0 }}
                   viewport={{ once: true, margin: "0px" }}
-                  transition={{ duration: 0.5, delay: idx * 0.1, type: "spring", stiffness: 100 }}
+                  transition={{ duration: 0.4, type: "spring", stiffness: 200 }}
                   className="relative flex flex-col items-center shrink-0 w-8"
                 >
                   {/* Movies */}
@@ -1229,15 +1230,19 @@ export function Screenings() {
                     }
 
                     const IconComp = style.Icon;
+                    const cardId = `${m.id || m.title}-${cIndex}`;
+                    const isActive = activeTimelineCard === cardId;
 
                     return (
                       <motion.div
-                        key={`${m.id || m.title}-${cIndex}`}
+                        key={cardId}
                         whileHover={{ y: isTop ? -8 : 8, scale: 1.02 }}
+                        onClick={() => setActiveTimelineCard(isActive ? null : cardId)}
                         transition={{ type: "spring", stiffness: 300 }}
                         className={cn(
                           "absolute flex flex-col gap-4 items-center w-[260px] md:w-[300px]",
-                          isTop ? "bottom-[64px]" : "top-[176px]"
+                          isTop ? "bottom-[64px]" : "top-[176px]",
+                          isActive ? "z-[60]" : "z-10 hover:z-[50]"
                         )}
                         style={{
                           ...(cIndex > 1 && isTop ? { marginBottom: `${(cIndex-1)*20}px`, marginLeft: `${(cIndex-1)*20}px` } : {}),
