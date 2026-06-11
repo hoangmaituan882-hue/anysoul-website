@@ -1235,13 +1235,13 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         value={libraryCategoryFilter}
         onChange={setLibraryCategoryFilter}
         options={[{ value: "all", label: "全部分类" }]}
-        className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold"
+        className="h-10 - text-sm"
       />
       <OptionCapsule
         value={libraryStatusFilter}
         onChange={setLibraryStatusFilter}
         options={[{ value: "all", label: "全部状态" }, { value: "available", label: "可排播" }, { value: "planned", label: "已排期" }, { value: "watched", label: "已归档" }, { value: "hidden", label: "隐藏" }, { value: "rejected", label: "拒绝" }]}
-        className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold"
+        className="h-10 - text-sm"
       />
     </div>
   );
@@ -1328,9 +1328,12 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className="text-[12px] font-bold text-muted-foreground">数据源</span>
-                <select value={scrapeProviderFilter} onChange={(event) => setScrapeProviderFilter(event.target.value as MediaProviderFilter)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                  {providerFilters.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
-                </select>
+                <OptionCapsule
+        value={scrapeProviderFilter}
+        onChange={(value) => setScrapeProviderFilter(value)}
+        options={providerFilters}
+        className="h-10 min-w-0 text-sm"
+      />
               </label>
               <button onClick={scrapeMedia} disabled={isScraping} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-bold text-background shadow-sm transition-colors hover:bg-foreground/90 disabled:opacity-50">
                 <Search className={cn("size-4", isScraping && "animate-spin")} /> {isScraping ? "抓取中" : "搜索抓取"}
@@ -1546,27 +1549,39 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">类型</span>
-                    <select value={item.type} onChange={(event) => updateLibraryItem(index, { type: event.target.value as ScreeningSourceItem["type"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["movie", "anime", "ova", "series", "short", "other"] as ScreeningSourceItem["type"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={item.type}
+        onChange={(value) => updateLibraryItem(index, { type: value })}
+        options={["movie", "anime", "ova", "series", "short", "other"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">分类</span>
-                    <select value={item.category} onChange={(event) => updateLibraryItem(index, { category: event.target.value as ScreeningSourceItem["category"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {movieTypes.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={item.category}
+        onChange={(value) => updateLibraryItem(index, { category: value })}
+        options={movieTypes}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">状态</span>
-                    <select value={item.status} onChange={(event) => updateLibraryItem(index, { status: event.target.value as ScreeningSourceItem["status"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["available", "planned", "watched", "hidden", "rejected"] as ScreeningSourceItem["status"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={item.status}
+        onChange={(value) => updateLibraryItem(index, { status: value })}
+        options={["available", "planned", "watched", "hidden", "rejected"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">优先级</span>
-                    <select value={item.priority} onChange={(event) => updateLibraryItem(index, { priority: event.target.value as ScreeningSourceItem["priority"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["low", "normal", "high"] as ScreeningSourceItem["priority"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={item.priority}
+        onChange={(value) => updateLibraryItem(index, { priority: value })}
+        options={["low", "normal", "high"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                 </div>
 
@@ -1769,9 +1784,12 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                 <ImageUploadField label="海报" value={editingLibraryItem.posterUrl || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { posterUrl: value })} admin readOnly={readOnly} scope="screening-poster" compact />
                 <label className="flex flex-col gap-1.5">
                   <span className="text-[12px] font-bold text-muted-foreground">补全来源</span>
-                  <select value={metadataProviderFilter} onChange={(event) => setMetadataProviderFilter(event.target.value as MediaProviderFilter)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                    {providerFilters.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
-                  </select>
+                  <OptionCapsule
+        value={metadataProviderFilter}
+        onChange={(value) => setMetadataProviderFilter(value)}
+        options={providerFilters}
+        className="h-10 min-w-0 text-sm"
+      />
                 </label>
                 <button
                   type="button"
@@ -1811,27 +1829,39 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">类型</span>
-                    <select value={editingLibraryItem.type} onChange={(event) => updateLibraryItem(editingLibraryIndex, { type: event.target.value as ScreeningSourceItem["type"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["movie", "anime", "ova", "series", "short", "other"] as ScreeningSourceItem["type"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={editingLibraryItem.type}
+        onChange={(value) => updateLibraryItem(editingLibraryIndex, { type: value })}
+        options={["movie", "anime", "ova", "series", "short", "other"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">分类</span>
-                    <select value={editingLibraryItem.category} onChange={(event) => updateLibraryItem(editingLibraryIndex, { category: event.target.value as ScreeningSourceItem["category"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {movieTypes.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={editingLibraryItem.category}
+        onChange={(value) => updateLibraryItem(editingLibraryIndex, { category: value })}
+        options={movieTypes}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">状态</span>
-                    <select value={editingLibraryItem.status} onChange={(event) => updateLibraryItem(editingLibraryIndex, sourceStatusPatch(event.target.value as ScreeningSourceItem["status"], editingLibraryItem))} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["available", "planned", "watched", "hidden", "rejected"] as ScreeningSourceItem["status"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={editingLibraryItem.status}
+        onChange={(value) => updateLibraryItem(editingLibraryIndex, sourceStatusPatch(value, editingLibraryItem))}
+        options={["available", "planned", "watched", "hidden", "rejected"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">优先级</span>
-                    <select value={editingLibraryItem.priority} onChange={(event) => updateLibraryItem(editingLibraryIndex, { priority: event.target.value as ScreeningSourceItem["priority"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["low", "normal", "high"] as ScreeningSourceItem["priority"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={editingLibraryItem.priority}
+        onChange={(value) => updateLibraryItem(editingLibraryIndex, { priority: value })}
+        options={["low", "normal", "high"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                 </div>
 
@@ -1897,27 +1927,39 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">媒体类型</span>
-                    <select value={candidateDraft.type} onChange={(event) => updateCandidateDraft({ type: event.target.value as ScreeningSourceItem["type"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["movie", "anime", "ova", "series", "short", "other"] as ScreeningSourceItem["type"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={candidateDraft.type}
+        onChange={(value) => updateCandidateDraft({ type: value })}
+        options={["movie", "anime", "ova", "series", "short", "other"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">分类标签</span>
-                    <select value={candidateDraft.category} onChange={(event) => updateCandidateDraft({ category: event.target.value as ScreeningSourceItem["category"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {movieTypes.map((value) => <option key={value.value} value={value.value}>{value.label}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={candidateDraft.category}
+        onChange={(value) => updateCandidateDraft({ category: value })}
+        options={movieTypes}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">片源状态</span>
-                    <select value={candidateDraft.status} onChange={(event) => updateCandidateDraft({ status: event.target.value as ScreeningSourceItem["status"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["available", "planned", "watched", "hidden", "rejected"] as ScreeningSourceItem["status"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={candidateDraft.status}
+        onChange={(value) => updateCandidateDraft({ status: value })}
+        options={["available", "planned", "watched", "hidden", "rejected"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <span className="text-[12px] font-bold text-muted-foreground">优先级</span>
-                    <select value={candidateDraft.priority} onChange={(event) => updateCandidateDraft({ priority: event.target.value as ScreeningSourceItem["priority"] })} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                      {(["low", "normal", "high"] as ScreeningSourceItem["priority"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
+                    <OptionCapsule
+        value={candidateDraft.priority}
+        onChange={(value) => updateCandidateDraft({ priority: value })}
+        options={["low", "normal", "high"].map(v => ({ label: v, value: v }))}
+        className="h-10 min-w-0 text-sm"
+      />
                   </label>
                 </div>
 

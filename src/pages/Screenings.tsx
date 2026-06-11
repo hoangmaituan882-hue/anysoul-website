@@ -1449,25 +1449,25 @@ export function Screenings() {
         value={libraryCategoryFilter}
         onChange={setLibraryCategoryFilter}
         options={[{ value: "all", label: "全部分类" }, { value: "good", label: "经典好片" }, { value: "bad", label: "绝世烂片" }, { value: "classic", label: "往期经典" }, { value: "anime", label: "动画" }, { value: "topic", label: "主题片" }, { value: "other", label: "其他" }]}
-        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+        className="h-10 min-w-0 - text-xs md:h-11 md:text-sm"
       />
                   <OptionCapsule
         value={libraryStatusFilter}
         onChange={setLibraryStatusFilter}
         options={[{ value: "all", label: "全部状态" }, { value: "available", label: "可排播" }, { value: "planned", label: "已计划" }, { value: "watched", label: "已看" }, { value: "hidden", label: "隐藏" }, { value: "rejected", label: "拒绝" }]}
-        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+        className="h-10 min-w-0 - text-xs md:h-11 md:text-sm"
       />
                   <OptionCapsule
         value={libraryTypeFilter}
         onChange={setLibraryTypeFilter}
         options={[{ value: "all", label: "全部类型" }, { value: "movie", label: "电影" }, { value: "anime", label: "动画" }, { value: "ova", label: "OVA" }, { value: "series", label: "剧集" }, { value: "short", label: "短片" }, { value: "other", label: "其他" }]}
-        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+        className="h-10 min-w-0 - text-xs md:h-11 md:text-sm"
       />
                   <OptionCapsule
         value={libraryPriorityFilter}
         onChange={setLibraryPriorityFilter}
         options={[{ value: "all", label: "全部优先级" }, { value: "high", label: "高优先级" }, { value: "normal", label: "普通优先级" }, { value: "low", label: "低优先级" }]}
-        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+        className="h-10 min-w-0 - text-xs md:h-11 md:text-sm"
       />
                 </div>
 
@@ -1772,7 +1772,7 @@ export function Screenings() {
         value={sourceSubmissionField}
         onChange={setSourceSubmissionField}
         options={[{ value: "other", label: "其他补充" }, { value: "sourceUrl", label: "播放链接" }, { value: "sourceNote", label: "播放备注" }, { value: "description", label: "简介纠错" }, { value: "fanshiReview", label: "泛式评价" }]}
-        className="mt-3 h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-bold"
+        className="mt-3 h-10 w-full - bg-background text-xs"
       />
                           <textarea value={sourceSubmissionContent} onChange={(event) => setSourceSubmissionContent(event.target.value)} className="mt-3 min-h-24 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium outline-none focus:border-primary/50" placeholder="写下要补充的信息..." />
                           <input value={sourceSubmissionContact} onChange={(event) => setSourceSubmissionContact(event.target.value)} className="mt-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none focus:border-primary/50" placeholder="联系方式，可选" />
