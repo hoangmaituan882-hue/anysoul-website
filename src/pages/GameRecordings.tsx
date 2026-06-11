@@ -278,12 +278,13 @@ export function GameRecordings() {
                   <span className="rounded-full bg-background/80 px-3 py-1 text-xs font-black text-muted-foreground backdrop-blur">{featuredRecording.date}</span>
                 </div>
                 <h2 className="max-w-2xl text-3xl font-black leading-tight tracking-tight md:text-5xl">{featuredRecording.title}</h2>
+                <h2 className="max-w-2xl text-2xl font-black leading-tight tracking-tight sm:text-3xl md:text-5xl">{featuredRecording.title}</h2>
                 <p className="mt-3 max-w-2xl text-sm font-bold leading-relaxed text-muted-foreground md:text-base">{featuredRecording.summary}</p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   {featuredRecording.tags.slice(0, 5).map((tag) => <span key={tag} className="rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-black text-muted-foreground backdrop-blur">{tag}</span>)}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 self-end md:grid-cols-1">
+              <div className="grid grid-cols-2 gap-2 self-end sm:grid-cols-3 md:grid-cols-1">
                 <Metric label="录像数" value={`${recordings.length}`} />
                 <Metric label="总时长" value={`${totalDurationHours || 0}h`} />
                 <Metric label="弹幕" value={featuredRecording.danmaku.toLocaleString()} />
@@ -292,7 +293,7 @@ export function GameRecordings() {
           </button>
         ) : null}
 
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           <button onClick={() => setFilter({ kind: "all", value: "全部" })} className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition", filter.kind === "all" ? "bg-foreground text-background shadow-sm" : "border border-border bg-card text-muted-foreground hover:text-foreground")}>
             <Filter className="size-4" /> 全部 {recordings.length}
           </button>
@@ -313,7 +314,7 @@ export function GameRecordings() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto text-xs md:text-sm">
+        <div className="flex items-center gap-2 overflow-x-auto text-xs md:text-sm no-scrollbar" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           <span className="flex shrink-0 items-center gap-1 font-semibold text-muted-foreground"><ArrowDownUp className="size-3.5" /> 排序方式:</span>
           {[
             { id: "dateDesc", label: "时间倒序" },
@@ -356,9 +357,11 @@ export function GameRecordings() {
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {recording.tags.slice(0, 3).map((tag) => <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{tag}</span>)}
                   </div>
-                  <div className="mt-auto grid grid-cols-3 gap-2 border-t border-border pt-3 text-[11px] font-bold text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><Eye className="size-3" /> {recording.viewers.toLocaleString()}</span>
-                    <span className="inline-flex items-center gap-1"><MessageCircle className="size-3" /> {recording.danmaku.toLocaleString()}</span>
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-y-2 border-t border-border pt-3 text-[11px] font-bold text-muted-foreground">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center gap-1"><Eye className="size-3" /> {recording.viewers.toLocaleString()}</span>
+                      <span className="inline-flex items-center gap-1"><MessageCircle className="size-3" /> {recording.danmaku.toLocaleString()}</span>
+                    </div>
                     <span>{recording.chapters.length} 节点</span>
                   </div>
                 </div>
@@ -390,7 +393,7 @@ export function GameRecordings() {
                       <span className="rounded-full bg-lime-100 px-2.5 py-0.5 text-[11px] font-bold text-lime-700 dark:bg-lime-900/60 dark:text-lime-300">{selectedRecording.gameTitle}</span>
                       <span className="rounded-full bg-background/70 px-2.5 py-0.5 text-[11px] font-bold backdrop-blur">{selectedRecording.date}</span>
                     </div>
-                    <h2 className="text-3xl font-black tracking-tight sm:text-5xl">{selectedRecording.title}</h2>
+                    <h2 className="text-2xl font-black tracking-tight sm:text-4xl md:text-5xl">{selectedRecording.title}</h2>
                   </div>
                 </div>
                 <div className="grid gap-6 p-5 lg:grid-cols-[1fr_300px]">
@@ -461,9 +464,9 @@ export function GameRecordings() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-background/80 p-4">
-      <div className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-1 line-clamp-1 text-lg font-black">{value}</div>
+    <div className="rounded-2xl border border-border bg-background/80 p-3 sm:p-4">
+      <div className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-1 line-clamp-1 text-base sm:text-lg font-black">{value}</div>
     </div>
   );
 }
