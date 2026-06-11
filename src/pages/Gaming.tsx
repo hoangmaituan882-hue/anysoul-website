@@ -225,6 +225,12 @@ function buildCategories(library: GamingLibraryItem[]): GamingCategory[] {
   return groups.map((game) => ({ title: game.genre || "游戏", subtitle: game.platform, img: game.coverUrl }));
 }
 
+function getCategoryImage(category: GamingCategory, library: GamingLibraryItem[]) {
+  if (category.img) return category.img;
+  const game = library.find((item) => item.genre === category.title || item.title === category.title || (item.tags || []).includes(category.title));
+  return game?.coverUrl || game?.heroImage || defaultGamingMain.streamImage;
+}
+
 function getGameImage(game?: GamingLibraryItem) {
   return game?.heroImage || game?.coverUrl || defaultGamingMain.streamImage;
 }
@@ -495,11 +501,11 @@ export function Gaming() {
         <div className="flex flex-col gap-4 mt-2">
            <h3 className="text-xl font-bold flex items-center gap-2">游戏分类 <Flame className="size-5 text-orange-500 fill-orange-500" /></h3>
            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-               {content.categories.slice(0, 3).map((category) => (
-                 <button key={`${category.title}-${category.subtitle}`} onClick={() => { window.location.hash = `#game-library?category=${encodeURIComponent(category.title)}`; }} className="flex flex-col gap-2 group cursor-pointer text-left">
-                    <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-card border border-border relative">
-                       <img src={category.img} alt={category.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    </div>
+                {content.categories.slice(0, 3).map((category) => (
+                  <button key={`${category.title}-${category.subtitle}`} onClick={() => { window.location.hash = `#game-library?category=${encodeURIComponent(category.title)}`; }} className="flex flex-col gap-2 group cursor-pointer text-left">
+                     <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-card border border-border relative">
+                        <img src={getCategoryImage(category, library)} alt={category.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                     </div>
                     <div>
                       <div className="font-bold text-foreground group-hover:text-primary transition-colors">{category.title}</div>
                       <div className="text-xs text-muted-foreground font-medium">{category.subtitle}</div>

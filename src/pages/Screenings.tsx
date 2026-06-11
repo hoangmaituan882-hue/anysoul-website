@@ -689,9 +689,19 @@ export function Screenings() {
           <div className="flex-1 flex flex-col">
             {/* Title area */}
             <div className="mb-8">
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-foreground mb-6">
-                  周末放映会
+                <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-foreground mb-3">
+                  {nextScreening.title || "周末放映会"}
                 </h1>
+                {(nextScreening.theme || nextScreening.description) && (
+                  <p className="mb-6 max-w-2xl text-sm font-medium leading-relaxed text-muted-foreground md:text-base">
+                    {nextScreening.description || nextScreening.theme}
+                  </p>
+                )}
+                {nextScreening.coverUrl && (
+                  <div className="mb-6 overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                    <img src={nextScreening.coverUrl} alt={nextScreening.title} className="aspect-[16/7] w-full object-cover" />
+                  </div>
+                )}
 
                 {/* Filter Pills */}
                 <div className="flex flex-wrap gap-2 md:gap-3">

@@ -230,10 +230,12 @@ function summarizeGameFromRecordings(game: GamingLibraryItem, recordings: Gaming
 function normalizeForPublish(draft: GamingMainContent): GamingMainContent {
   const recordings = draft.recordings || [];
   const library = (draft.library || []).map((game) => summarizeGameFromRecordings(game, recordings));
+  const categories = (draft.categories || []).filter((category) => category.title || category.subtitle || category.img);
   return {
     ...draft,
     recordings,
     library,
+    categories,
     currentGameTitle: library.find((game) => game.id === draft.currentGameId)?.title || draft.currentGameTitle,
     streamTitle: library.find((game) => game.id === draft.streamGameId)?.title || draft.streamTitle,
     streamImage: library.find((game) => game.id === draft.streamGameId)?.coverUrl || draft.streamImage,
@@ -492,6 +494,35 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     void publish(nextDraft);
   };
 
+  const addCategory = () => {
+    const game = library[0];
+    setDraft((current) => ({
+      ...current,
+      categories: [...(current.categories || []), { title: game?.genre || "新分类", subtitle: game?.platform || "待补充", img: game?.coverUrl || "" }]
+    }));
+  };
+
+  const updateCategory = (index: number, patch: Partial<NonNullable<GamingMainContent["categories"]>[number]>) => {
+    setDraft((current) => ({
+      ...current,
+      categories: (current.categories || []).map((category, categoryIndex) => categoryIndex === index ? { ...category, ...patch } : category)
+    }));
+  };
+
+  const moveCategory = (index: number, direction: -1 | 1) => {
+    setDraft((current) => {
+      const categories = [...(current.categories || [])];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= categories.length) return current;
+      [categories[index], categories[targetIndex]] = [categories[targetIndex], categories[index]];
+      return { ...current, categories };
+    });
+  };
+
+  const deleteCategory = (index: number) => {
+    setDraft((current) => ({ ...current, categories: (current.categories || []).filter((_, categoryIndex) => categoryIndex !== index) }));
+  };
+
   return (
     <div className="space-y-5 max-w-6xl mx-auto">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -573,6 +604,39 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-bold">游戏分类展示</h3>
+                <p className="mt-1 text-xs font-bold text-muted-foreground">控制游戏页“游戏分类”下方的标题、副标题和图片。清空后前台会从游戏库自动生成。</p>
+              </div>
+              <button onClick={addCategory} disabled={readOnly} className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3 py-2 text-sm font-bold text-background disabled:opacity-50"><Plus className="size-4" /> 添加分类</button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {(draft.categories || []).length ? (draft.categories || []).map((category, index) => (
+                <div key={`${category.title}-${index}`} className="grid gap-3 rounded-2xl border border-border bg-card p-3 lg:grid-cols-[140px_1fr_auto]">
+                  <div className="overflow-hidden rounded-xl border border-border bg-muted">
+                    {category.img ? <img src={category.img} alt={category.title} className="aspect-[4/3] w-full object-cover" /> : <div className="flex aspect-[4/3] items-center justify-center px-3 text-center text-xs font-black text-muted-foreground">空图时自动回退</div>}
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Field label="标题" value={category.title} onChange={(value) => updateCategory(index, { title: value })} />
+                    <Field label="副标题" value={category.subtitle} onChange={(value) => updateCategory(index, { subtitle: value })} />
+                    <div className="md:col-span-2">
+                      <ImageUploadField label="分类图片" value={category.img || ""} onChange={(value) => updateCategory(index, { img: value })} admin readOnly={readOnly} scope="gaming-category" compact />
+                    </div>
+                  </div>
+                  <div className="flex flex-row gap-2 lg:flex-col">
+                    <button disabled={readOnly || index === 0} onClick={() => moveCategory(index, -1)} className="rounded-lg border border-border px-3 py-2 text-xs font-black disabled:opacity-50">上移</button>
+                    <button disabled={readOnly || index === (draft.categories || []).length - 1} onClick={() => moveCategory(index, 1)} className="rounded-lg border border-border px-3 py-2 text-xs font-black disabled:opacity-50">下移</button>
+                    <button disabled={readOnly} onClick={() => deleteCategory(index)} className="rounded-lg border border-rose-500/20 px-3 py-2 text-xs font-black text-rose-500 disabled:opacity-50"><Trash2 className="inline size-3.5" /> 删除</button>
+                  </div>
+                </div>
+              )) : (
+                <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm font-bold text-muted-foreground">暂无手动分类。保存发布后，前台会从游戏库自动生成分类。</div>
+              )}
             </div>
           </div>
 

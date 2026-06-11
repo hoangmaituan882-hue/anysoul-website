@@ -646,6 +646,29 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     }
   };
 
+  const publishPageCopyNow = async () => {
+    if (readOnly) {
+      setStatus("只读模式无法发布页面文案");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const publishableLibrary = normalizeLibraryForPublish(library);
+      setLibrary(publishableLibrary);
+      await commitScreeningBatch([
+        { key: SCREENINGS_NEXT_KEY, payload: next, publish: true, message: "Publish screening page copy" },
+        { key: SCREENINGS_LIBRARY_KEY, payload: publishableLibrary, publish: true, message: "Publish screening library copy" }
+      ], "Publish screening page copy");
+      setStatus("放映页面文案和片源库标题介绍已保存并发布，自动统计情报未被修改");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "页面文案发布失败，请检查内容服务");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const updateMovie = (index: number, patch: Partial<ScreeningMovie>) => {
     if (readOnly) return;
 
@@ -1279,6 +1302,36 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
           <button onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold transition-colors hover:bg-muted">
             <RefreshCw className="size-4" /> 刷新
           </button>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-border bg-background p-5 shadow-sm">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h3 className="text-lg font-black text-foreground">放映页面文案</h3>
+            <p className="text-sm text-muted-foreground">只控制前台放映页的标题、说明和封面；自动记录情报、历史导入和抓取结果保持只读。</p>
+          </div>
+          <button onClick={publishPageCopyNow} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
+            <Save className="size-4" /> 保存并发布页面文案
+          </button>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field label="放映页标题" value={next.title} onChange={(value) => setNext({ ...next, title: value })} placeholder="例如：周末放映会" />
+            <Field label="主题 / 副标题" value={next.theme} onChange={(value) => setNext({ ...next, theme: value })} placeholder="例如：本周动画与电影专场" />
+            <TextAreaField label="放映页介绍" value={next.description || ""} onChange={(value) => setNext({ ...next, description: value })} placeholder="展示在放映页顶部的说明文字" />
+            <TextAreaField label="真实历史放映片源库介绍" value={library.description} onChange={(value) => setLibrary((current) => ({ ...current, description: value }))} placeholder="展示在片源库标题下方的介绍" />
+            <Field label="真实历史放映片源库标题" value={library.title} onChange={(value) => setLibrary((current) => ({ ...current, title: value }))} />
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-3">
+            <div className="mb-3 overflow-hidden rounded-xl border border-border bg-muted">
+              {next.coverUrl ? <img src={next.coverUrl} alt={next.title} className="aspect-video w-full object-cover" /> : <div className="flex aspect-video items-center justify-center px-3 text-center text-xs font-black text-muted-foreground">暂无封面</div>}
+            </div>
+            <ImageUploadField label="放映页封面" value={next.coverUrl || ""} onChange={(value) => setNext({ ...next, coverUrl: value })} admin readOnly={readOnly} scope="screening-page-cover" compact />
+            <div className="mt-3 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground">
+              自动情报：{schedule.weeks.length} 个排播周 / {library.items.length} 个片源 / {missingFieldItems.length} 个待补全项。这里只读展示，不提供编辑。
+            </div>
+          </div>
         </div>
       </div>
 
