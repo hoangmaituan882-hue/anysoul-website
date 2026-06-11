@@ -680,6 +680,16 @@ export function Screenings() {
     }
   };
 
+  useEffect(() => {
+    if (showTimeline && scrollContainerRef.current) {
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+        }
+      }, 100);
+    }
+  }, [showTimeline, screeningsData]);
+
   return (
     <div className="py-20 md:py-32 w-full overflow-x-hidden relative min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -1160,31 +1170,123 @@ export function Screenings() {
                   transition={{ duration: 0.5, delay: idx * 0.1, type: "spring", stiffness: 100 }}
                   className="relative flex flex-col items-center shrink-0 w-8"
                 >
-                  {/* Good Movie */}
-                  {node.movies.filter(m => m.type === 'good').map((movie, cIndex) => (
-                    <motion.div
-                      key={`good-${cIndex}`}
-                      whileHover={{ y: -8, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                      className="absolute bottom-[64px] flex flex-col gap-4 items-center w-[260px] md:w-[300px]"
-                    >
-                      <div className="absolute -bottom-[28px] w-px h-[28px] bg-gradient-to-b from-transparent to-emerald-500/50" />
-                      <div className="w-full bg-background border border-border/80 rounded-2xl p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(16,185,129,0.15)] hover:border-emerald-500/30 transition-all flex flex-col gap-3 relative z-10 overflow-hidden group/card cursor-pointer">
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-2.5 py-1 rounded-full">
-                            <Star className="w-3 h-3 fill-current" />
-                            经典好片
-                          </span>
-                          <span className="text-xs font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">{movie.rating} 分</span>
-                        </div>
-                        <h4 className="text-base font-bold text-foreground group-hover/card:text-emerald-500 transition-colors">{movie.title}</h4>
-                        {movie.description && (
-                          <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{movie.description}</p>
+                  {/* Movies */}
+                  {node.movies.map((m, cIndex) => {
+                    const enriched = screeningRecords.find(r => (r.movie.libraryId || r.movie.id || r.movie.title) === (m.libraryId || m.id || m.title))?.movie || m;
+                    const type = enriched.type || m.type;
+                    const isTop = cIndex % 2 === 0;
+                    
+                    let style = {
+                      lineGradient: isTop ? 'bg-gradient-to-b from-transparent to-zinc-500/50' : 'bg-gradient-to-t from-transparent to-zinc-500/50',
+                      hoverBorder: 'hover:border-zinc-500/30', hoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(113,113,122,0.15)]',
+                      bgGradient: 'from-zinc-500/5',
+                      badgeBg: 'bg-zinc-100 dark:bg-zinc-800/50', badgeText: 'text-zinc-600 dark:text-zinc-400',
+                      ratingBg: 'bg-zinc-500/10', ratingText: 'text-zinc-500',
+                      titleHover: 'group-hover/card:text-zinc-500',
+                      label: '影视作品', Icon: Film
+                    };
+
+                    if (type === 'good' || type === 'classic') {
+                      style = {
+                        lineGradient: isTop ? 'bg-gradient-to-b from-transparent to-emerald-500/50' : 'bg-gradient-to-t from-transparent to-emerald-500/50',
+                        hoverBorder: 'hover:border-emerald-500/30', hoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(16,185,129,0.15)]',
+                        bgGradient: 'from-emerald-500/5',
+                        badgeBg: 'bg-emerald-50 dark:bg-emerald-900/30', badgeText: 'text-emerald-600 dark:text-emerald-400',
+                        ratingBg: 'bg-emerald-500/10', ratingText: 'text-emerald-500',
+                        titleHover: 'group-hover/card:text-emerald-500',
+                        label: '往期经典', Icon: Star
+                      };
+                    } else if (type === 'bad') {
+                      style = {
+                        lineGradient: isTop ? 'bg-gradient-to-b from-transparent to-rose-500/50' : 'bg-gradient-to-t from-transparent to-rose-500/50',
+                        hoverBorder: 'hover:border-rose-500/30', hoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(225,29,72,0.15)]',
+                        bgGradient: 'from-rose-500/5',
+                        badgeBg: 'bg-rose-50 dark:bg-rose-900/30', badgeText: 'text-rose-600 dark:text-rose-400',
+                        ratingBg: 'bg-rose-500/10', ratingText: 'text-rose-500',
+                        titleHover: 'group-hover/card:text-rose-500',
+                        label: '绝世烂片', Icon: AlertTriangle
+                      };
+                    } else if (type === 'anime') {
+                      style = {
+                        lineGradient: isTop ? 'bg-gradient-to-b from-transparent to-sky-500/50' : 'bg-gradient-to-t from-transparent to-sky-500/50',
+                        hoverBorder: 'hover:border-sky-500/30', hoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(14,165,233,0.15)]',
+                        bgGradient: 'from-sky-500/5',
+                        badgeBg: 'bg-sky-50 dark:bg-sky-900/30', badgeText: 'text-sky-600 dark:text-sky-400',
+                        ratingBg: 'bg-sky-500/10', ratingText: 'text-sky-500',
+                        titleHover: 'group-hover/card:text-sky-500',
+                        label: '精选动画', Icon: Film
+                      };
+                    } else if (type === 'topic') {
+                      style = {
+                        lineGradient: isTop ? 'bg-gradient-to-b from-transparent to-violet-500/50' : 'bg-gradient-to-t from-transparent to-violet-500/50',
+                        hoverBorder: 'hover:border-violet-500/30', hoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(139,92,246,0.15)]',
+                        bgGradient: 'from-violet-500/5',
+                        badgeBg: 'bg-violet-50 dark:bg-violet-900/30', badgeText: 'text-violet-600 dark:text-violet-400',
+                        ratingBg: 'bg-violet-500/10', ratingText: 'text-violet-500',
+                        titleHover: 'group-hover/card:text-violet-500',
+                        label: '主题片', Icon: MonitorPlay
+                      };
+                    }
+
+                    const IconComp = style.Icon;
+
+                    return (
+                      <motion.div
+                        key={`${m.id || m.title}-${cIndex}`}
+                        whileHover={{ y: isTop ? -8 : 8, scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                        className={cn(
+                          "absolute flex flex-col gap-4 items-center w-[260px] md:w-[300px]",
+                          isTop ? "bottom-[64px]" : "top-[176px]"
                         )}
-                      </div>
-                    </motion.div>
-                  ))}
+                        style={{
+                          ...(cIndex > 1 && isTop ? { marginBottom: `${(cIndex-1)*20}px`, marginLeft: `${(cIndex-1)*20}px` } : {}),
+                          ...(cIndex > 1 && !isTop ? { marginTop: `${(cIndex-1)*20}px`, marginLeft: `${(cIndex-1)*20}px` } : {})
+                        }}
+                      >
+                        <div className={cn("absolute w-px h-[28px]", isTop ? "-bottom-[28px]" : "-top-[28px]", style.lineGradient)} />
+                        
+                        <div className={cn("w-full bg-background border border-border/80 rounded-[1.5rem] p-1.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] transition-all flex flex-col relative z-10 overflow-hidden group/card cursor-pointer", style.hoverShadow, style.hoverBorder)}>
+                          <div className={cn("absolute inset-0 bg-gradient-to-br to-transparent pointer-events-none opacity-0 group-hover/card:opacity-100 transition-opacity duration-300", style.bgGradient)} />
+                          
+                          {enriched.posterUrl ? (
+                            <div className="relative w-full aspect-[21/9] md:aspect-[16/7] rounded-[1.25rem] overflow-hidden mb-3">
+                              <img src={enriched.posterUrl} alt={enriched.title} className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700 ease-out" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                <span className={cn("inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full backdrop-blur-md bg-white/10 text-white border border-white/20")}>
+                                  <IconComp className="w-3 h-3" />
+                                  {style.label}
+                                </span>
+                                {enriched.rating && (
+                                  <span className="text-xs font-black text-white bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10">{enriched.rating} 分</span>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="px-3.5 pt-3.5 pb-2">
+                              <div className="flex items-center justify-between">
+                                <span className={cn("inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide px-2.5 py-1 rounded-full", style.badgeBg, style.badgeText)}>
+                                  <IconComp className="w-3 h-3" />
+                                  {style.label}
+                                </span>
+                                {enriched.rating && (
+                                  <span className={cn("text-xs font-black px-2 py-0.5 rounded-full", style.ratingBg, style.ratingText)}>{enriched.rating} 分</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className={cn("flex flex-col gap-2 relative z-10", enriched.posterUrl ? "px-3.5 pb-3.5" : "px-3.5 pb-3.5")}>
+                            <h4 className={cn("text-base font-bold text-foreground transition-colors", style.titleHover)}>{enriched.title}</h4>
+                            {enriched.description && (
+                              <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{enriched.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
 
                   {/* Node Dot & Title */}
                   <div className="relative z-10 flex flex-col items-center group/node">
@@ -1219,32 +1321,6 @@ export function Screenings() {
                       </span>
                     </div>
                   </div>
-
-                  {/* Bad Movie */}
-                  {node.movies.filter(m => m.type === 'bad').map((movie, cIndex) => (
-                    <motion.div
-                      key={`bad-${cIndex}`}
-                      whileHover={{ y: 8, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                      className="absolute top-[176px] flex flex-col gap-4 items-center w-[260px] md:w-[300px]"
-                    >
-                      <div className="absolute -top-[28px] w-px h-[28px] bg-gradient-to-t from-transparent to-rose-500/50" />
-                      <div className="w-full bg-background border border-border/80 rounded-2xl p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(225,29,72,0.15)] hover:border-rose-500/30 transition-all flex flex-col gap-3 relative z-10 overflow-hidden group/card cursor-pointer">
-                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-rose-600 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400 px-2.5 py-1 rounded-full">
-                            <AlertTriangle className="w-3 h-3" />
-                            绝世烂片
-                          </span>
-                          <span className="text-xs font-black text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{movie.rating} 分</span>
-                        </div>
-                        <h4 className="text-base font-bold text-foreground group-hover/card:text-rose-500 transition-colors">{movie.title}</h4>
-                        {movie.description && (
-                          <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{movie.description}</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
 
                   {/* Empty state indication */}
                   {node.movies.length === 0 && (
