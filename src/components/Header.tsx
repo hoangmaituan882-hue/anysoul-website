@@ -2,7 +2,6 @@ import CircleUserRound from "./icons/user-icon";
 import Compass from "./icons/locate-icon";
 import Gamepad2 from "./icons/gamepad-icon";
 import History from "./icons/history-circle-icon";
-import Home from "./icons/home-icon";
 import Info from "./icons/info-circle-icon";
 import Languages from "./icons/globe-icon";
 import LayoutDashboard from "./icons/layout-dashboard-icon";
@@ -149,7 +148,6 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
         </a>
 
         <nav className="z-50 hidden h-full shrink-0 items-center gap-1 md:flex">
-          <a href="#" className={navButtonClass("ml-1")}><Home className="size-4 transition-colors group-hover:text-primary" /><span>首页</span></a>
           <a href="#screenings" className={navButtonClass()}>
             <svg className="size-4 transition-colors group-hover:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
             <span>放映</span>
@@ -163,10 +161,6 @@ export function Header({ isWorkspace, isGames }: { isWorkspace?: boolean; isGame
         </nav>
 
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain rounded-full border border-border/70 bg-card/80 px-1 py-1 shadow-sm no-scrollbar md:hidden">
-          <a href="#" className="group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="首页">
-            <Home className="size-4 transition-colors group-hover:text-primary" strokeWidth={2} />
-            <span>首页</span>
-          </a>
           <a href="#screenings" className="group inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-bold text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5" title="放映">
             <svg className="size-4 transition-colors group-hover:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
             <span>放映</span>
