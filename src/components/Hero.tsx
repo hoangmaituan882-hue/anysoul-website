@@ -99,7 +99,7 @@ export function Hero() {
         </motion.div>
 
         <motion.h1 
-          className="text-5xl md:text-7xl font-bold tracking-tight text-foreground leading-tight relative z-10"
+          className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-foreground leading-tight relative z-10 whitespace-nowrap"
           initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.6, delay: 2.2, ease: "easeOut" }}
@@ -157,7 +157,7 @@ export function Hero() {
           
           {/* Foreground Text */}
           <motion.h2 
-            className="text-5xl md:text-7xl font-bold tracking-tight z-10 drop-shadow-sm"
+            className="text-[clamp(1.75rem,8.5vw,3rem)] sm:text-5xl md:text-7xl font-bold tracking-tight z-10 drop-shadow-sm whitespace-nowrap"
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, delay: 2.4, ease: "easeOut" }}

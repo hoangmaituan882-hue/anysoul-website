@@ -31,6 +31,54 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "efb2334",
+    "hash": "efb2334a0648dc7857f88629119a331cc0a63a35",
+    "date": "2026-06-12",
+    "title": "Add page copy controls for games and screenings",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 2。",
+    "files": [
+      "src/pages/Gaming.tsx",
+      "src/pages/Screenings.tsx",
+      "src/workspace/GamingAdminPanel.tsx",
+      "src/workspace/ScreeningsAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add page copy controls for games and screenings",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 2、工作台 2",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
+    "version": "06b6bf0",
+    "hash": "06b6bf0907d066a763d928efad640b56e0052271",
+    "date": "2026-06-12",
+    "title": "UI: Optimize mobile responsiveness for Recent Talks cards",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。",
+    "files": [
+      "src/generated/changelog.ts",
+      "src/pages/Talks.tsx"
+    ],
+    "items": [
+      {
+        "type": "改进",
+        "text": "UI: Optimize mobile responsiveness for Recent Talks cards",
+        "color": "bg-blue-100 text-blue-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "62c43db",
     "hash": "62c43db449298d5c3670028ed6883b44b646dca2",
     "date": "2026-06-12",
@@ -2021,46 +2069,6 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "f76671b",
-    "subtitle": "改进",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "改进",
-        "title": "UI: Replace upcoming schedules with real recent archive talks",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 4。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 4",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "version": "5fbf332",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-11",
-    "cardsPosition": "bottom",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "Fix game page recording class helper",
-        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "7f53fa8",
     "subtitle": "改进",
     "status": "published",
@@ -2176,6 +2184,46 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "组件 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "06b6bf0",
+    "subtitle": "改进",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "top",
+    "cards": [
+      {
+        "type": "改进",
+        "title": "UI: Optimize mobile responsiveness for Recent Talks cards",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "efb2334",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-12",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add page copy controls for games and screenings",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 2、工作台 2。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 2、工作台 2",
         "description": ""
       }
     ]

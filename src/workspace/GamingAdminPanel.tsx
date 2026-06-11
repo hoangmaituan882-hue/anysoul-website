@@ -207,7 +207,14 @@ function importedRecordingToItem(source: Record<string, unknown>, game: GamingLi
 
 function summarizeGameFromRecordings(game: GamingLibraryItem, recordings: GamingRecordingItem[]): GamingLibraryItem {
   const gameRecordings = recordings.filter((recording) => recordingBelongsToGame(recording, game));
-  if (!gameRecordings.length) return game;
+  if (!gameRecordings.length) {
+    return {
+      ...game,
+      recordingCount: 0,
+      totalViewers: 0,
+      totalDanmaku: 0
+    };
+  }
   const totalSeconds = gameRecordings.reduce((sum, recording) => sum + durationToSeconds(recording.duration), 0);
   const sortedByDate = [...gameRecordings].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
   const latestDate = sortedByDate.find((recording) => recording.date)?.date || game.lastPlayedAt;
@@ -227,12 +234,23 @@ function summarizeGameFromRecordings(game: GamingLibraryItem, recordings: Gaming
   };
 }
 
-function normalizeForPublish(draft: GamingMainContent): GamingMainContent {
+function syncGameRecordingStats(draft: GamingMainContent): GamingMainContent {
   const recordings = draft.recordings || [];
   const library = (draft.library || []).map((game) => summarizeGameFromRecordings(game, recordings));
-  const categories = (draft.categories || []).filter((category) => category.title || category.subtitle || category.img);
   return {
     ...draft,
+    recordings,
+    library
+  };
+}
+
+function normalizeForPublish(draft: GamingMainContent): GamingMainContent {
+  const syncedDraft = syncGameRecordingStats(draft);
+  const library = syncedDraft.library || [];
+  const recordings = syncedDraft.recordings || [];
+  const categories = (draft.categories || []).filter((category) => category.title || category.subtitle || category.img);
+  return {
+    ...syncedDraft,
     recordings,
     library,
     categories,
@@ -297,6 +315,12 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       return matchesGame && (!keyword || haystack.includes(keyword));
     });
   }, [recordingGame, recordingQuery, recordings]);
+  const recordingStatsPreview = useMemo(() => {
+    const totalSeconds = recordings.reduce((sum, recording) => sum + durationToSeconds(recording.duration), 0);
+    const totalViewers = recordings.reduce((sum, recording) => sum + Number(recording.viewers || 0), 0);
+    const totalDanmaku = recordings.reduce((sum, recording) => sum + Number(recording.danmaku || 0), 0);
+    return { count: recordings.length, totalHours: formatTotalHours(totalSeconds), totalViewers, totalDanmaku };
+  }, [recordings]);
   const filteredRecordingIds = useMemo(() => filteredRecordings.map((recording) => recording.id), [filteredRecordings]);
   const selectedFilteredCount = selectedRecordingIds.filter((id) => filteredRecordingIds.includes(id)).length;
 
@@ -318,7 +342,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     if (!recordingGameId && library[0]?.id) setRecordingGameId(library[0].id);
   }, [library, recordingGameId]);
 
-  const publish = async (nextDraft = draft) => {
+  const publish = async (nextDraft = draft, successMessage = "已保存并发布，游戏回页面会自动同步更新") => {
     if (readOnly) return;
     setIsSaving(true);
     try {
@@ -342,12 +366,18 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       const entry = data.entries?.find((item) => item.key === "gaming.main");
       if (entry) setEntryMeta({ version: entry.version, updatedAt: entry.updatedAt });
       setDraft(normalizeGamingDraft(payload));
-      setStatus("已保存并发布，游戏回页面会自动同步更新");
+      setStatus(successMessage);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "发布失败，请检查内容服务");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const syncRecordingStatsAndPublish = () => {
+    const nextDraft = syncGameRecordingStats(draft);
+    setDraft(nextDraft);
+    void publish(nextDraft, "已根据录像库更新游戏统计并发布");
   };
 
   const updateGame = (id: string, patch: Partial<GamingLibraryItem>) => {
@@ -401,6 +431,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
       isFeatured: false
     };
     setDraft((current) => ({ ...current, recordings: [recording, ...(current.recordings || [])] }));
+    setStatus("已添加录像，点击一键更新并发布统计或保存并发布后同步到游戏库");
   };
 
   const updateRecording = (id: string, patch: Partial<GamingRecordingItem>) => {
@@ -413,6 +444,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
   const deleteRecording = (id: string) => {
     setDraft((current) => ({ ...current, recordings: (current.recordings || []).filter((recording) => recording.id !== id) }));
     setSelectedRecordingIds((current) => current.filter((item) => item !== id));
+    setStatus("已删除录像，点击一键更新并发布统计或保存并发布后刷新游戏库统计");
   };
 
   const toggleRecordingSelection = (id: string) => {
@@ -436,7 +468,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     }
     setDraft((current) => ({ ...current, recordings: (current.recordings || []).filter((recording) => !deletable.has(recording.id)) }));
     setSelectedRecordingIds((current) => current.filter((id) => !deletable.has(id)));
-    setStatus(`已删除 ${deletable.size} 条当前筛选范围内的录像，确认后点击保存并发布`);
+    setStatus(`已删除 ${deletable.size} 条当前筛选范围内的录像，点击一键更新并发布统计或保存并发布后刷新游戏库统计`);
   };
 
   const cleanupCurrentGameTitles = () => {
@@ -460,7 +492,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         return { ...recording, title };
       })
     }));
-    setStatus(`已清洗 ${changed} 条 ${recordingGame.title} 录像标题，确认后点击保存并发布`);
+    setStatus(`已清洗 ${changed} 条 ${recordingGame.title} 录像标题，点击一键更新并发布统计或保存并发布后同步到游戏库`);
   };
 
   const importRecordings = () => {
@@ -480,7 +512,7 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         return { ...current, recordings: [...uniqueImported, ...(current.recordings || [])] };
       });
       setRecordingImportJson("");
-      setStatus(`已导入 ${imported.length} 条 ${recordingGame.title} 录像，确认后点击保存并发布`);
+      setStatus(`已导入 ${imported.length} 条 ${recordingGame.title} 录像，点击一键更新并发布统计或保存并发布后同步到游戏库`);
     } catch (error) {
       setStatus(error instanceof Error ? `录像 JSON 导入失败：${error.message}` : "录像 JSON 导入失败");
     }
@@ -645,8 +677,21 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
               <div>
                 <h3 className="font-bold">游戏录像库</h3>
                 <p className="mt-1 text-xs font-bold text-muted-foreground">先选择游戏标签，再添加单条录像或批量导入 B 站录播 JSON。</p>
+                <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-black text-muted-foreground">
+                  <span className="rounded-full border border-border bg-card px-2.5 py-1">总录像 {recordingStatsPreview.count}</span>
+                  <span className="rounded-full border border-border bg-card px-2.5 py-1">总时长 {recordingStatsPreview.totalHours}</span>
+                  <span className="rounded-full border border-border bg-card px-2.5 py-1">播放量 {recordingStatsPreview.totalViewers}</span>
+                  <span className="rounded-full border border-border bg-card px-2.5 py-1">弹幕 {recordingStatsPreview.totalDanmaku}</span>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={syncRecordingStatsAndPublish}
+                  disabled={readOnly || isSaving || !library.length}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-black text-primary hover:bg-primary/15 disabled:opacity-50"
+                >
+                  <RefreshCw className="size-4" /> 一键更新并发布统计
+                </button>
                 <button onClick={() => addRecording()} disabled={readOnly || !recordingGame} className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3 py-2 text-sm font-bold text-background disabled:opacity-50"><Plus className="size-4" /> 添加录像</button>
               </div>
             </div>
