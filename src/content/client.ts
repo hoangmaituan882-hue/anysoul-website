@@ -1,5 +1,11 @@
 import type { BootstrapResponse, ContentResponse, FeedbackSubmission, MediaAssetRecord, PostCommentRecord, PostRecord, PublicPostDetail, PublicPostSummary, ScreeningSourceSubmission } from "./types";
 
+export type WatchedSourceRecord = {
+  sourceId: string;
+  sourceTitle: string;
+  watchedAt: string;
+};
+
 const inferredApiBase = typeof window === "undefined" ? "http://localhost:8787" : `http://${window.location.hostname || "localhost"}:8787`;
 
 export const CONTENT_API_BASE = import.meta.env.VITE_CONTENT_API_URL || import.meta.env.VITE_CONTENT_API_BASE || inferredApiBase;
@@ -134,6 +140,16 @@ export async function fetchMyPosts(authFetch: (input: string, init?: RequestInit
   }
 
   return response.json() as Promise<{ posts: PostRecord[] }>;
+}
+
+export async function fetchMyWatchedSources(authFetch: (input: string, init?: RequestInit) => Promise<Response>) {
+  const response = await authFetch(`${CONTENT_API_BASE}/api/me/watched-sources`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch watched sources: ${response.status}`);
+  }
+
+  return response.json() as Promise<{ items: WatchedSourceRecord[] }>;
 }
 
 export async function createMyPost(authFetch: (input: string, init?: RequestInit) => Promise<Response>, payload: PostDraftPayload) {

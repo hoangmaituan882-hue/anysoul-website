@@ -18,6 +18,7 @@ type LocalBlogComment = {
 };
 
 const LOCAL_COMMENTS_KEY = "anysoul-post-comments";
+const showDevFallback = import.meta.env.DEV;
 
 const testBlog: PublicPostDetail = {
   id: "test-owner-blog-2026-06",
@@ -26,7 +27,7 @@ const testBlog: PublicPostDetail = {
   title: "把网站变成自己的长期记忆库",
   slug: "site-owner-memory-blog",
   summary: "这是一篇用于测试文章详情页的站主博客，记录为什么要把站点从展示页升级成长期可维护的个人内容系统。",
-  coverUrl: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1400&q=80",
+  coverUrl: "",
   tags: ["站主博客", "网站日志", "产品记录", "测试文章"],
   publishedAt: "2026-06-08T08:30:00.000Z",
   createdAt: "2026-06-08T08:00:00.000Z",
@@ -57,7 +58,7 @@ const testBlog: PublicPostDetail = {
 这篇测试博客的作用，就是验证列表、详情、封面、标签、正文排版和评论区域是否形成完整闭环。`
 };
 
-const fallbackPosts: PublicPostDetail[] = [testBlog];
+const fallbackPosts: PublicPostDetail[] = showDevFallback ? [testBlog] : [];
 
 const defaultComments: BlogComment[] = [
   {
@@ -207,7 +208,7 @@ function CommentPanel({ post }: { post: PublicPostDetail }) {
   }, [post.slug]);
 
   const comments = useMemo(() => {
-    const seeded = post.slug === testBlog.slug && remoteComments.length === 0 ? defaultComments : [];
+    const seeded = showDevFallback && post.slug === testBlog.slug && remoteComments.length === 0 ? defaultComments : [];
     const uniqueComments = new Map([...remoteComments, ...localComments, ...seeded].map((comment) => [comment.id, comment]));
     return Array.from(uniqueComments.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [localComments, remoteComments, post.slug]);
@@ -325,7 +326,10 @@ export function Posts({ route }: { route: string }) {
       const fallback = fallbackSummaries({ tag: selectedTag, q: query });
       setPosts(fallback);
       setTags(fallbackTags());
-      setStatus(error instanceof TypeError ? `无法连接内容服务，已展示本地测试博客：${CONTENT_API_BASE}` : "已展示本地测试博客。");
+      setStatus(showDevFallback && fallback.length
+        ? error instanceof TypeError ? `无法连接内容服务，已展示本地测试博客：${CONTENT_API_BASE}` : "已展示本地测试博客。"
+        : error instanceof TypeError ? `无法连接内容服务：${CONTENT_API_BASE}` : "暂时没有可显示的站主博客。"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -333,7 +337,7 @@ export function Posts({ route }: { route: string }) {
 
   async function loadDetail() {
     if (!slug) return;
-    const localPost = fallbackPosts.find((post) => post.slug === slug);
+    const localPost = showDevFallback ? fallbackPosts.find((post) => post.slug === slug) : undefined;
     setIsLoading(true);
     setDetail(null);
     setStatus("正在加载博客详情...");
@@ -363,23 +367,21 @@ export function Posts({ route }: { route: string }) {
   }, [selectedTag]);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-16 sm:px-6 lg:px-8">
-      <section className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
-        <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_340px] lg:p-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(244,114,182,0.18),transparent_28%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.16),transparent_30%)]" />
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:px-8">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="relative p-6 sm:p-8">
           <div className="relative">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-black text-muted-foreground shadow-sm backdrop-blur">
               <FileText className="size-3.5 text-primary" /> 站主博客
             </div>
-            <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight text-foreground sm:text-6xl">只保留站主写作，把讨论留给评论区</h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground">这里是站主自己的博客和网站日志。普通用户不再投稿发文，只能在每篇文章详情页登录后评论，内容主线更集中，也更容易长期维护。</p>
-          </div>
-          <div className="relative rounded-3xl border border-border bg-background/85 p-5 shadow-sm backdrop-blur">
-            <div className="text-sm font-black text-foreground">阅读规则</div>
-            <div className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
-              <div className="rounded-2xl bg-muted/30 p-3"><span className="font-black text-foreground">站主</span>：在工作台创建、编辑、发布博客。</div>
-              <div className="rounded-2xl bg-muted/30 p-3"><span className="font-black text-foreground">用户</span>：阅读文章，在详情页评论反馈。</div>
-              <a href={`#posts/${testBlog.slug}`} className="inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-black text-primary-foreground transition-colors hover:bg-primary/90">打开测试博客详情</a>
+            <h1 className="mt-5 max-w-4xl text-3xl font-black leading-tight tracking-tight text-foreground sm:text-4xl">站主写作，讨论留在评论区</h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">这里沉淀站主博客和网站日志。用户侧保留阅读与评论，内容主线更集中，也更容易长期维护。</p>
+            <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 text-xs font-bold text-muted-foreground">
+              <span className="text-foreground">轻参与：</span>
+              <span>站主发布文章</span>
+              <span className="text-border">/</span>
+              <span>登录用户评论反馈</span>
+              {showDevFallback ? <a href={`#posts/${testBlog.slug}`} className="ml-auto text-primary hover:text-foreground">打开测试博客</a> : null}
             </div>
           </div>
         </div>
@@ -387,7 +389,7 @@ export function Posts({ route }: { route: string }) {
 
       {slug ? (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-          <article className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+          <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
             <div className="border-b border-border p-5 sm:p-8">
               <a href="#posts" className="mb-6 inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold text-muted-foreground hover:bg-muted hover:text-foreground">
                 <ArrowLeft className="size-4" /> 返回博客列表
@@ -400,7 +402,7 @@ export function Posts({ route }: { route: string }) {
                     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1"><CalendarDays className="size-3.5" /> {formatDate(detail.publishedAt || detail.createdAt)}</span>
                     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1"><UserRound className="size-3.5" /> {detail.authorName || "站主"}</span>
                   </div>
-                  <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-foreground sm:text-6xl">{detail.title}</h1>
+                  <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight text-foreground sm:text-5xl">{detail.title}</h1>
                   {detail.summary ? <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">{detail.summary}</p> : null}
                   <div className="mt-6 flex flex-wrap gap-2">
                     {detail.tags.map((tag) => <span key={tag} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-bold text-muted-foreground">{tag}</span>)}
@@ -419,7 +421,7 @@ export function Posts({ route }: { route: string }) {
           </article>
 
           <aside className="space-y-5 lg:sticky lg:top-24">
-            <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
               <div className="text-sm font-black text-foreground">博客说明</div>
               <p className="mt-3 text-sm leading-7 text-muted-foreground">文章只由站主在后台发布。用户侧不再提供写文章入口，详情页保留评论作为反馈渠道。</p>
             </div>
@@ -429,7 +431,7 @@ export function Posts({ route }: { route: string }) {
       ) : (
         <section className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-3xl border border-border bg-card p-4 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-black text-foreground">搜索博客</h2>
                 <button onClick={loadList} className="rounded-xl p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><RefreshCw className={cn("size-4", isLoading && "animate-spin")} /></button>
@@ -440,7 +442,7 @@ export function Posts({ route }: { route: string }) {
               </div>
               <button onClick={loadList} className="mt-3 w-full rounded-2xl bg-foreground px-3 py-2.5 text-sm font-black text-background hover:opacity-90">搜索</button>
             </div>
-            <div className="rounded-3xl border border-border bg-card p-4 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-foreground"><Tag className="size-4 text-primary" /> 标签</h2>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => setSelectedTag("")} className={cn("rounded-full border px-3 py-1.5 text-xs font-bold", !selectedTag ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:text-foreground")}>全部</button>
@@ -465,7 +467,7 @@ export function Posts({ route }: { route: string }) {
               ))}
             </div>
             {!posts.length && !isLoading ? (
-              <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
                 <FileText className="mx-auto size-10 text-muted-foreground" />
                 <div className="mt-3 text-sm font-black text-foreground">暂无站主博客</div>
                 <p className="mt-1 text-sm text-muted-foreground">站主在工作台发布后会显示在这里，用户侧只保留评论能力。</p>

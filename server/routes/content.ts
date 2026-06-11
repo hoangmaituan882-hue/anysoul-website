@@ -54,14 +54,13 @@ export function registerContentRoutes(
   deps: {
     loadStore: () => Promise<ContentStore>;
     mutateStore: <T>(updater: (store: ContentStore) => T | Promise<T>) => Promise<T>;
-    saveStore: (store: ContentStore) => Promise<void>;
     publicContent: (store: ContentStore, keys?: string[]) => Record<string, unknown>;
     broadcast: (event: string, payload: unknown) => void;
     requireWorkspaceAdmin: (req: express.Request, res: express.Response) => Promise<{ user: AuthUser } | null>;
     trimText: (value: unknown, maxLength: number) => string;
   }
 ) {
-  const { loadStore, mutateStore, saveStore, publicContent, broadcast, requireWorkspaceAdmin, trimText } = deps;
+  const { loadStore, mutateStore, publicContent, broadcast, requireWorkspaceAdmin, trimText } = deps;
 
   app.get("/api/public/bootstrap", async (_req, res) => {
     const store = await loadStore();

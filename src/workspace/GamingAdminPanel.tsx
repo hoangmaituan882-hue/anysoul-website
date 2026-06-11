@@ -3,7 +3,7 @@ import { Gamepad2, Plus, RefreshCw, Rocket, Search, Trash2, X } from "lucide-rea
 import { CONTENT_API_BASE } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultGamingMain } from "../content/defaults/gaming";
-import type { AdminContentEntry, GamingExploreItem, GamingLibraryItem, GamingMainContent } from "../content/types";
+import type { AdminContentEntry, GamingLibraryItem, GamingMainContent } from "../content/types";
 import { DateTimePicker } from "../components/DateTimePicker";
 import { ImageUploadField } from "../components/ImageUploadField";
 import { cn } from "../lib/utils";
@@ -81,7 +81,7 @@ function newGame(): GamingLibraryItem {
     mode: "单人",
     status: "planned",
     tags: ["待整理"],
-    coverUrl: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1200",
+    coverUrl: "",
     rating: "",
     totalHours: "",
     lastPlayedAt: "",

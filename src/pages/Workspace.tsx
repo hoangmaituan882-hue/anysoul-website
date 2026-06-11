@@ -3,12 +3,12 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { motion, AnimatePresence, Reorder } from "motion/react";
 import {
   Plus, MessageCircle, Activity,
-  Inbox, ArrowUpDown, ListTodo, ChevronDown, List, Calendar, Clock,
-  Circle, Bell, Brain, Pause, Settings, X, Search, Database,
+  Inbox, ArrowUpDown, ListTodo, ChevronDown, List, Calendar,
+  Circle, Bell, Pause, Settings, X, Database,
   Navigation, Sparkles, XCircle, Volume2, Film, Gamepad2, Image,
   ChevronLeft, ChevronRight, Home, Languages, Moon, Sun,
   Palette, Smartphone, Key, BarChart2, Gift, Trophy, GraduationCap, Monitor,
-  Play, FastForward, Rewind, Users, Tv, Airplay, Video, VolumeX, Maximize, Share2,
+  FastForward, Rewind, Users, Tv, Airplay, VolumeX, Maximize, Share2,
   Heart, Pencil, CheckCircle2, RefreshCw, Info
 } from "lucide-react";
 import { cn } from "../lib/utils";
@@ -56,6 +56,9 @@ type WorkspaceLayout = {
   leftTop: number;
   rightTop: number;
 };
+
+type WorkspaceTab = "review" | "content" | "posts" | "screenings" | "talks" | "games" | "plaza" | "users" | "monitor";
+type WorkspacePrimaryTask = "review" | "content" | "columns" | "system";
 
 type CalendarTodoItem = {
   id: string;
@@ -260,7 +263,7 @@ function ResizeHandle({
 }
 
 export function Workspace() {
-  const [activeTab, setActiveTab] = useLocalStorage<'content' | 'posts' | 'screenings' | 'talks' | 'games' | 'plaza' | 'users' | 'monitor'>('workspace-activeTab', 'content');
+  const [activeTab, setActiveTab] = useLocalStorage<WorkspaceTab>('workspace-activeTab', 'review');
   const [todoView, setTodoView] = useLocalStorage<'list' | 'calendar' | 'monitor'>('workspace-todoView', 'list');
   const [todoFilter, setTodoFilter] = useLocalStorage<TodoFilter>('workspace-todoFilter', 'all');
   const [feedbackTodoOrder, setFeedbackTodoOrder] = useLocalStorage<string[]>('workspace-feedback-todo-order', []);
@@ -270,7 +273,7 @@ export function Workspace() {
   const [isTodoFilterOpen, setIsTodoFilterOpen] = useState(false);
   const [aiSettings, setAiSettings] = useState<AiSettings>({
     apiKey: "",
-    baseUrl: "https://api.openai.com/v1",
+    baseUrl: "",
     model: "gpt-4o-mini",
     configured: false,
     apiKeyPreview: ""
@@ -302,6 +305,22 @@ export function Workspace() {
   const accountName = user?.name || "未登录用户";
   const accountInitial = accountName.trim().slice(0, 1).toUpperCase() || "A";
   const allUserSubmissions = useMemo<PendingUserSubmission[]>(() => [
+    ...sourceSubmissions.items.map((source) => ({
+      id: source.id,
+      kind: "source" as const,
+      title: `片源补充：${source.sourceTitle}`,
+      category: source.field,
+      content: source.content,
+      contact: source.contact,
+      submitter: source.submitter,
+      submitterRole: "visitor" as const,
+      sourceLabel: "片源补充",
+      reviewNote: source.reviewNote,
+      status: source.status,
+      createdAt: source.createdAt,
+      reviewedAt: source.reviewedAt,
+      source
+    })),
     ...feedbackSubmissions.items.map((feedback) => ({
       id: feedback.id,
       kind: "feedback" as const,
@@ -319,7 +338,7 @@ export function Workspace() {
       reviewedAt: feedback.reviewedAt,
       feedback
     }))
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [feedbackSubmissions.items]);
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [feedbackSubmissions.items, sourceSubmissions.items]);
   const pendingSubmissions = useMemo(() => {
     const orderIndex = new Map<string, number>(feedbackTodoOrder.map((id, index) => [id, index]));
     return allUserSubmissions
@@ -356,6 +375,20 @@ export function Workspace() {
   const selectedDayTodos = calendarTodoItems.filter((item) => item.date === selectedTodoDate);
   const openServerAlerts = serverMonitoring?.alerts.filter((alert) => alert.status === "open") || [];
   const currentMetric = serverMonitoring?.current;
+  const workspacePrimaryTask: WorkspacePrimaryTask = activeTab === "review"
+    ? "review"
+    : activeTab === "content" || activeTab === "posts"
+      ? "content"
+      : activeTab === "screenings" || activeTab === "plaza" || activeTab === "talks" || activeTab === "games"
+        ? "columns"
+        : "system";
+  const reviewStats = useMemo(() => ({
+    pending: allUserSubmissions.filter((submission) => submission.status === "pending").length,
+    approved: allUserSubmissions.filter((submission) => submission.status === "approved").length,
+    rejected: allUserSubmissions.filter((submission) => submission.status === "rejected").length,
+    feedback: allUserSubmissions.filter((submission) => submission.kind === "feedback").length,
+    source: allUserSubmissions.filter((submission) => submission.kind === "source").length
+  }), [allUserSubmissions]);
 
   function startLayoutResize(event: ReactPointerEvent<HTMLDivElement>, area: "columns" | "leftStack" | "rightStack") {
     event.preventDefault();
@@ -708,7 +741,7 @@ export function Workspace() {
                 {/* Avatar Profile */}
                 <button className="group relative flex size-11 items-center justify-center rounded-full transition-all duration-200 bg-primary/20 ring-2 ring-primary">
                   <div className="relative flex shrink-0 overflow-hidden size-9 rounded-full">
-                    <img className="aspect-square size-full object-cover" alt="Profile" src="https://api.dicebear.com/7.x/notionists/svg?seed=Fanshi" />
+                    <span className="flex size-full items-center justify-center bg-primary/15 text-xs font-black text-primary">FS</span>
                   </div>
                   <span className="absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-background bg-emerald-500" />
                 </button>
@@ -746,7 +779,9 @@ export function Workspace() {
                 <div className="h-6 w-px bg-border/70 mx-1 lg:my-1 lg:h-px lg:w-6" />
 
                 <button onClick={() => setIsSettingsOpen(true)} className="flex size-11 items-center justify-center rounded-full bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-colors relative overflow-hidden">
-                  <img src="https://api.dicebear.com/7.x/shapes/svg?seed=setting1" className="size-8 rounded-full border border-border" />
+                  <span className="flex size-8 items-center justify-center rounded-full border border-border bg-background">
+                    <Settings className="size-4" />
+                  </span>
                   <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-amber-500" />
                 </button>
               </div>
@@ -1178,48 +1213,26 @@ export function Workspace() {
                     <Activity className="size-4 text-emerald-500" /> 动态统计
                   </div>
                   <button
-                    onClick={() => setActiveTab('content')}
-                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'content' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                    <Database className="size-4" /> 内容管理
+                    onClick={() => setActiveTab('review')}
+                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", workspacePrimaryTask === 'review' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
+                    <ListTodo className="size-4" /> 审核
+                    {reviewStats.pending ? <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-black text-white">{reviewStats.pending}</span> : null}
                   </button>
                   <button
-                    onClick={() => setActiveTab('posts')}
-                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'posts' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                    <Pencil className="size-4" /> 文章系统
+                    onClick={() => setActiveTab('content')}
+                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", workspacePrimaryTask === 'content' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
+                    <Database className="size-4" /> 内容
                   </button>
                   <button
                     onClick={() => setActiveTab('screenings')}
-                   className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'screenings' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                   <Film className="size-4" /> 放映会控制
-                 </button>
-                 <button
-                   onClick={() => setActiveTab('games')}
-                   title="游戏回控制"
-                   className={cn("flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'games' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                   <Gamepad2 className="size-4" /> 游戏回控制
-                 </button>
-                 <button
-                   onClick={() => setActiveTab('talks')}
-                   className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'talks' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                   <Video className="size-4" /> 杂谈回控制
-                 </button>
-                  <button
-                    onClick={() => setActiveTab('plaza')}
-                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'plaza' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                    <Image className="size-4" /> 图库中心控制
+                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", workspacePrimaryTask === 'columns' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
+                    <Film className="size-4" /> 栏目
                   </button>
                   <button
                     onClick={() => setActiveTab('monitor')}
-                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'monitor' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                    <BarChart2 className="size-4" /> 网站监控
+                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", workspacePrimaryTask === 'system' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
+                    <BarChart2 className="size-4" /> 系统
                   </button>
-                  {canManageUsers && (
-                  <button
-                    onClick={() => setActiveTab('users')}
-                    className={cn("flex h-10 items-center gap-1.5 rounded-full border px-3 text-[13px] relative tracking-wide transition-colors lg:h-full lg:rounded-none lg:border-0 lg:px-0 lg:text-[14px]", activeTab === 'users' ? "border-primary/30 bg-primary/10 font-bold text-primary lg:border-b-2 lg:border-primary lg:bg-transparent" : "border-border bg-background/70 font-medium text-muted-foreground hover:text-foreground lg:border-b-2 lg:border-transparent lg:bg-transparent")}>
-                    <Users className="size-4" /> 用户管理
-                  </button>
-                  )}
                </div>
                <button className={cn("flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full border hover:shadow-md transition-colors shadow-sm relative overflow-hidden group shrink-0", readOnly ? "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/40" : "bg-[#f4fce3] dark:bg-[#84cc16]/10 text-[#65a30d] dark:text-[#a3e635] border-[#d9f99d] dark:border-[#84cc16]/20")}>
                   <Volume2 className="size-3.5 relative z-10" />
@@ -1234,7 +1247,125 @@ export function Workspace() {
                 当前身份：{roleLabel}。{readOnly ? "普通用户或访客只能查看工作台，不能保存、发布、审核、配置 API 或修改内容。" : canManageUsers ? "站主拥有全部控制权限，包括用户管理。" : "管理员可控制工作台，但不能管理用户。"}
               </div>
 
+              {workspacePrimaryTask !== "review" && (
+                <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-background/80 p-2 shadow-sm">
+                  {workspacePrimaryTask === "content" && (
+                    <>
+                      <button onClick={() => setActiveTab("content")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "content" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>首页 / 公告</button>
+                      <button onClick={() => setActiveTab("posts")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "posts" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>文章</button>
+                    </>
+                  )}
+                  {workspacePrimaryTask === "columns" && (
+                    <>
+                      <button onClick={() => setActiveTab("screenings")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "screenings" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>放映</button>
+                      <button onClick={() => setActiveTab("plaza")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "plaza" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>图库</button>
+                      <button onClick={() => setActiveTab("talks")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "talks" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>杂谈</button>
+                      <button onClick={() => setActiveTab("games")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "games" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>游戏</button>
+                    </>
+                  )}
+                  {workspacePrimaryTask === "system" && (
+                    <>
+                      <button onClick={() => setActiveTab("monitor")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "monitor" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>监控</button>
+                      {canManageUsers ? <button onClick={() => setActiveTab("users")} className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", activeTab === "users" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>用户</button> : null}
+                      <button onClick={() => setIsAiSettingsOpen(true)} className="h-8 rounded-full bg-muted px-3 text-xs font-black text-muted-foreground transition-colors hover:text-foreground">AI / 媒体设置</button>
+                    </>
+                  )}
+                </div>
+              )}
+
                 <AnimatePresence mode="wait">
+                  {activeTab === 'review' && (
+                    <motion.div
+                      key="review"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="mx-auto max-w-6xl space-y-4"
+                    >
+                      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <div className="inline-flex items-center gap-2 rounded-full bg-muted px-2.5 py-1 text-xs font-black text-muted-foreground">
+                            <ListTodo className="size-3.5 text-primary" /> 审核中心
+                          </div>
+                          <h2 className="mt-3 text-2xl font-black tracking-tight text-foreground">反馈、投稿与片源补充统一处理</h2>
+                          <p className="mt-1 text-sm font-bold text-muted-foreground">左侧待办保留拖拽和日历视图，这里只放审核需要的最短路径。</p>
+                        </div>
+                        <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground">{todoStatus}</div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                        {[
+                          { label: "待审核", value: reviewStats.pending, tone: "text-amber-500" },
+                          { label: "已通过", value: reviewStats.approved, tone: "text-emerald-500" },
+                          { label: "已拒绝", value: reviewStats.rejected, tone: "text-rose-500" },
+                          { label: "反馈", value: reviewStats.feedback, tone: "text-foreground" },
+                          { label: "片源补充", value: reviewStats.source, tone: "text-foreground" }
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+                            <div className="text-xs font-bold text-muted-foreground">{item.label}</div>
+                            <div className={cn("mt-1 text-3xl font-black", item.tone)}>{item.value}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="rounded-2xl border border-border bg-background shadow-sm">
+                        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <h3 className="text-sm font-black text-foreground">审核队列</h3>
+                            <p className="mt-1 text-xs font-bold text-muted-foreground">优先处理待审核项，发布与版本确认仍在各内容面板内完成。</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {(["all", "pending", "approved", "rejected"] as const).map((filter) => (
+                              <button
+                                key={filter}
+                                onClick={() => setTodoFilter(filter)}
+                                className={cn("h-8 rounded-full px-3 text-xs font-black transition-colors", todoFilter === filter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}
+                              >
+                                {todoFilterLabels[filter]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="divide-y divide-border">
+                          {pendingSubmissions.slice(0, 12).map((submission) => (
+                            <div key={submission.id} className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSubmission((current) => current?.id === submission.id ? null : submission)}
+                                className="min-w-0 text-left"
+                              >
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className={cn("rounded-full border px-2.5 py-1 text-xs font-black", submission.status === "approved" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300" : submission.status === "rejected" ? "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300" : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300")}>{submissionStatusLabels[submission.status]}</span>
+                                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">{submission.kind === "source" ? "片源补充" : "反馈"}</span>
+                                  <span className="text-xs font-bold text-muted-foreground">{new Date(submission.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <div className="mt-2 truncate text-sm font-black text-foreground">{submission.title}</div>
+                                <p className="mt-1 line-clamp-2 text-sm font-medium leading-6 text-muted-foreground">{submission.content}</p>
+                                {selectedSubmission?.id === submission.id ? (
+                                  <div className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold leading-6 text-muted-foreground">
+                                    提交者：{submission.submitter || "访客"} · 分类：{submission.category}{submission.contact ? ` · 联系：${submission.contact}` : ""}
+                                  </div>
+                                ) : null}
+                              </button>
+                              <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
+                                <button disabled={isReviewingSubmission || readOnly} onClick={() => reviewSourceSubmission(submission, submission.status === "approved" ? "pending" : "approved")} className="h-8 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-black text-emerald-600 transition-colors hover:bg-emerald-500/15 disabled:opacity-50">{submission.status === "approved" ? "撤回通过" : "通过"}</button>
+                                <button disabled={isReviewingSubmission || readOnly} onClick={() => reviewSourceSubmission(submission, submission.status === "rejected" ? "pending" : "rejected")} className="h-8 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-black text-rose-600 transition-colors hover:bg-rose-500/15 disabled:opacity-50">{submission.status === "rejected" ? "撤回拒绝" : "拒绝"}</button>
+                              </div>
+                            </div>
+                          ))}
+                          {!pendingSubmissions.length ? (
+                            <div className="px-4 py-12 text-center">
+                              <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
+                              <div className="mt-3 text-sm font-black text-foreground">暂无需要处理的审核项</div>
+                              <p className="mt-1 text-xs font-bold text-muted-foreground">反馈、投稿和片源补充会集中显示在这里。</p>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {activeTab === 'content' && (
                     <motion.div
                       key="content"
@@ -1297,13 +1428,13 @@ export function Workspace() {
                            <div className="bg-card border border-border shadow-md rounded-2xl overflow-hidden relative group">
                              {/* Background blur image effect */}
                              <div className="absolute inset-0 z-0">
-                               <img src="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Poster blur" className="w-full h-full object-cover opacity-20 dark:opacity-10 scale-110 blur-xl" />
+                               <div className="h-full w-full scale-110 bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.22),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.18),rgba(148,163,184,0.12))] opacity-70 blur-xl dark:opacity-40" />
                                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
                              </div>
 
                              <div className="relative z-10 p-6 flex flex-col sm:flex-row gap-6">
                                <div className="shrink-0 group/cover relative rounded-lg overflow-hidden border border-border shadow-md h-40 w-28 sm:h-48 sm:w-36 transition-transform duration-300 hover:scale-105">
-                                 <img src="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Movie Poster" className="w-full h-full object-cover" />
+                                 <div className="flex h-full w-full items-center justify-center bg-muted text-xs font-black text-muted-foreground">POSTER</div>
                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cover:opacity-100 transition-opacity flex items-center justify-center">
                                    <button className="bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full transition-colors text-white">
                                      <Pencil className="size-4" />

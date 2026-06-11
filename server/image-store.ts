@@ -44,8 +44,6 @@ export async function generateThumbnails(buffer: Buffer, imageId: string, dataDi
 
     let pipeline = image.clone();
     const originalWidth = metadata.width || width;
-    const originalHeight = metadata.height;
-
     if (width < originalWidth) {
       pipeline = pipeline.resize(width, undefined, {
         fit: "inside",

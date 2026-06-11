@@ -42,6 +42,8 @@ export function loadRuntimeConfig() {
     monitoringFailureThreshold: Number(process.env.MONITORING_FAILURE_THRESHOLD || 2),
     tmdbApiKey: process.env.TMDB_API_KEY || "",
     tmdbApiBase: normalizedUrl(process.env.TMDB_API_BASE || "", "https://api.themoviedb.org/3"),
+    bangumiApiBase: normalizedUrl(process.env.BANGUMI_API_BASE || "", "https://bgmapi.anibt.net"),
+    bangumiImageBase: normalizedUrl(process.env.BANGUMI_IMAGE_BASE || "", "https://bgmimg.anibt.net"),
     openAiApiKey: process.env.OPENAI_API_KEY || "",
     openAiBaseUrl: normalizedUrl(process.env.OPENAI_BASE_URL || "", "https://api.openai.com/v1"),
     openAiModel: process.env.OPENAI_MODEL || "gpt-4o-mini",

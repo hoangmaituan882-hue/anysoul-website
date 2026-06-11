@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, FileText, Bell, Tag, ArrowRight } from "lucide-react";
+import { X, FileText, Bell } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { TalkSidebarItem } from "../content/types";
 

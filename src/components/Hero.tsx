@@ -1,5 +1,4 @@
-import { cn } from "../lib/utils";
-import { ArrowRight, Bot, Command, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useContent } from "../content/useContent";

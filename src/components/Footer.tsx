@@ -1,4 +1,3 @@
-import { Sparkles } from "lucide-react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 
 export function Footer() {

@@ -264,7 +264,7 @@ export function PlazaAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
         createdAt: new Date().toISOString().slice(0, 10),
         views: 0,
         activeDaysAgo: null,
-        avatarSrc: "https://picsum.photos/seed/new-soul/400/520",
+        avatarSrc: "",
         bannerColor: "from-sky-500/20 to-purple-500/20",
         featured: false,
         visibility: "pending",

@@ -1,25 +1,25 @@
 import express from "express";
 import multer from "multer";
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, rename, statfs, writeFile, access } from "node:fs/promises";
+import { mkdir, readFile, rename, statfs, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { Pool } from "pg";
 import { generateThumbnails, getThumbnailUrls, detectBestFormat } from "./image-store";
-import { csvEnv, boolEnv, type RuntimeConfig, loadRuntimeConfig } from "./config/runtime";
-import { addClient, removeClient, broadcast } from "./store/content-events";
+import { loadRuntimeConfig } from "./config/runtime";
+import { broadcast } from "./store/content-events";
 import { registerContentRoutes } from "./routes/content";
 import { registerRealtimeRoute } from "./routes/realtime";
-import { defaultHomeFaq, defaultHomeHero } from "../src/content/defaults/home";
-import { defaultGamingMain } from "../src/content/defaults/gaming";
-import { defaultTalksContent } from "../src/content/defaults/talks";
-import { defaultPlazaContent } from "../src/content/defaults/plaza";
-import { defaultSiteAnnouncements } from "../src/content/defaults/siteAnnouncements";
-import { defaultFeedbackSubmissions } from "../src/content/defaults/feedback";
-import { defaultSiteAnalytics } from "../src/content/defaults/analytics";
-import { defaultScreeningLibrary } from "../src/content/defaults/screeningLibrary";
+import { defaultHomeFaq, defaultHomeHero } from "../src/content/seeds/home";
+import { defaultGamingMain } from "../src/content/seeds/gaming";
+import { defaultTalksContent } from "../src/content/seeds/talks";
+import { defaultPlazaContent } from "../src/content/seeds/plaza";
+import { defaultSiteAnnouncements } from "../src/content/seeds/siteAnnouncements";
+import { defaultFeedbackSubmissions } from "../src/content/seeds/feedback";
+import { defaultSiteAnalytics } from "../src/content/seeds/analytics";
+import { defaultScreeningLibrary } from "../src/content/seeds/screeningLibrary";
 import type { FeedbackSubmission, FeedbackSubmissionsContent, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalkTranscriptItem } from "../src/content/types";
 import {
   defaultScreeningsAnime,
@@ -29,7 +29,7 @@ import {
   defaultScreeningSourceSubmissions,
   defaultScreeningsStats,
   defaultScreeningsTodo
-} from "../src/content/defaults/screenings";
+} from "../src/content/seeds/screenings";
 
 type ContentStatus = "draft" | "published";
 
@@ -186,8 +186,8 @@ process.on("unhandledRejection", (error) => {
 const defaultMediaScraperSettings: MediaScraperSettings = {
   tmdbApiKey: runtimeConfig.tmdbApiKey,
   tmdbApiBase: runtimeConfig.tmdbApiBase,
-  bangumiApiBase: "https://bgmapi.anibt.net",
-  bangumiImageBase: "https://bgmimg.anibt.net"
+  bangumiApiBase: runtimeConfig.bangumiApiBase,
+  bangumiImageBase: runtimeConfig.bangumiImageBase
 };
 
 const defaultAiCoreSettings: AiCoreSettings = {
@@ -785,56 +785,6 @@ function tmdbGenreTags(details: Record<string, unknown> | undefined) {
     .slice(0, 4);
 }
 
-async function searchTmdbCandidates(request: MediaScrapeRequest, settings: MediaScraperSettings): Promise<MediaScrapeCandidate[]> {
-  const token = settings.tmdbApiKey || runtimeConfig.tmdbApiKey;
-  const query = extractTitle(request.query || "");
-  if (!token || !query) return [];
-
-  const sourceUrl = normalizeBilibiliUrl(request.sourceUrl || request.query);
-  const endpoint = request.mediaType === "anime" || request.mediaType === "series" ? "tv" : "movie";
-  const apiBase = normalizedUrl(settings.tmdbApiBase || runtimeConfig.tmdbApiBase, runtimeConfig.tmdbApiBase);
-  const url = new URL(`${apiBase}/search/${endpoint}`);
-  url.searchParams.set("query", query);
-  url.searchParams.set("language", "zh-CN");
-  url.searchParams.set("include_adult", "false");
-
-  const response = await fetch(url, tmdbFetchOptions(url, token));
-
-  if (!response.ok) return [];
-  const data = await response.json() as { results?: Array<Record<string, unknown>> };
-  const today = new Date().toISOString().slice(0, 10);
-
-  return (data.results || []).slice(0, 6).map((item, index) => {
-    const title = String(item.title || item.name || query);
-    const originalTitle = String(item.original_title || item.original_name || "") || undefined;
-    const releaseDate = String(item.release_date || item.first_air_date || "");
-    const rating = typeof item.vote_average === "number" ? Number(item.vote_average.toFixed(1)) : undefined;
-    const type = inferSourceType(title, request.mediaType);
-    const category = inferSourceCategory(title, rating);
-    const posterPath = typeof item.poster_path === "string" ? item.poster_path : undefined;
-
-    return {
-      id: slugifyTitle(`${title}-${releaseDate || index}`),
-      title,
-      originalTitle,
-      type,
-      category,
-      year: releaseDate ? releaseDate.slice(0, 4) : undefined,
-      rating,
-      posterUrl: posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : undefined,
-      description: String(item.overview || "从 TMDB 搜索结果抓取的元数据，播放仍通过 Bilibili 链接外跳。"),
-      tags: Array.from(new Set([type === "anime" ? "动画" : "电影", "TMDB", sourceUrl ? "Bilibili" : "待补链接"])),
-      sourceUrl,
-      sourceNote: sourceUrl ? "Bilibili 外跳播放链接，前台不内置播放器。" : undefined,
-      status: "available" as const,
-      priority: category === "classic" || category === "bad" ? "high" as const : "normal" as const,
-      timesWatched: 0,
-      addedAt: today,
-      provider: "tmdb" as const,
-      confidence: Math.max(0.62, 0.95 - index * 0.08)
-    };
-  });
-}
 
 async function suggestEnglishMovieQueries(query: string) {
   const settings = await loadAiCoreSettings().catch(() => undefined);
@@ -1381,23 +1331,6 @@ function sanitizeAiPatch(raw: unknown, item: ScreeningSourceItem, candidates: Me
   return patch;
 }
 
-function fallbackPatchFromCandidates(item: ScreeningSourceItem, candidates: MediaScrapeCandidate[]) {
-  const best = candidates.find((candidate) => candidate.provider !== "local") || candidates[0];
-  if (!best) return {};
-
-  return sanitizeAiPatch({
-    originalTitle: best.originalTitle,
-    type: best.type,
-    category: best.category,
-    year: best.year,
-    duration: best.duration,
-    rating: best.rating,
-    posterUrl: best.posterUrl,
-    description: best.description,
-    tags: Array.from(new Set([...item.tags, ...best.tags, "AI建议"])),
-    sourceNote: item.sourceUrl ? "播放链接来自已配置的 Bilibili 外跳地址；元数据经抓取源与 AI 清洗。" : best.sourceNote
-  }, item, candidates);
-}
 
 function metadataPatchFromCandidates(item: ScreeningSourceItem, candidates: MediaScrapeCandidate[], overwrite = false) {
   const best = candidates.find((candidate) => candidate.provider !== "local") || candidates[0];
@@ -2385,7 +2318,7 @@ async function saveMediaAsset(file: Express.Multer.File, auth: AuthSessionContex
 
   let thumbnailUrls: Record<string, string> = {};
   try {
-    const thumbs = await generateThumbnails(file.buffer, assetId, dataDir);
+    await generateThumbnails(file.buffer, assetId, dataDir);
     const publicBase = runtimeConfig.objectStoragePublicBaseUrl || `http://localhost:${runtimeConfig.port}`;
     thumbnailUrls = getThumbnailUrls(assetId, publicBase);
   } catch {
@@ -5221,7 +5154,6 @@ registerRealtimeRoute(app);
 registerContentRoutes(app, {
   loadStore,
   mutateStore,
-  saveStore,
   publicContent,
   broadcast,
   requireWorkspaceAdmin: async (req: express.Request, res: express.Response) => requireWorkspaceAdmin(req, res),

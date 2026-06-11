@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
-import { Play, FileText, ArrowUpRight, Search, FileDown, Plus, Calendar, Folder, Archive, X, Clock, Users, Heart, Bot, Tag, List, MessageSquare, Sparkles, Filter, Eye, MessageCircle, ArrowDownUp } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { Play, FileText, ArrowUpRight, Search, FileDown, Plus, Calendar, Folder, Archive, Clock, Tag, Sparkles, Filter, Eye, MessageCircle, ArrowDownUp } from "lucide-react";
 import { cn } from "../lib/utils";
 import { TalkModal } from "../components/TalkModal";
 import { TopicsModal } from "../components/TopicsModal";
@@ -43,12 +42,31 @@ type TalkCard = {
   videoProvider?: TalkItem["videoProvider"];
 };
 
-const fallbackCover = "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=900&q=70";
-const avatarImages = [
-  "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=100&h=100&fit=crop",
-  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop",
-  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop"
-];
+const fallbackCover = "";
+
+function makeAvatarSlots(count: number) {
+  return Array.from({ length: count }, () => "");
+}
+
+function TalkCover({ src, alt, className }: { src?: string; alt: string; className?: string }) {
+  if (src) return <img src={src} alt={alt} className={className} />;
+
+  return (
+    <div aria-label={alt} className={cn(className, "flex items-center justify-center bg-muted text-xs font-black uppercase tracking-wide text-muted-foreground")}>
+      TALK
+    </div>
+  );
+}
+
+function TalkAvatar({ src }: { src?: string }) {
+  if (src) return <img src={src} className="h-full w-full object-cover" alt="" />;
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] font-black text-muted-foreground">
+      AS
+    </div>
+  );
+}
 
 function parseTalkDate(date: string) {
   const parsed = new Date(`${date || new Date().toISOString().slice(0, 10)}T00:00:00`);
@@ -109,7 +127,7 @@ function normalizeTalksContent(value: TalksContent): TalksContent {
   };
 }
 
-function talkToCard(talk: TalkItem, index = 0, defaultCoverUrl = ""): TalkCard {
+function talkToCard(talk: TalkItem, defaultCoverUrl = ""): TalkCard {
   const parsed = parseTalkDate(talk.date);
   const meta = categoryMeta(talk.category, talk.tags);
   const mentions = Array.isArray(talk.mentions) ? talk.mentions : [];
@@ -127,7 +145,7 @@ function talkToCard(talk: TalkItem, index = 0, defaultCoverUrl = ""): TalkCard {
     min: durationToMinutes(talk.duration),
     color: meta.color,
     cover: talk.coverUrl || defaultCoverUrl || fallbackCover,
-    imgs: avatarImages.slice(0, Math.max(1, Math.min(3, (talk.guests?.length || 1) + 1))),
+    imgs: makeAvatarSlots(Math.max(1, Math.min(3, (talk.guests?.length || 1) + 1))),
     hasAiSummary: Boolean(talk.summary || talk.summaryBullets?.length || talk.highlights?.length),
     viewers: Number(talk.viewers || 0),
     danmaku: Number(talk.danmaku || 0),
@@ -164,7 +182,7 @@ function scheduleToCard(item: TalkScheduleItem, index: number): TalkCard {
     min: 0,
     color: meta.color,
     cover: "",
-    imgs: avatarImages.slice(0, 2),
+    imgs: makeAvatarSlots(2),
     hasAiSummary: false,
     viewers: 0,
     danmaku: 0,
@@ -340,7 +358,7 @@ export function Talks() {
 
   const archiveData = useMemo(() => (
     (talksContent.archive.length ? talksContent.archive : defaultTalksContent.archive)
-      .map((talk, index) => talkToCard(talk, index, talksContent.defaultCoverUrl))
+      .map((talk) => talkToCard(talk, talksContent.defaultCoverUrl))
       .sort((a, b) => b.timestamp - a.timestamp)
   ), [talksContent.archive, talksContent.defaultCoverUrl]);
 
@@ -389,7 +407,7 @@ export function Talks() {
     || talksContent.live
     || talksContent.archive[0]
     || defaultTalksContent.live;
-  const liveTalkData = talkToCard(liveTalkSource, 0, talksContent.defaultCoverUrl);
+  const liveTalkData = talkToCard(liveTalkSource, talksContent.defaultCoverUrl);
   const schedules = talksContent.upcoming.length
     ? talksContent.upcoming.map(scheduleToCard)
     : latestYearTalks.slice(1);
@@ -460,11 +478,10 @@ export function Talks() {
               className="group flex flex-col bg-[#fcf8f3] dark:bg-[#2d2822] rounded-3xl overflow-hidden border border-[#f5eade] dark:border-[#3a332a] cursor-pointer hover:shadow-md transition-all duration-300"
             >
               <div className="relative w-full aspect-video bg-muted overflow-hidden">
-                <img 
-                   src={item.cover}
-                   alt={item.title} 
-                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                   onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=500&q=60" }}
+                <TalkCover
+                  src={item.cover}
+                  alt={item.title}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/40 transition-colors">
                    <div className="w-12 h-12 bg-white/90 backdrop-blur-sm shadow-xl rounded-full flex items-center justify-center text-pink-500 scale-95 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all">
@@ -513,7 +530,7 @@ export function Talks() {
           </div>
         ) : null}
         
-        <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />
+        {selectedTalk && <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />}
       </div>
     );
   }
@@ -547,10 +564,10 @@ export function Talks() {
             >
               {/* Video Thumbnail */}
               <div className="relative w-full md:w-[60%] aspect-video bg-muted rounded-2xl overflow-hidden shadow-sm shrink-0">
-                <img 
-                   src={liveTalkData.cover}
-                   alt="Live preview" 
-                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                <TalkCover
+                  src={liveTalkData.cover}
+                  alt="Live preview"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 {/* Overlay play button */}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors">
@@ -581,7 +598,7 @@ export function Talks() {
                     <div className="flex -space-x-2">
                       {liveTalkData.imgs.map((img, i) => (
                         <div key={i} className="w-8 h-8 rounded-full border-2 border-[#fcf8f3] dark:border-[#2d2822] overflow-hidden">
-                          <img src={img} className="w-full h-full object-cover" />
+                          <TalkAvatar src={img} />
                         </div>
                       ))}
                     </div>
@@ -633,14 +650,14 @@ export function Talks() {
                      
                      {sch.cover ? (
                        <div className="absolute bottom-0 left-0 right-0 h-28 rounded-b-3xl overflow-hidden mt-4">
-                           <img src={sch.cover} className="w-full h-full object-cover" />
+                           <TalkCover src={sch.cover} alt={sch.title} className="w-full h-full object-cover" />
                        </div>
                      ) : (
                        <div className="absolute bottom-4 left-5 right-5 flex justify-between items-center z-10">
                          <div className="flex -space-x-2">
                            {sch.imgs?.map((img, idx) => (
                              <div key={idx} className="w-8 h-8 rounded-full border-2 border-[#fcf8f3] dark:border-[#2d2822] overflow-hidden bg-muted">
-                                <img src={img} className="w-full h-full object-cover" />
+                                <TalkAvatar src={img} />
                              </div>
                            ))}
                          </div>
@@ -773,7 +790,7 @@ export function Talks() {
                     className="flex items-center gap-3 rounded-2xl border border-[#f5eade] bg-[#fcf8f3] p-3 text-left transition-colors hover:bg-[#f0ece5] dark:border-[#3a332a] dark:bg-[#2d2822] dark:hover:bg-[#282725]"
                   >
                     <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-muted">
-                      <img src={item.cover} alt={item.title} className="h-full w-full object-cover" />
+                      <TalkCover src={item.cover} alt={item.title} className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="line-clamp-1 text-sm font-bold">{item.title}</div>
@@ -846,7 +863,7 @@ export function Talks() {
                      onClick={() => href ? undefined : setSelectedTalk(talk)}
                      className="bg-[#f0ece5] dark:bg-[#282725] rounded-3xl overflow-hidden h-[180px] relative group cursor-pointer hover:shadow-md transition-all"
                    >
-                      <img src={talk.cover} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+                      <TalkCover src={talk.cover} alt={title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10 group-hover:bg-black/40 transition-colors" />
                       <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col justify-end z-10">
                         <div className="flex items-center gap-1.5 mb-1.5 transform translate-y-1 group-hover:translate-y-0 transition-transform">
@@ -888,7 +905,7 @@ export function Talks() {
         </div>
       </div>
       
-      <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />
+      {selectedTalk && <TalkModal talk={selectedTalk} onClose={() => setSelectedTalk(null)} t={t} />}
       <TopicsModal isOpen={showTopicsModal} onClose={() => setShowTopicsModal(false)} t={t} initialTopicId={activeTopicId} topics={[...talksContent.recentUpdates, ...talksContent.topics]} />
       
     </div>

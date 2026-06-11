@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Play, FileText, Search, Users, Heart, Bot, Tag, List, MessageSquare, Sparkles, Clock, Eye, MessageCircle, ArrowDownUp, GripVertical, ChevronLeft, ChevronRight, X, Star, Zap, Quote, Lightbulb } from "lucide-react";
+import { Play, FileText, Search, Users, Heart, Bot, Tag, List, MessageSquare, Sparkles, Clock, Eye, MessageCircle, ChevronLeft, ChevronRight, X, Star, Zap, Quote, Lightbulb } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import type { TalkItem } from "../content/types";

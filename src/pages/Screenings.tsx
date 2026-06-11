@@ -1,14 +1,14 @@
+import { OptionCapsule } from '../components/OptionCapsule';
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import { useState, useRef, useEffect, useMemo, type UIEvent } from "react";
-import { ChevronLeft, ChevronRight, Play, Star, AlertTriangle, MonitorPlay, Clock, History, Film, Activity, Users, ListTodo, Plus, CheckCircle2, ThumbsUp, X, Database, Search, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, AlertTriangle, MonitorPlay, Clock, History, Film, Activity, Users, ListTodo, Plus, CheckCircle2, ThumbsUp, X, Database, Search, Shuffle } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { appendLocalSourceSubmission, CONTENT_API_BASE } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { useContent } from "../content/useContent";
 import { FeedbackChannelForm } from "../components/FeedbackChannelForm";
 import {
-  screeningSourceStatusLabel,
   screeningSourceTimingLabel,
   screeningSourceSortTime,
   formatDateKey,
@@ -313,7 +313,6 @@ function priorityBadgeClass(priority?: string) {
 
 export function Screenings() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [selectedWeek, setSelectedWeek] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useLocalStorage<'all' | 'todo' | 'history'>('screenings-activeTab', 'all');
   const [todoSort, setTodoSort] = useLocalStorage<'hot' | 'new'>('screenings-todoSort', 'hot');
   const [isNominateModalOpen, setIsNominateModalOpen] = useState(false);
@@ -982,7 +981,7 @@ export function Screenings() {
                 {/* Profile part */}
                 <div className="flex flex-col items-center mb-6 relative z-10">
                   <div className="w-20 h-20 rounded-full overflow-hidden bg-white dark:bg-zinc-800 border-2 border-white shadow-md mb-4 group-hover/sidebar:scale-105 transition-transform duration-500">
-                    <img src="https://api.dicebear.com/7.x/notionists/svg?seed=fanshi123" alt="Fanshi" className="w-full h-full object-cover scale-110" />
+                    <span className="flex h-full w-full items-center justify-center text-xl font-black text-blue-600 dark:text-blue-300">FS</span>
                   </div>
                   <h3 className="font-bold text-xl text-foreground mb-1 group-hover/sidebar:text-blue-600 dark:group-hover/sidebar:text-blue-400 transition-colors">泛式放映厅</h3>
                   <p className="text-[13px] text-muted-foreground text-center font-medium">每个周末与你相约吐槽烂片感受神作</p>
@@ -1446,38 +1445,30 @@ export function Screenings() {
                     <Search className="size-4" />
                     <input value={libraryQuery} onChange={(event) => setLibraryQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent outline-none" placeholder="搜索片名 / 标签" />
                   </label>
-                  <select value={libraryCategoryFilter} onChange={(event) => setLibraryCategoryFilter(event.target.value)} className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold outline-none md:h-11 md:text-sm">
-                    <option value="all">全部分类</option>
-                    <option value="good">经典好片</option>
-                    <option value="bad">绝世烂片</option>
-                    <option value="classic">往期经典</option>
-                    <option value="anime">动画</option>
-                    <option value="topic">主题片</option>
-                    <option value="other">其他</option>
-                  </select>
-                  <select value={libraryStatusFilter} onChange={(event) => setLibraryStatusFilter(event.target.value)} className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold outline-none md:h-11 md:text-sm">
-                    <option value="all">全部状态</option>
-                    <option value="available">可排播</option>
-                    <option value="planned">已计划</option>
-                    <option value="watched">已看</option>
-                    <option value="hidden">隐藏</option>
-                    <option value="rejected">拒绝</option>
-                  </select>
-                  <select value={libraryTypeFilter} onChange={(event) => setLibraryTypeFilter(event.target.value)} className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold outline-none md:h-11 md:text-sm">
-                    <option value="all">全部类型</option>
-                    <option value="movie">电影</option>
-                    <option value="anime">动画</option>
-                    <option value="ova">OVA</option>
-                    <option value="series">剧集</option>
-                    <option value="short">短片</option>
-                    <option value="other">其他</option>
-                  </select>
-                  <select value={libraryPriorityFilter} onChange={(event) => setLibraryPriorityFilter(event.target.value)} className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold outline-none md:h-11 md:text-sm">
-                    <option value="all">全部优先级</option>
-                    <option value="high">高优先级</option>
-                    <option value="normal">普通优先级</option>
-                    <option value="low">低优先级</option>
-                  </select>
+                  <OptionCapsule
+        value={libraryCategoryFilter}
+        onChange={setLibraryCategoryFilter}
+        options={[{ value: "all", label: "全部分类" }, { value: "good", label: "经典好片" }, { value: "bad", label: "绝世烂片" }, { value: "classic", label: "往期经典" }, { value: "anime", label: "动画" }, { value: "topic", label: "主题片" }, { value: "other", label: "其他" }]}
+        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+      />
+                  <OptionCapsule
+        value={libraryStatusFilter}
+        onChange={setLibraryStatusFilter}
+        options={[{ value: "all", label: "全部状态" }, { value: "available", label: "可排播" }, { value: "planned", label: "已计划" }, { value: "watched", label: "已看" }, { value: "hidden", label: "隐藏" }, { value: "rejected", label: "拒绝" }]}
+        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+      />
+                  <OptionCapsule
+        value={libraryTypeFilter}
+        onChange={setLibraryTypeFilter}
+        options={[{ value: "all", label: "全部类型" }, { value: "movie", label: "电影" }, { value: "anime", label: "动画" }, { value: "ova", label: "OVA" }, { value: "series", label: "剧集" }, { value: "short", label: "短片" }, { value: "other", label: "其他" }]}
+        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+      />
+                  <OptionCapsule
+        value={libraryPriorityFilter}
+        onChange={setLibraryPriorityFilter}
+        options={[{ value: "all", label: "全部优先级" }, { value: "high", label: "高优先级" }, { value: "normal", label: "普通优先级" }, { value: "low", label: "低优先级" }]}
+        className="h-10 min-w-0 rounded-2xl border border-border bg-card px-3 text-xs font-bold md:h-11 md:text-sm"
+      />
                 </div>
 
                 <div className="shrink-0 space-y-3 border-b border-border bg-background px-3 py-3 md:px-5">
@@ -1777,13 +1768,12 @@ export function Screenings() {
                         <div className="mt-5 rounded-2xl border border-border bg-card p-4">
                           <div className="text-xs font-black text-muted-foreground">补充信息给站主</div>
                           <p className="mt-1 text-xs font-bold text-muted-foreground">可提交播放链接、备注、泛式评价补充或资料纠错。提交后进入后台审核，审核通过后才会公开。</p>
-                          <select value={sourceSubmissionField} onChange={(event) => setSourceSubmissionField(event.target.value as ScreeningSourceSubmission["field"])} className="mt-3 h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-bold outline-none">
-                            <option value="other">其他补充</option>
-                            <option value="sourceUrl">播放链接</option>
-                            <option value="sourceNote">播放备注</option>
-                            <option value="description">简介纠错</option>
-                            <option value="fanshiReview">泛式评价</option>
-                          </select>
+                          <OptionCapsule
+        value={sourceSubmissionField}
+        onChange={setSourceSubmissionField}
+        options={[{ value: "other", label: "其他补充" }, { value: "sourceUrl", label: "播放链接" }, { value: "sourceNote", label: "播放备注" }, { value: "description", label: "简介纠错" }, { value: "fanshiReview", label: "泛式评价" }]}
+        className="mt-3 h-10 w-full rounded-xl border border-border bg-background px-3 text-xs font-bold"
+      />
                           <textarea value={sourceSubmissionContent} onChange={(event) => setSourceSubmissionContent(event.target.value)} className="mt-3 min-h-24 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium outline-none focus:border-primary/50" placeholder="写下要补充的信息..." />
                           <input value={sourceSubmissionContact} onChange={(event) => setSourceSubmissionContact(event.target.value)} className="mt-2 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none focus:border-primary/50" placeholder="联系方式，可选" />
                           <button onClick={submitSourceSupplement} className="mt-3 w-full rounded-xl bg-foreground px-4 py-2.5 text-sm font-black text-background transition-colors hover:bg-foreground/90">提交给站主审核</button>

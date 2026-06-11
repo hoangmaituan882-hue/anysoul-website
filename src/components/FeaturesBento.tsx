@@ -1,7 +1,5 @@
-import { cn } from "../lib/utils";
-import { Zap, Shield, Blocks, Cpu, Database, BarChart3, MessageSquare } from "lucide-react";
-import { motion, useMotionValue, useSpring } from "motion/react";
-import { useRef, useState } from "react";
+import { Zap, Shield, Blocks, Cpu, Database, BarChart3 } from "lucide-react";
+import { motion } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 
 import { FollowCursorCard } from "./FollowCursorCard";

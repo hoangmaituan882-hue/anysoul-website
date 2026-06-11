@@ -31,6 +31,35 @@ export type GeneratedRoadmapNode = {
 
 export const changelogUpdates: GeneratedChangelogUpdate[] = [
   {
+    "version": "2316bb9",
+    "hash": "2316bb99ad0f67fe3bbf1b12689ec8a25b701145",
+    "date": "2026-06-10",
+    "title": "Add public site workspace",
+    "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2、后端 1。",
+    "files": [
+      "server/index.ts",
+      "src/App.tsx",
+      "src/components/Header.tsx",
+      "src/content/defaults/siteAnnouncements.ts",
+      "src/content/types.ts",
+      "src/generated/changelog.ts",
+      "src/pages/SiteWorkspace.tsx",
+      "src/workspace/ContentAdminPanel.tsx"
+    ],
+    "items": [
+      {
+        "type": "新功能",
+        "text": "Add public site workspace",
+        "color": "bg-emerald-100 text-emerald-800"
+      },
+      {
+        "type": "影响范围",
+        "text": "页面 1、组件 1、工作台 1、内容数据 2、后端 1",
+        "color": "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+      }
+    ]
+  },
+  {
     "version": "21ebf6b",
     "hash": "21ebf6bddfd46e4b711bfd11dc8668b0a5c72b90",
     "date": "2026-06-10",
@@ -1123,32 +1152,12 @@ export const changelogUpdates: GeneratedChangelogUpdate[] = [
 
 export const changelogRoadmap: GeneratedRoadmapNode[] = [
   {
-    "version": "66600ba",
-    "subtitle": "修复",
-    "status": "published",
-    "statusText": "已发布",
-    "date": "2026-06-10",
-    "cardsPosition": "top",
-    "cards": [
-      {
-        "type": "修复",
-        "title": "feat: 图库类型统一+数据标准化+杂谈JSON导入按钮+多项健壮性修复",
-        "description": "- SoulImageCard: 删除本地 Soul 接口，直接使用 PlazaSoulItem，运行时字段兜底\n- Plaza: 移除 soul as Soul 强转，标签仅从可见作品生成，失效tag自动回退\n- PlazaAdminPanel: normalizePlazaSoulItem 逐字段标准化(tags去重/NAN→0/visibility校验)\n- PlazaAdminPanel: 批量上传新增 MIME/15MB 前置校验，阻止非法格式\n- PlazaAdminPanel: likes/views 防 NaN，tags编辑自动去重\n- PlazaAdminPanel: 后台相册/弹窗 <img> → OptimizedImage(lazy+error fallback)\n- PlazaAdminPanel: 统计新增 hidden/rejected 状态计数\n- OptimizedImage: 支持 loading prop(eager/lazy)\n- server: 新增 POST /api/admin/talks/import-json 导入端点\n- TalksAdminPanel: 工具栏新增 JSON 导入按钮+结果展示\n- 修正 sizes 覆盖 xl 四列，Info选项文案改为'显示/隐藏信息'\n- 安全日期排序(NaN→末尾)，安全数字解析"
-      },
-      {
-        "type": "影响范围",
-        "title": "页面 2、组件 3、工作台 4、内容数据 1、后端 1",
-        "description": ""
-      }
-    ]
-  },
-  {
     "version": "7e775df",
     "subtitle": "修复",
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1168,7 +1177,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "新功能",
@@ -1188,7 +1197,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1208,7 +1217,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -1228,7 +1237,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1248,7 +1257,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "top",
+    "cardsPosition": "bottom",
     "cards": [
       {
         "type": "改进",
@@ -1268,7 +1277,7 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
     "status": "published",
     "statusText": "已发布",
     "date": "2026-06-10",
-    "cardsPosition": "bottom",
+    "cardsPosition": "top",
     "cards": [
       {
         "type": "修复",
@@ -1278,6 +1287,26 @@ export const changelogRoadmap: GeneratedRoadmapNode[] = [
       {
         "type": "影响范围",
         "title": "组件 1、后端 2",
+        "description": ""
+      }
+    ]
+  },
+  {
+    "version": "2316bb9",
+    "subtitle": "新功能",
+    "status": "published",
+    "statusText": "已发布",
+    "date": "2026-06-10",
+    "cardsPosition": "bottom",
+    "cards": [
+      {
+        "type": "新功能",
+        "title": "Add public site workspace",
+        "description": "本次提交更新了相关功能与页面体验，影响范围：页面 1、组件 1、工作台 1、内容数据 2、后端 1。"
+      },
+      {
+        "type": "影响范围",
+        "title": "页面 1、组件 1、工作台 1、内容数据 2、后端 1",
         "description": ""
       }
     ]

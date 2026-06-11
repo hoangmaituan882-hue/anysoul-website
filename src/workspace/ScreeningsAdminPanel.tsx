@@ -1,10 +1,11 @@
+import { OptionCapsule } from '../components/OptionCapsule';
 import { useEffect, useMemo, useState } from "react";
 import { Bot, CalendarClock, CheckCircle2, Database, Film, KeyRound, Plus, RefreshCw, Rocket, Save, Search, Settings, Sparkles, Trash2, X } from "lucide-react";
 import { CONTENT_API_BASE, fetchPublishedContent } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultScreeningLibrary } from "../content/defaults/screeningLibrary";
-import { defaultScreeningSourceSubmissions, defaultScreeningsNext, defaultScreeningsSchedule } from "../content/defaults/screenings";
-import type { AdminContentEntry, ScreeningLibraryContent, ScreeningMovie, ScreeningNextContent, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningWeek } from "../content/types";
+import { defaultScreeningsNext, defaultScreeningsSchedule } from "../content/defaults/screenings";
+import type { AdminContentEntry, ScreeningLibraryContent, ScreeningMovie, ScreeningNextContent, ScreeningScheduleContent, ScreeningSourceItem, ScreeningWeek } from "../content/types";
 import { cn } from "../lib/utils";
 import { DateTimePicker } from "../components/DateTimePicker";
 import { ImageUploadField } from "../components/ImageUploadField";
@@ -69,7 +70,6 @@ type ContentEntryMeta = Pick<AdminContentEntry, "version" | "updatedAt">;
 
 const SCREENINGS_NEXT_KEY = "screenings.next";
 const SCREENINGS_LIBRARY_KEY = "screenings.library";
-const SCREENINGS_SOURCE_SUBMISSIONS_KEY = "screenings.sourceSubmissions";
 const SCREENINGS_SCHEDULE_KEY = "screenings.schedule";
 
 const providerFilters: Array<{ value: MediaProviderFilter; label: string; hint: string }> = [
@@ -141,11 +141,6 @@ function normalizeLibrary(value: unknown): ScreeningLibraryContent {
     items: Array.isArray(library?.items) ? library.items : defaultScreeningLibrary.items,
     tags: Array.isArray(library?.tags) ? library.tags : defaultScreeningLibrary.tags
   };
-}
-
-function normalizeSourceSubmissions(value: unknown): ScreeningSourceSubmissionsContent {
-  const content = value as Partial<ScreeningSourceSubmissionsContent> | null;
-  return { items: Array.isArray(content?.items) ? content.items : defaultScreeningSourceSubmissions.items };
 }
 
 function normalizeSchedule(value: unknown): ScreeningScheduleContent {
@@ -435,8 +430,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const { authFetch } = useAuth();
   const [activeMode, setActiveMode] = useState<"next" | "library">("next");
   const [next, setNext] = useState<ScreeningNextContent>(defaultScreeningsNext);
-  const [library, setLibrary] = useState<ScreeningLibraryContent>(defaultScreeningLibrary);
-  const [sourceSubmissions, setSourceSubmissions] = useState<ScreeningSourceSubmissionsContent>(defaultScreeningSourceSubmissions);
+  const [library, setLibrary] = useState<ScreeningLibraryContent>(defaultScreeningLibrary);
   const [schedule, setSchedule] = useState<ScreeningScheduleContent>(defaultScreeningsSchedule);
   const [status, setStatus] = useState("正在加载下周放映配置...");
   const [isSaving, setIsSaving] = useState(false);
@@ -454,9 +448,9 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const [showScraperSettings, setShowScraperSettings] = useState(false);
   const [scraperSettings, setScraperSettings] = useState<MediaScraperSettings>({
     tmdbApiKey: "",
-    tmdbApiBase: "https://api.themoviedb.org/3",
-    bangumiApiBase: "https://bgmapi.anibt.net",
-    bangumiImageBase: "https://bgmimg.anibt.net"
+    tmdbApiBase: "",
+    bangumiApiBase: "",
+    bangumiImageBase: ""
   });
   const [aiSuggestions, setAiSuggestions] = useState<MediaAiSuggestion[]>([]);
   const [aiScanItems, setAiScanItems] = useState<ScreeningSourceItem[]>([]);
@@ -524,11 +518,10 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
 
   const load = async () => {
     if (readOnly) {
-      const data = await fetchPublishedContent([SCREENINGS_NEXT_KEY, SCREENINGS_LIBRARY_KEY, SCREENINGS_SOURCE_SUBMISSIONS_KEY, SCREENINGS_SCHEDULE_KEY]);
+      const data = await fetchPublishedContent([SCREENINGS_NEXT_KEY, SCREENINGS_LIBRARY_KEY, SCREENINGS_SCHEDULE_KEY]);
       setEntryMeta({});
       setNext(normalizeNext(data.content[SCREENINGS_NEXT_KEY]));
-      setLibrary(normalizeLibrary(data.content[SCREENINGS_LIBRARY_KEY]));
-      setSourceSubmissions(normalizeSourceSubmissions(data.content[SCREENINGS_SOURCE_SUBMISSIONS_KEY]));
+      setLibrary(normalizeLibrary(data.content[SCREENINGS_LIBRARY_KEY]));
       setSchedule(normalizeSchedule(data.content[SCREENINGS_SCHEDULE_KEY]));
       setStatus("只读模式已加载前台已发布的放映会内容，登录管理员后可编辑。");
       return;
@@ -538,15 +531,13 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     if (!res.ok) throw new Error(await readAdminError(res, "放映会内容加载失败"));
 
     const data = await res.json() as AdminContentResponse;
-    const trackedEntries = data.entries.filter((entry) => [SCREENINGS_NEXT_KEY, SCREENINGS_LIBRARY_KEY, SCREENINGS_SOURCE_SUBMISSIONS_KEY, SCREENINGS_SCHEDULE_KEY].includes(entry.key));
+    const trackedEntries = data.entries.filter((entry) => [SCREENINGS_NEXT_KEY, SCREENINGS_LIBRARY_KEY, SCREENINGS_SCHEDULE_KEY].includes(entry.key));
     const draft = data.entries.find((entry) => entry.key === SCREENINGS_NEXT_KEY)?.draft;
-    const libraryDraft = data.entries.find((entry) => entry.key === SCREENINGS_LIBRARY_KEY)?.draft;
-    const submissionsDraft = data.entries.find((entry) => entry.key === SCREENINGS_SOURCE_SUBMISSIONS_KEY)?.draft;
+    const libraryDraft = data.entries.find((entry) => entry.key === SCREENINGS_LIBRARY_KEY)?.draft;
     const scheduleDraft = data.entries.find((entry) => entry.key === SCREENINGS_SCHEDULE_KEY)?.draft;
     setEntryMeta(Object.fromEntries(trackedEntries.map((entry) => [entry.key, { version: entry.version, updatedAt: entry.updatedAt }])));
     setNext(normalizeNext(draft));
-    setLibrary(normalizeLibrary(libraryDraft));
-    setSourceSubmissions(normalizeSourceSubmissions(submissionsDraft));
+    setLibrary(normalizeLibrary(libraryDraft));
     setSchedule(normalizeSchedule(scheduleDraft));
     setStatus("已同步下周放映配置、片源库和排播周期");
   };
@@ -1104,32 +1095,6 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     }
   };
 
-  const reviewSourceSubmission = async (submission: ScreeningSourceSubmission, decision: "approved" | "rejected") => {
-    if (readOnly) {
-      setStatus("只读模式无法审核用户补充");
-      return;
-    }
-
-    setIsSaving(true);
-    setStatus(decision === "approved" ? `正在同意《${submission.sourceTitle}》的补充信息...` : `正在拒绝《${submission.sourceTitle}》的补充信息...`);
-
-    try {
-      const response = await authFetch(`${CONTENT_API_BASE}/api/admin/submissions/source/${submission.id}/review`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, message: `Review source submission: ${decision}` })
-      });
-      const data = await response.json().catch(() => ({})) as { entry?: AdminContentEntry; error?: string };
-      if (!response.ok || !data.entry) throw new Error(data.error || "review failed");
-      const nextSubmissions = data.entry.draft as ScreeningSourceSubmissionsContent;
-      setSourceSubmissions(nextSubmissions);
-      setStatus(decision === "approved" ? `已同意《${submission.sourceTitle}》的补充信息，前台详情会显示已采纳补充` : `已拒绝《${submission.sourceTitle}》的补充信息`);
-    } catch {
-      setStatus("补充信息审核失败，请检查内容服务");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const publishNextToSchedule = async () => {
     if (readOnly) {
@@ -1266,18 +1231,18 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         <Search className="size-4" />
         <input value={libraryQuery} onChange={(event) => setLibraryQuery(event.target.value)} placeholder="搜索片名、标签、简介" className="min-w-0 flex-1 bg-transparent outline-none" />
       </label>
-      <select value={libraryCategoryFilter} onChange={(event) => setLibraryCategoryFilter(event.target.value)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none">
-        <option value="all">全部分类</option>
-        {movieTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-      </select>
-      <select value={libraryStatusFilter} onChange={(event) => setLibraryStatusFilter(event.target.value)} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none">
-        <option value="all">全部状态</option>
-        <option value="available">可排播</option>
-        <option value="planned">已排期</option>
-        <option value="watched">已归档</option>
-        <option value="hidden">隐藏</option>
-        <option value="rejected">拒绝</option>
-      </select>
+      <OptionCapsule
+        value={libraryCategoryFilter}
+        onChange={setLibraryCategoryFilter}
+        options={[{ value: "all", label: "全部分类" }]}
+        className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold"
+      />
+      <OptionCapsule
+        value={libraryStatusFilter}
+        onChange={setLibraryStatusFilter}
+        options={[{ value: "all", label: "全部状态" }, { value: "available", label: "可排播" }, { value: "planned", label: "已排期" }, { value: "watched", label: "已归档" }, { value: "hidden", label: "隐藏" }, { value: "rejected", label: "拒绝" }]}
+        className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-bold"
+      />
     </div>
   );
 
@@ -1354,10 +1319,12 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
               <Field label="Bilibili 录播链接" value={scrapeSourceUrl} onChange={setScrapeSourceUrl} placeholder="https://www.bilibili.com/video/..." />
               <label className="flex flex-col gap-1.5">
                 <span className="text-[12px] font-bold text-muted-foreground">媒体类型</span>
-                <select value={scrapeMediaType} onChange={(event) => setScrapeMediaType(event.target.value as ScreeningSourceItem["type"] | "auto")} className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium outline-none transition-colors focus:border-primary/50 focus:ring-2 focus:ring-primary/15">
-                  <option value="auto">自动识别</option>
-                  {(["movie", "anime", "ova", "series", "short", "other"] as ScreeningSourceItem["type"][]).map((value) => <option key={value} value={value}>{value}</option>)}
-                </select>
+                <OptionCapsule
+        value={scrapeMediaType}
+        onChange={(val) => setScrapeMediaType(val | "auto")}
+        options={[{ value: "auto", label: "自动识别" }]}
+        className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium transition-colors"
+      />
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className="text-[12px] font-bold text-muted-foreground">数据源</span>

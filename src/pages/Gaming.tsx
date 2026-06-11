@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Bell, ChevronDown, Play, ArrowRight, Flame, ChevronLeft, ChevronRight, Clock, User, X, BookOpen, Star, Eye, Crown, Users, LayoutGrid, Heart, MessageSquare, ExternalLink } from "lucide-react";
+import { Search, Bell, ChevronDown, Play, ArrowRight, Flame, ChevronLeft, ChevronRight, Clock, User, X, BookOpen, Star, Eye, Crown, LayoutGrid, Heart, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useContent } from "../content/useContent";
 import { defaultGamingMain } from "../content/defaults/gaming";
@@ -150,7 +150,6 @@ export function Gaming() {
   const currentGame = library.find((game) => game.id === content.currentGameId) || library[0];
   const streamGame = library.find((game) => game.id === content.streamGameId) || currentGame;
   const heroGames = content.heroGames.length ? content.heroGames : library.map(libraryToHero);
-  const recentGamesList = content.recentGames.length ? content.recentGames : library.map(libraryToRecent);
   const selectedGame = library.find((game) => game.id === selectedGameId) || null;
   const heatmap = useMemo(() => buildHeatmap(selectedGame?.playRecords || []), [selectedGame]);
 
@@ -188,13 +187,54 @@ export function Gaming() {
     if (currentSlide >= heroGames.length) setCurrentSlide(0);
   }, [currentSlide, heroGames.length]);
 
-  const activeHero = heroGames[currentSlide] || heroGames[0] || libraryToHero(currentGame);
   const totalGames = library.length;
   const plannedGames = library.filter((game) => game.status === "planned").length;
   const playingGames = library.filter((game) => game.status === "playing").length;
   const openGameLibrary = () => {
     window.location.hash = "#game-library";
   };
+
+  if (!library.length && !heroGames.length) {
+    return (
+      <div className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-8">
+        <div className="flex w-full max-w-sm flex-col gap-3">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-foreground" />
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={content.searchPlaceholder || "Search games..."}
+              className="w-full rounded-full border border-border/60 bg-card/80 py-2.5 pl-10 pr-4 text-[15px] font-medium shadow-sm outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+        <div className="mt-8 rounded-[28px] border border-dashed border-border bg-card p-8 shadow-sm">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-black text-muted-foreground">
+                GAME LIBRARY
+              </div>
+              <h1 className="mt-4 text-2xl font-black tracking-tight">游戏内容等待发布</h1>
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-muted-foreground">
+                后台发布游戏条目后，这里会恢复原来的轮播、分类、最近记录和联动游戏展示。
+              </p>
+            </div>
+            <button
+              onClick={openGameLibrary}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-bold shadow-sm transition-colors hover:bg-muted"
+            >
+              <LayoutGrid className="size-4" />
+              游戏库
+              <ArrowRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const activeHero = heroGames[currentSlide] || heroGames[0] || libraryToHero(currentGame);
 
   return (
     <div className="max-w-[1400px] mx-auto w-full px-6 pb-16">
@@ -369,7 +409,7 @@ export function Gaming() {
               <span className="absolute top-2 right-2.5 size-1.5 rounded-full bg-red-500" />
            </button>
            <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 py-1.5 px-2 rounded-full transition-colors font-bold">
-              <img src="https://api.dicebear.com/7.x/notionists/svg?seed=AnySoul" alt="AnySoul" className="size-8 rounded-full border border-border object-cover bg-blue-50" />
+              <span className="flex size-8 items-center justify-center rounded-full border border-border bg-primary/10 text-xs font-black text-primary">AS</span>
               <span>AnySoul</span>
               <ChevronDown className="size-4 text-muted-foreground" />
            </div>

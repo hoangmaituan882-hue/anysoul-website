@@ -3,7 +3,7 @@ import { Bot, Calendar, Check, FileText, Link, Loader2, Plus, RefreshCw, Rocket,
 import { ImageUploadField } from "../components/ImageUploadField";
 import { CONTENT_API_BASE, importTalksJson } from "../content/client";
 import { defaultTalksContent } from "../content/defaults/talks";
-import type { AdminContentEntry, TalkHighlightItem, TalkItem, TalkQuoteItem, TalkScheduleItem, TalkSidebarItem, TalkTranscriptItem, TalksContent } from "../content/types";
+import type { AdminContentEntry, TalkHighlightItem, TalkItem, TalkQuoteItem, TalkSidebarItem, TalkTranscriptItem, TalksContent } from "../content/types";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 
@@ -108,7 +108,6 @@ function normalizeTalks(value: unknown): TalksContent {
 function createBlankTalk(index: number): TalkItem {
   const today = new Date().toISOString().slice(0, 10);
   return {
-    ...defaultTalksContent.archive[0],
     id: `talk-${Date.now()}`,
     episodeNo: index + 1,
     title: "新的杂谈回录像",
