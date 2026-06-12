@@ -816,11 +816,15 @@ export function Screenings() {
 
   useEffect(() => {
     if (showTimeline && scrollContainerRef.current) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+          scrollContainerRef.current.scrollTo({
+            left: scrollContainerRef.current.scrollWidth,
+            behavior: 'smooth'
+          });
         }
-      }, 100);
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [showTimeline, screeningsData]);
 
@@ -1314,6 +1318,11 @@ export function Screenings() {
               exit={{ opacity: 0, height: 0 }}
               className="relative w-full mb-32 group/roadmap overflow-hidden"
             >
+            {/* Center fixed wave scrollbar */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-auto">
+              <TimelineWaveScrollbar scrollRef={scrollContainerRef} dataLength={screeningsData.length} />
+            </div>
+
           {/* Scroll Container */}
           <div
             ref={scrollContainerRef}
