@@ -897,8 +897,14 @@ export function Screenings() {
 
             {activeTab === 'all' && (
               <>
-                <div className="mb-4">
+                <div className="mb-4 flex items-center justify-between">
                     <h3 className="text-[15px] font-medium text-muted-foreground">自动记录情报</h3>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <Shuffle className="size-3.5" /> 刷新数据
+                    </button>
                 </div>
 
                 {/* Grid Area */}
