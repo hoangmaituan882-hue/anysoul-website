@@ -4945,7 +4945,7 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
       }
     }
 
-    store.siteVersion += kind === "source" ? 1 : 0;
+    store.siteVersion += 1;
     entry.version += 1;
     entry.updatedAt = reviewedAt;
     if (kind === "source") entry.publishedAt = reviewedAt;
