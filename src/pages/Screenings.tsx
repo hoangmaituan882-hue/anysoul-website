@@ -397,6 +397,45 @@ function TimelineWaveScrollbar({ scrollRef, dataLength }: { scrollRef: React.Ref
   );
 }
 
+function SidebarPosterWall({ posters }: { posters: string[] }) {
+  const safePosters = posters.length > 0 ? posters : ["/images/default-poster.jpg"];
+  // divide into 3 columns
+  const cols = [
+    safePosters.filter((_, i) => i % 3 === 0),
+    safePosters.filter((_, i) => i % 3 === 1),
+    safePosters.filter((_, i) => i % 3 === 2),
+  ];
+
+  return (
+    <div className="absolute inset-0 flex gap-2 p-2 overflow-hidden bg-black/5 dark:bg-black/20">
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background z-10 pointer-events-none" />
+      {cols.map((colPosters, colIdx) => {
+        if (colPosters.length === 0) return null;
+        const triplicated = [...colPosters, ...colPosters, ...colPosters];
+        return (
+          <div key={colIdx} className="flex-1 flex flex-col gap-2 overflow-hidden relative">
+            <motion.div 
+              animate={{ y: colIdx % 2 === 0 ? ["0%", "-33.333333%"] : ["-33.333333%", "0%"] }}
+              transition={{ repeat: Infinity, ease: "linear", duration: 30 + colIdx * 8 }}
+              className="flex flex-col gap-2 w-full"
+            >
+              {triplicated.map((url, i) => (
+                <img key={i} src={url} className="w-full aspect-[2/3] object-cover rounded-xl shadow-sm opacity-80" alt="" />
+              ))}
+            </motion.div>
+          </div>
+        );
+      })}
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
+         <div className="bg-background/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-border/50 shadow-xl flex items-center gap-2">
+            <Database className="w-4 h-4 text-blue-500" />
+            <span className="font-bold text-xs tracking-wide">片源库墙</span>
+         </div>
+      </div>
+    </div>
+  );
+}
+
 export function Screenings() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useLocalStorage<'all' | 'todo' | 'history'>('screenings-activeTab', 'all');
@@ -431,6 +470,17 @@ export function Screenings() {
   const libraryContent = useContent<ScreeningLibraryContent>("screenings.library", defaultScreeningLibrary);
   const sourceSubmissionsContent = useContent<ScreeningSourceSubmissionsContent>("screenings.sourceSubmissions", defaultScreeningSourceSubmissions);
   const { user, authFetch } = useAuth();
+  
+  const [isSidebarFlipped, setIsSidebarFlipped] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setIsSidebarFlipped(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const sidebarPosters = useMemo(() => {
+    return libraryContent.items.map(i => i.posterUrl).filter(Boolean) as string[];
+  }, [libraryContent]);
+
   const screeningsData = scheduleContent.weeks;
   const todoMovies = todoContent.items;
   const archivedWeeks = useMemo(
@@ -1090,13 +1140,20 @@ export function Screenings() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="w-full lg:w-[380px] shrink-0 flex flex-col mt-8 lg:mt-0"
+            className="w-full lg:w-[380px] shrink-0 flex flex-col mt-8 lg:mt-0 relative"
+            style={{ perspective: 1200 }}
           >
             <motion.div
-              whileHover={{ scale: 1.01 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              className="bg-[#f8f5ee] dark:bg-[#1a1917] border border-[#e8dfce] dark:border-[#38332c] rounded-[2rem] p-6 lg:p-8 flex-1 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] relative overflow-hidden group/sidebar"
+              animate={{ rotateY: isSidebarFlipped ? 180 : 0 }}
+              transition={{ duration: 1.2, type: "spring", bounce: 0.3 }}
+              style={{ transformStyle: "preserve-3d" }}
+              className="flex-1 flex flex-col relative"
             >
+              {/* Front Face */}
+              <div
+                style={{ backfaceVisibility: "hidden" }}
+                className="bg-[#f8f5ee] dark:bg-[#1a1917] border border-[#e8dfce] dark:border-[#38332c] rounded-[2rem] p-6 lg:p-8 flex-1 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] relative overflow-hidden group/sidebar"
+              >
                 {/* Ambient glow */}
                 <div className="absolute -top-32 -left-32 w-64 h-64 bg-amber-500/10 dark:bg-amber-500/5 rounded-full blur-[64px] pointer-events-none group-hover/sidebar:bg-amber-500/20 transition-colors duration-1000" />
                 <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[64px] pointer-events-none group-hover/sidebar:bg-blue-500/20 transition-colors duration-1000" />
@@ -1190,6 +1247,15 @@ export function Screenings() {
                       ))}
                   </div>
                 </div>
+              </div>
+              
+              {/* Back Face (Poster Wall) */}
+              <div
+                style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+                className="absolute inset-0 bg-[#f8f5ee] dark:bg-[#1a1917] border border-[#e8dfce] dark:border-[#38332c] rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
+              >
+                <SidebarPosterWall posters={sidebarPosters} />
+              </div>
             </motion.div>
           </motion.div>
         </div>
