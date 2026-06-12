@@ -6,6 +6,7 @@ import ShieldAlert from "../components/icons/shield-check";
 import Sparkles from "../components/icons/sparkles-icon";
 import Wrench from "../components/icons/gear-icon";
 import ArrowUpRight from "../components/icons/external-link-icon";
+import { Github } from "lucide-react";
 import { motion } from "motion/react";
 
 import { FeedbackChannelForm } from "../components/FeedbackChannelForm";
@@ -77,6 +78,17 @@ const aboutData = [
     bg: "bg-sky-500/10",
     summary: "查看网站每次功能调整、部署修复和后台优化的更新履历。",
     body: "更新记录页会沉淀近期网站迭代，包括首页文案、放映会、杂谈回、图库、用户系统、监控和部署相关改动，方便回看每一轮做了什么。"
+  },
+  {
+    id: "github",
+    number: "07",
+    title: "开源 仓库",
+    shortTitle: "GitHub",
+    icon: Github,
+    color: "text-zinc-500",
+    bg: "bg-zinc-500/10",
+    summary: "本项目已在 GitHub 完全开源，欢迎交流与 Star ⭐️",
+    body: "如果你对本站的开发架构、UI 交互或实现细节感兴趣，可以访问代码仓库。也欢迎提交 Issue 或 PR 共同完善！"
   }
 ];
 
@@ -191,6 +203,29 @@ export function About() {
               </div>
               <p className="mt-3 text-lg font-bold text-foreground">{aboutData[5].summary}</p>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{aboutData[5].body}</p>
+           </div>
+        </motion.a>
+
+        {/* Card 7: GitHub 开源仓库 - Spans full width on large, 2 cols on medium */}
+        <motion.a href="https://github.com/hoangmaituan882-hue/anysoul-website" target="_blank" rel="noopener noreferrer" initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.5, delay:0.6}} className="group relative col-span-1 flex flex-col md:flex-row md:items-center justify-between overflow-hidden rounded-[2rem] border border-border bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg md:col-span-2 lg:col-span-4 md:p-8">
+           <div className="absolute right-0 top-0 size-64 rounded-full bg-zinc-500/10 blur-3xl transition-colors group-hover:bg-zinc-500/20" />
+           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6 w-full">
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-zinc-500/10 text-zinc-500 backdrop-blur group-hover:scale-110 transition-transform">
+                <Github className="size-8" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-black tracking-tight sm:text-3xl">开源仓库</h2>
+                  <span className="rounded-full bg-zinc-500/10 px-2 py-0.5 text-xs font-black text-zinc-500">07</span>
+                </div>
+                <p className="mt-3 text-lg font-bold text-foreground">{aboutData[6].summary}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground max-w-3xl">{aboutData[6].body}</p>
+              </div>
+              <div className="mt-6 md:mt-0 md:flex shrink-0 items-center justify-center self-start md:self-center">
+                 <div className="flex items-center gap-2 rounded-full bg-zinc-100 dark:bg-zinc-800/50 px-4 py-2 text-sm font-bold text-zinc-600 dark:text-zinc-300 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800 transition-colors">
+                   View on GitHub <ArrowUpRight className="size-4" />
+                 </div>
+              </div>
            </div>
         </motion.a>
 
