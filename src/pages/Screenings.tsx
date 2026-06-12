@@ -329,6 +329,73 @@ function priorityBadgeClass(priority?: string) {
   return "border-blue-500/20 bg-blue-500/10 text-blue-600";
 }
 
+function TimelineWaveScrollbar({ scrollRef, dataLength }: { scrollRef: React.RefObject<HTMLDivElement>, dataLength: number }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [hoverIndex, setHoverIndex] = useState<number>(-1);
+  const [progressIndex, setProgressIndex] = useState(0);
+  const barsCount = 60;
+
+  const updateScroll = (ratio: number) => {
+    if (scrollRef.current) {
+      const maxScroll = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
+      if (maxScroll <= 0) return;
+      scrollRef.current.scrollTo({ left: ratio * maxScroll, behavior: 'smooth' });
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => handlePointerMove(e);
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const ratio = x / rect.width;
+    setHoverIndex(Math.floor(ratio * (barsCount - 1)));
+    updateScroll(ratio);
+  };
+  const handlePointerLeave = () => setHoverIndex(-1);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        const maxScroll = scrollWidth - clientWidth;
+        if (maxScroll <= 0) { setProgressIndex(0); return; }
+        const ratio = scrollLeft / maxScroll;
+        setProgressIndex(Math.max(0, Math.min(barsCount - 1, Math.round(ratio * (barsCount - 1)))));
+      }
+    };
+    handleScroll();
+    const el = scrollRef.current;
+    if (el) { el.addEventListener("scroll", handleScroll, { passive: true }); window.addEventListener("resize", handleScroll); }
+    return () => { if (el) el.removeEventListener("scroll", handleScroll); window.removeEventListener("resize", handleScroll); };
+  }, [scrollRef, barsCount]);
+
+  return (
+    <div 
+      ref={trackRef}
+      className="flex items-center justify-between w-[90vw] md:w-[600px] max-w-full h-12 py-2 cursor-pointer touch-none pointer-events-auto"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+    >
+      {Array.from({ length: barsCount }).map((_, i) => {
+        const dist = hoverIndex !== -1 ? Math.abs(hoverIndex - i) : Math.abs(progressIndex - i);
+        let h = 8;
+        let opacity = 0.3;
+        if (dist === 0) { h = 32; opacity = 1; }
+        else if (dist === 1) { h = 24; opacity = 0.8; }
+        else if (dist === 2) { h = 16; opacity = 0.6; }
+        else if (dist === 3) { h = 12; opacity = 0.4; }
+        return (
+          <div key={i} className="flex flex-col justify-center items-center h-full pointer-events-none px-[1px]">
+            <div style={{ height: `${h}px`, opacity }} className="w-1.5 md:w-2 bg-primary rounded-full transition-all duration-300 ease-out shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Screenings() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useLocalStorage<'all' | 'todo' | 'history'>('screenings-activeTab', 'all');
@@ -354,6 +421,7 @@ export function Screenings() {
   const [localWatchedSourceIds, setLocalWatchedSourceIds] = useLocalStorage<string[]>("screenings-local-watched-source-ids", []);
   const [syncedWatchedSourceIds, setSyncedWatchedSourceIds] = useState<string[]>([]);
   const [showTimeline, setShowTimeline] = useLocalStorage('screenings-showTimeline', true);
+  const [isTimelinePosterOnly, setIsTimelinePosterOnly] = useLocalStorage('screenings-timeline-poster-only', true);
   const [showHistory, setShowHistory] = useLocalStorage('screenings-showHistory', true);
   const [activeTimelineCard, setActiveTimelineCard] = useState<string | null>(null);
   const nextScreening = useContent<ScreeningNextContent>("screenings.next", defaultScreeningsNext);
@@ -1130,6 +1198,12 @@ export function Screenings() {
               >
                 隐藏
               </button>
+              <button
+                onClick={() => setIsTimelinePosterOnly(!isTimelinePosterOnly)}
+                className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all ml-1", isTimelinePosterOnly ? "bg-blue-500 text-white shadow-sm" : "text-muted-foreground hover:text-foreground")}
+              >
+                海报模式
+              </button>
             </div>
           </div>
           {showTimeline && (
@@ -1264,7 +1338,7 @@ export function Screenings() {
                           <div className={cn("absolute inset-0 bg-gradient-to-br to-transparent pointer-events-none opacity-0 group-hover/card:opacity-100 transition-opacity duration-300", style.bgGradient)} />
                           
                           {enriched.posterUrl ? (
-                            <div className="relative w-full aspect-[21/9] md:aspect-[16/7] rounded-[1.25rem] overflow-hidden mb-3">
+                            <div className={cn("relative w-full rounded-[1.25rem] overflow-hidden transition-all", isTimelinePosterOnly && !isActive ? "aspect-[21/9] md:aspect-[16/7] mb-0" : "aspect-[21/9] md:aspect-[16/7] mb-3")}>
                               <img src={enriched.posterUrl} alt={enriched.title} className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700 ease-out" />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
@@ -1291,12 +1365,14 @@ export function Screenings() {
                             </div>
                           )}
 
-                          <div className={cn("flex flex-col gap-2 relative z-10", enriched.posterUrl ? "px-3.5 pb-3.5" : "px-3.5 pb-3.5")}>
-                            <h4 className={cn("text-base font-bold text-foreground transition-colors", style.titleHover)}>{enriched.title}</h4>
-                            {enriched.description && (
-                              <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{enriched.description}</p>
-                            )}
-                          </div>
+                          {(!isTimelinePosterOnly || isActive) && (
+                            <div className={cn("flex flex-col gap-2 relative z-10", enriched.posterUrl ? "px-3.5 pb-3.5" : "px-3.5 pb-3.5")}>
+                              <h4 className={cn("text-base font-bold text-foreground transition-colors", style.titleHover)}>{enriched.title}</h4>
+                              {enriched.description && (
+                                <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{enriched.description}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     );
@@ -1320,19 +1396,14 @@ export function Screenings() {
                     </div>
 
                     <div className="absolute top-[60px] flex flex-col items-center whitespace-nowrap z-20 transition-transform duration-300 group-hover/node:translate-y-1">
-                      <span className={cn("text-lg font-bold mb-1 transition-colors duration-300",
-                        node.status === 'live' ? "text-red-500" :
-                        node.status === 'ended' ? "text-foreground/80" : "text-blue-500"
-                      )}>{node.title}</span>
-                      <span className="text-[11px] font-bold text-muted-foreground mb-3 tracking-widest uppercase bg-muted/50 px-2 py-0.5 rounded-sm">{node.date}</span>
-                      <span className={cn("text-[10px] font-black px-3 py-1.5 rounded-full tracking-widest uppercase transition-all duration-300 shadow-sm",
-                        node.status === 'live' ? "bg-red-500 border border-red-400 text-white shadow-red-500/30 group-hover/node:shadow-red-500/50" :
-                        node.status === 'planned' ? "bg-blue-50 dark:bg-blue-900/30 border border-blue-500/30 text-blue-600 dark:text-blue-400" :
-                        "bg-muted border border-border/50 text-muted-foreground")}>
-                        {node.status === 'live' ? (
-                           <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 animate-pulse" /> {node.statusText}</span>
-                        ) : node.statusText}
-                      </span>
+                      {(() => {
+                         const yearMatch = node.date.match(/^(\d{4})[./-]/);
+                         const year = yearMatch ? parseInt(yearMatch[1], 10) : 0;
+                         const displayDate = year >= 2026 ? node.date.substring(5) : node.date;
+                         return (
+                           <span className="text-[13px] font-bold text-muted-foreground tracking-widest uppercase bg-muted/50 px-2 py-0.5 rounded-sm">{displayDate}</span>
+                         );
+                      })()}
                     </div>
                   </div>
 
