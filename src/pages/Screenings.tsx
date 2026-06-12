@@ -1326,7 +1326,7 @@ export function Screenings() {
           {/* Scroll Container */}
           <div
             ref={scrollContainerRef}
-            className="relative flex items-center overflow-x-auto no-scrollbar scroll-smooth py-64 px-4 md:px-12"
+            className="relative flex items-center overflow-x-auto no-scrollbar scroll-smooth h-[600px] md:h-[750px] px-4 md:px-12"
             style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }}
           >
             {/* Horizontal Line Background */}
@@ -1413,8 +1413,8 @@ export function Screenings() {
                         onClick={() => setActiveTimelineCard(isActive ? null : cardId)}
                         transition={{ type: "spring", stiffness: 300 }}
                         className={cn(
-                          "absolute flex flex-col gap-4 items-center w-[260px] md:w-[300px]",
-                          isTop ? "bottom-[64px]" : "top-[64px]",
+                          "absolute flex flex-col gap-4 items-center w-[150px] md:w-[180px]",
+                          isTop ? "bottom-[48px]" : "top-[48px]",
                           isActive ? "z-[60]" : "z-10 hover:z-[50]"
                         )}
                         style={{
@@ -1457,9 +1457,9 @@ export function Screenings() {
 
                           {(!isTimelinePosterOnly || isActive) && (
                             <div className={cn("flex flex-col gap-2 relative z-10", enriched.posterUrl ? "px-3.5 pb-3.5" : "px-3.5 pb-3.5")}>
-                              <h4 className={cn("text-base font-bold text-foreground transition-colors", style.titleHover)}>{enriched.title}</h4>
+                              <h4 className={cn("text-sm md:text-base font-bold text-foreground transition-colors line-clamp-2", style.titleHover)}>{enriched.title}</h4>
                               {enriched.description && (
-                                <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{enriched.description}</p>
+                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{enriched.description}</p>
                               )}
                             </div>
                           )}
