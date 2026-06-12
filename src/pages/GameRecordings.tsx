@@ -277,7 +277,6 @@ export function GameRecordings() {
                   </span>
                   <span className="rounded-full bg-background/80 px-3 py-1 text-xs font-black text-muted-foreground backdrop-blur">{featuredRecording.date}</span>
                 </div>
-                <h2 className="max-w-2xl text-3xl font-black leading-tight tracking-tight md:text-5xl">{featuredRecording.title}</h2>
                 <h2 className="max-w-2xl text-2xl font-black leading-tight tracking-tight sm:text-3xl md:text-5xl">{featuredRecording.title}</h2>
                 <p className="mt-3 max-w-2xl text-sm font-bold leading-relaxed text-muted-foreground md:text-base">{featuredRecording.summary}</p>
                 <div className="mt-5 flex flex-wrap gap-2">
