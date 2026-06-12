@@ -29,7 +29,7 @@ export function Hero() {
   });
   
   const { scrollY } = useScroll();
-  const bgOpacity = useTransform(scrollY, [0, 500], [0, 1]);
+  const bgOpacity = useTransform(scrollY, [0, 150], [0, 1]);
   
   const draw = {
     hidden: (custom: { color: string }) => ({ pathLength: 0, opacity: 0, stroke: custom.color }),
@@ -85,7 +85,7 @@ export function Hero() {
         style={{ opacity: bgOpacity }}
       >
         <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center bg-fixed" />
-        <div className="absolute inset-0 bg-background/60 dark:bg-background/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-background/60 dark:bg-background/80" />
       </motion.div>
 
       <div className="relative z-10 flex flex-col items-center text-center w-full max-w-4xl mx-auto space-y-4 mt-8 mb-20">
@@ -187,163 +187,6 @@ export function Hero() {
         >
           {hero.subtitle}
         </motion.p>
-      </div>
-
-      {/* Mock Browser Window */}
-      <div 
-        className="relative z-10 w-full max-w-6xl mx-auto drop-shadow-2xl"
-      >
-        <div className="relative h-[600px] md:h-[650px] w-full overflow-hidden bg-[#f5f5f5] dark:bg-[#1a1a1a] border border-border/40 rounded-xl shadow-[0_8px_40px_rgb(0,0,0,0.08)] flex flex-col">
-          {/* Browser Header */}
-          <div className="flex h-12 items-center border-b border-border/40 bg-white dark:bg-[#222] px-4 gap-3 z-20 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="size-3 rounded-full bg-[#ff5f56]" />
-              <div className="size-3 rounded-full bg-[#ffbd2e]" />
-              <div className="size-3 rounded-full bg-[#27c93f]" />
-            </div>
-            <div className="mx-auto flex items-center justify-center text-[13px] text-muted-foreground">
-              {hero.browserTitle}
-            </div>
-            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mr-2">
-              <div className="size-2 rounded-full bg-[#27c93f]" />
-              {hero.browserStatus1}
-            </div>
-          </div>
-          
-          {/* Browser Content container (3 Columns) */}
-          <div className="flex flex-col md:flex-row flex-1 p-4 gap-4 overflow-y-auto md:overflow-hidden">
-            
-            {/* Column 1: Chat Mock */}
-            <div className="flex-[4] min-h-[350px] md:min-h-0 flex flex-col bg-white dark:bg-[#222] border border-border/40 rounded-xl overflow-hidden shadow-sm relative">
-               <div className="h-12 border-b border-border/40 flex items-center justify-between px-4 shrink-0">
-                 <div className="flex items-center gap-2">
-                    <svg className="size-5" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="4" width="16" height="16" rx="4" fill="#a4c639" transform="rotate(-10 12 12)" />
-                      <circle cx="11.5" cy="11.5" r="3.5" fill="#1a1a1a" />
-                      <circle cx="11.5" cy="11.5" r="1.5" fill="#a4c639" />
-                    </svg>
-                    <span className="font-semibold text-sm">AnySoul</span>
-                 </div>
-                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <div className="size-1.5 rounded-full bg-[#27c93f]" /> {hero.browserStatus2}
-                 </div>
-               </div>
-               
-               <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
-                 {/* User bubble */}
-                 <div className="flex justify-end">
-                   <div className="bg-[#cfdb7d] text-[#1a1a1a] p-3 px-4 rounded-2xl rounded-tr-sm text-[13px] max-w-[85%] shadow-sm">
-                      {hero.chatMsg1}
-                   </div>
-                 </div>
-                 
-                 {/* Bot bubble */}
-                 <div className="flex justify-start relative group">
-                   <div className="bg-white dark:bg-[#333] border border-border/60 p-3 px-4 rounded-2xl rounded-tl-sm text-[13px] max-w-[90%] shadow-sm leading-relaxed">
-                      {hero.chatMsg2}
-                   </div>
-                 </div>
-
-                 {/* User bubble */}
-                 <div className="flex justify-end">
-                   <div className="bg-[#cfdb7d] text-[#1a1a1a] p-3 px-4 rounded-2xl rounded-tr-sm text-[13px] max-w-[85%] shadow-sm">
-                      {hero.chatMsg3}
-                   </div>
-                 </div>
-
-                 {/* Thinking state */}
-                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2 px-1">
-                    <span className="animate-spin duration-3000">↻</span> {hero.chatThinking}
-                 </div>
-               </div>
-
-               {/* Left sidebar nav icons (overlay on left edge) */}
-               <div className="absolute left-0 top-14 bottom-0 w-12 border-r border-border/40 bg-white/50 dark:bg-[#222]/50 backdrop-blur flex flex-col items-center py-4 gap-6 z-10">
-                 <div className="size-8 rounded-full bg-[#e8f0d1] flex items-center justify-center">
-                    <svg className="size-5" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="4" width="16" height="16" rx="4" fill="#a4c639" transform="rotate(-10 12 12)" />
-                      <circle cx="11.5" cy="11.5" r="3.5" fill="#1a1a1a" />
-                      <circle cx="11.5" cy="11.5" r="1.5" fill="#a4c639" />
-                    </svg>
-                 </div>
-                 <div className="size-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-black/5 cursor-pointer transition-colors">
-                    <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                 </div>
-                 <div className="size-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-black/5 cursor-pointer transition-colors">
-                    <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-                 </div>
-               </div>
-               
-               {/* Padding for left sidebar */}
-               <style dangerouslySetInnerHTML={{__html: `
-                 .flex-1.p-4 > div { margin-left: 2.5rem; }
-               `}} />
-            </div>
-
-            {/* Column 2: Events */}
-            <div className="flex-[3] min-h-[280px] md:min-h-0 flex flex-col gap-4">
-              <div className="h-[280px] bg-white dark:bg-[#222] border border-border/40 rounded-xl overflow-hidden shadow-sm flex flex-col">
-                <div className="h-10 border-b border-border/40 flex items-center px-4 shrink-0 text-sm font-semibold gap-1.5">
-                  <span className="text-[16px]">⚡️</span> {hero.eventsTitle}
-                </div>
-                <div className="p-4 flex flex-col gap-3 text-[13px] text-muted-foreground/80">
-                  <div className="flex items-center gap-2">
-                    <div className="size-1 rounded-full bg-border" />
-                    {hero.events[0]}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="size-1 rounded-full bg-border" />
-                    {hero.events[1]}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="size-1 rounded-full bg-border" />
-                    {hero.events[2]}
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 bg-white dark:bg-[#222] border border-border/40 rounded-xl overflow-hidden shadow-sm flex flex-col">
-                {/* Empty bottom left block based on image */}
-              </div>
-            </div>
-
-            {/* Column 3: Activity & Memory */}
-            <div className="flex-[4] min-h-[200px] md:min-h-0 bg-white dark:bg-[#222] border border-border/40 rounded-xl overflow-hidden shadow-sm flex flex-col relative">
-               <div className="h-10 border-b border-border/40 flex items-center px-4 shrink-0 text-[13px] gap-4">
-                  <div className="font-semibold text-[#a4c639] h-full flex items-center border-b-2 border-[#a4c639] cursor-pointer">{hero.activityTitle}</div>
-                  <div className="text-muted-foreground cursor-pointer hover:text-foreground">{hero.activityMemory}</div>
-               </div>
-               
-               <div className="p-4 flex flex-col gap-3">
-                 <div className="border border-border/40 rounded-lg p-3 flex items-start gap-3">
-                   <div className="size-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                     <svg className="size-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                   </div>
-                   <div className="flex flex-col gap-1">
-                      <div className="text-[13px] font-medium">{hero.activityItem1}</div>
-                      <div className="text-[12px] text-muted-foreground">{hero.activityItem1Desc}</div>
-                   </div>
-                 </div>
-               </div>
-
-               {/* Cute bear coming up from the bottom right */}
-               <div className="absolute bottom-[-10px] right-2 transform translate-x-4 pointer-events-none opacity-90 transition-opacity">
-                 <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                   {/* This is a simple approximation of the bear ears and head */}
-                   <path d="M20 50 C20 30, 40 10, 60 10 C80 10, 100 30, 100 50 L100 90 L20 90 Z" fill="#d8cdba" stroke="#222" strokeWidth="3"/>
-                   {/* Left Ear */}
-                   <circle cx="30" cy="20" r="15" fill="#d8cdba" stroke="#222" strokeWidth="3" />
-                   <circle cx="30" cy="20" r="8" fill="#e8ddd4" stroke="#222" strokeWidth="2" />
-                   {/* Right Ear */}
-                   <circle cx="90" cy="20" r="15" fill="#d8cdba" stroke="#222" strokeWidth="3" />
-                   <circle cx="90" cy="20" r="8" fill="#e8ddd4" stroke="#222" strokeWidth="2" />
-                   {/* Head overlay to cover ear bottoms */}
-                   <path d="M20 50 C20 20, 100 20, 100 50 L100 90 L20 90 Z" fill="#d8cdba" stroke="#222" strokeWidth="3"/>
-                 </svg>
-               </div>
-            </div>
-
-          </div>
-        </div>
       </div>
     </section>
   );
