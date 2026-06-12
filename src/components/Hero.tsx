@@ -1,6 +1,6 @@
 import ArrowRight from "./icons/right-chevron";
 
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useContent } from "../content/useContent";
 import type { HomeHeroContent } from "../content/types";
@@ -27,9 +27,6 @@ export function Hero() {
     activityItem1: t("hero.activity.item1"),
     activityItem1Desc: t("hero.activity.item1.desc")
   });
-  
-  const { scrollY } = useScroll();
-  const bgOpacity = useTransform(scrollY, [0, 150], [0, 1]);
   
   const draw = {
     hidden: (custom: { color: string }) => ({ pathLength: 0, opacity: 0, stroke: custom.color }),
@@ -79,14 +76,13 @@ export function Hero() {
 
   return (
     <section className="relative min-h-[90vh] flex flex-col justify-center items-center w-full">
-      {/* Scroll-triggered Background Image */}
-      <motion.div 
+      {/* Background Image */}
+      <div 
         className="absolute inset-0 z-0 overflow-hidden"
-        style={{ opacity: bgOpacity }}
       >
         <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center bg-fixed" />
         <div className="absolute inset-0 bg-background/60 dark:bg-background/80" />
-      </motion.div>
+      </div>
 
       <div className="relative z-10 flex flex-col items-center text-center w-full max-w-4xl mx-auto px-4 md:px-8 py-20 space-y-4 mt-8 mb-20">
         
