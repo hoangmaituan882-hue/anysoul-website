@@ -460,7 +460,7 @@ export function Screenings() {
   const [watchedStatus, setWatchedStatus] = useState("");
   const [localWatchedSourceIds, setLocalWatchedSourceIds] = useLocalStorage<string[]>("screenings-local-watched-source-ids", []);
   const [syncedWatchedSourceIds, setSyncedWatchedSourceIds] = useState<string[]>([]);
-  const [showTimeline, setShowTimeline] = useLocalStorage('screenings-showTimeline', true);
+  const [showTimeline, setShowTimeline] = useLocalStorage('screenings-showTimeline', false);
   const [isTimelinePosterOnly, setIsTimelinePosterOnly] = useLocalStorage('screenings-timeline-poster-only', true);
   const [showHistory, setShowHistory] = useLocalStorage('screenings-showHistory', true);
   const [activeTimelineCard, setActiveTimelineCard] = useState<string | null>(null);
