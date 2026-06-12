@@ -1719,7 +1719,14 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
           <div className="mt-4">
             <TextAreaField label="主题说明" value={next.theme} onChange={(value) => setNext({ ...next, theme: value })} placeholder="这次为什么播这些电影" />
           </div>
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={() => { setNext({ ...next, movies: [], status: "draft", statusText: "待定", title: "下周放映待定", theme: "排片未确定，敬请期待。" }); void publishNextNow(); }}
+              disabled={readOnly || isSaving}
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm font-bold text-amber-600 transition-colors hover:bg-amber-500/15 disabled:opacity-50"
+            >
+              <CalendarClock className="size-4" /> 设为待定并发布
+            </button>
             <button onClick={publishNextNow} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
               <Save className="size-4" /> 保存并发布下周放映
             </button>

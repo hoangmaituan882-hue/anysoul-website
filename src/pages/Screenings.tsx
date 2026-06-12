@@ -786,8 +786,17 @@ export function Screenings() {
                       <span className="text-[11px] bg-white/70 dark:bg-black/20 text-rose-600 dark:text-rose-400 font-medium px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm"><Star className="w-3 h-3 fill-current" /> {nextScreening.statusText}</span>
                   </div>
                   <div className="my-2 relative z-10">
-                    <h4 className="text-2xl font-bold text-foreground">{automatedStats.nextCountdownLabel}</h4>
-                    <p className="text-sm font-medium text-foreground/70 mt-1.5 line-clamp-1">{automatedStats.nextMovieSummary}</p>
+                    {nextScreening.status === "draft" && nextScreening.movies.length === 0 ? (
+                      <>
+                        <h4 className="text-2xl font-bold text-foreground">下周放映待定</h4>
+                        <p className="text-sm font-medium text-foreground/70 mt-1.5">排片未确定，敬请期待。</p>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="text-2xl font-bold text-foreground">{automatedStats.nextCountdownLabel}</h4>
+                        <p className="text-sm font-medium text-foreground/70 mt-1.5 line-clamp-1">{automatedStats.nextMovieSummary}</p>
+                      </>
+                    )}
                     <p className="text-xs text-foreground/50 mt-1">{nextScreening.movies.length} 部已绑定片源 · {nextScreening.startsAt}</p>
                   </div>
                   <div className="mt-auto flex justify-end relative z-10">

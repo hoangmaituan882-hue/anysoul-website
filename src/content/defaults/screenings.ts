@@ -12,7 +12,7 @@ export const defaultScreeningsNext: ScreeningNextContent = {
   title: "暂无放映安排",
   theme: "后台发布后显示。",
   status: "draft",
-  statusText: "待同步",
+  statusText: "待定",
   startsAt: "",
   timezone: "Asia/Shanghai",
   reservationCount: 0,
