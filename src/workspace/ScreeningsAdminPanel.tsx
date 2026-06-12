@@ -13,7 +13,6 @@ import Settings from "../components/icons/gear-icon";
 import Sparkles from "../components/icons/sparkles-icon";
 import Trash2 from "../components/icons/trash-icon";
 import X from "../components/icons/x-icon";
-import ChevronDown from "../components/icons/down-chevron";
 import { OptionCapsule } from '../components/OptionCapsule';
 import { useEffect, useMemo, useState } from "react";
 
@@ -447,13 +446,10 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
   const { authFetch } = useAuth();
   const [activeMode, setActiveMode] = useState<"next" | "library">("next");
   const [next, setNext] = useState<ScreeningNextContent>(defaultScreeningsNext);
-  const [library, setLibrary] = useState<ScreeningLibraryContent>(defaultScreeningLibrary);
-
+  const [library, setLibrary] = useState<ScreeningLibraryContent>(defaultScreeningLibrary);
   const [schedule, setSchedule] = useState<ScreeningScheduleContent>(defaultScreeningsSchedule);
   const [status, setStatus] = useState("正在加载下周放映配置...");
   const [isSaving, setIsSaving] = useState(false);
-  const [isPageCopyCollapsed, setIsPageCopyCollapsed] = useState(false);
-  const [isScraperCollapsed, setIsScraperCollapsed] = useState(false);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState("all");
   const [libraryStatusFilter, setLibraryStatusFilter] = useState("all");
@@ -541,8 +537,7 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       const data = await fetchPublishedContent([SCREENINGS_NEXT_KEY, SCREENINGS_LIBRARY_KEY, SCREENINGS_SCHEDULE_KEY]);
       setEntryMeta({});
       setNext(normalizeNext(data.content[SCREENINGS_NEXT_KEY]));
-      setLibrary(normalizeLibrary(data.content[SCREENINGS_LIBRARY_KEY]));
-
+      setLibrary(normalizeLibrary(data.content[SCREENINGS_LIBRARY_KEY]));
       setSchedule(normalizeSchedule(data.content[SCREENINGS_SCHEDULE_KEY]));
       setStatus("只读模式已加载前台已发布的放映会内容，登录管理员后可编辑。");
       return;
@@ -554,13 +549,11 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     const data = await res.json() as AdminContentResponse;
     const trackedEntries = data.entries.filter((entry) => [SCREENINGS_NEXT_KEY, SCREENINGS_LIBRARY_KEY, SCREENINGS_SCHEDULE_KEY].includes(entry.key));
     const draft = data.entries.find((entry) => entry.key === SCREENINGS_NEXT_KEY)?.draft;
-    const libraryDraft = data.entries.find((entry) => entry.key === SCREENINGS_LIBRARY_KEY)?.draft;
-
+    const libraryDraft = data.entries.find((entry) => entry.key === SCREENINGS_LIBRARY_KEY)?.draft;
     const scheduleDraft = data.entries.find((entry) => entry.key === SCREENINGS_SCHEDULE_KEY)?.draft;
     setEntryMeta(Object.fromEntries(trackedEntries.map((entry) => [entry.key, { version: entry.version, updatedAt: entry.updatedAt }])));
     setNext(normalizeNext(draft));
-    setLibrary(normalizeLibrary(libraryDraft));
-
+    setLibrary(normalizeLibrary(libraryDraft));
     setSchedule(normalizeSchedule(scheduleDraft));
     setStatus("已同步下周放映配置、片源库和排播周期");
   };
@@ -1335,23 +1328,17 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
         </div>
       </div>
 
-      <div className="rounded-3xl border border-border bg-background p-5 shadow-sm transition-all">
+      <div className="rounded-3xl border border-border bg-background p-5 shadow-sm">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3 cursor-pointer select-none group" onClick={() => setIsPageCopyCollapsed(!isPageCopyCollapsed)}>
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
-              <ChevronDown className={cn("size-4 transition-transform duration-200", isPageCopyCollapsed ? "-rotate-90" : "rotate-0")} />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-foreground">放映页面文案</h3>
-              <p className="text-sm text-muted-foreground">只控制前台放映页的标题、说明和封面；自动记录情报、历史导入和抓取结果保持只读。</p>
-            </div>
+          <div>
+            <h3 className="text-lg font-black text-foreground">放映页面文案</h3>
+            <p className="text-sm text-muted-foreground">只控制前台放映页的标题、说明和封面；自动记录情报、历史导入和抓取结果保持只读。</p>
           </div>
-          <button onClick={publishPageCopyNow} disabled={readOnly || isSaving} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
+          <button onClick={publishPageCopyNow} disabled={readOnly || isSaving} className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50">
             <Save className="size-4" /> 保存并发布页面文案
           </button>
         </div>
-        {!isPageCopyCollapsed && (
-          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="放映页标题" value={next.title} onChange={(value) => setNext({ ...next, title: value })} placeholder="例如：周末放映会" />
             <Field label="主题 / 副标题" value={next.theme} onChange={(value) => setNext({ ...next, theme: value })} placeholder="例如：本周动画与电影专场" />
@@ -1368,28 +1355,15 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
               自动情报：{schedule.weeks.length} 个排播周 / {library.items.length} 个片源 / {missingFieldItems.length} 个待补全项。这里只读展示，不提供编辑。
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {activeMode === "library" ? (
-        <div className="rounded-3xl border border-border bg-background p-5 shadow-sm transition-all">
-          <div className="mb-4 flex items-center gap-3 cursor-pointer select-none group" onClick={() => setIsScraperCollapsed(!isScraperCollapsed)}>
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
-              <ChevronDown className={cn("size-4 transition-transform duration-200", isScraperCollapsed ? "-rotate-90" : "rotate-0")} />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-foreground">资源刮削与录入</h3>
-              <p className="text-sm text-muted-foreground">通过 API 自动获取元数据，或手动新增条目到片源库。</p>
-            </div>
-          </div>
-          
-          {!isScraperCollapsed && (
-            <div className="relative mb-5 rounded-3xl border border-border bg-card shadow-sm">
-              <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
-                <div className="absolute -right-16 -top-20 size-48 rounded-full bg-primary/10 blur-3xl" />
-              </div>
-              <div className="relative grid gap-4 p-4 md:grid-cols-[1fr_1fr_150px_150px_auto] md:items-end">
-                <div className="relative md:col-span-5">
+        <div className="rounded-3xl border border-border bg-background p-5 shadow-sm">
+          <div className="mb-5 overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+            <div className="relative grid gap-4 p-4 md:grid-cols-[1fr_1fr_150px_150px_auto] md:items-end">
+              <div className="absolute -right-16 -top-20 size-48 rounded-full bg-primary/10 blur-3xl" />
+              <div className="relative md:col-span-5">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
                     <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-black tracking-widest text-primary">
@@ -1438,9 +1412,9 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                 <span className="text-[12px] font-bold text-muted-foreground">媒体类型</span>
                 <OptionCapsule
         value={scrapeMediaType}
-        onChange={(val) => setScrapeMediaType((val as any) || "auto")}
+        onChange={(val) => setScrapeMediaType(val | "auto")}
         options={[{ value: "auto", label: "自动识别" }]}
-        className="h-10 min-w-0 text-sm"
+        className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium transition-colors"
       />
               </label>
               <label className="flex flex-col gap-1.5">
