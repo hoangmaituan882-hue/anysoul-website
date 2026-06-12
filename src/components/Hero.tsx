@@ -93,7 +93,7 @@ export function Hero() {
         animate={{ opacity: bgRevealed ? 1 : 0 }}
         transition={{ duration: 0.15 }}
       >
-        <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center bg-scroll md:bg-fixed" />
+        <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-[position:center_10%] xl:bg-center bg-no-repeat bg-scroll xl:bg-fixed" />
       </motion.div>
 
       <div className="relative z-10 flex flex-col items-center text-center w-full max-w-4xl mx-auto px-4 md:px-8 py-20 space-y-4 mt-8 mb-20">
