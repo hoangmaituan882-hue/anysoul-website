@@ -1,3 +1,4 @@
+import React from 'react';
 import ChevronLeft from "../components/icons/right-chevron";
 import ChevronRight from "../components/icons/right-chevron";
 import Star from "../components/icons/star-icon";
@@ -1338,7 +1339,7 @@ export function Screenings() {
                         transition={{ type: "spring", stiffness: 300 }}
                         className={cn(
                           "absolute flex flex-col gap-4 items-center w-[260px] md:w-[300px]",
-                          isTop ? "bottom-[64px]" : "top-[176px]",
+                          isTop ? "bottom-[64px]" : "top-[64px]",
                           isActive ? "z-[60]" : "z-10 hover:z-[50]"
                         )}
                         style={{
@@ -1352,7 +1353,7 @@ export function Screenings() {
                           <div className={cn("absolute inset-0 bg-gradient-to-br to-transparent pointer-events-none opacity-0 group-hover/card:opacity-100 transition-opacity duration-300", style.bgGradient)} />
                           
                           {enriched.posterUrl ? (
-                            <div className={cn("relative w-full rounded-[1.25rem] overflow-hidden transition-all", isTimelinePosterOnly && !isActive ? "aspect-[21/9] md:aspect-[16/7] mb-0" : "aspect-[21/9] md:aspect-[16/7] mb-3")}>
+                            <div className={cn("relative w-full rounded-[1.25rem] overflow-hidden transition-all shadow-sm", isTimelinePosterOnly && !isActive ? "aspect-[2/3] mb-0" : "aspect-[2/3] mb-3")}>
                               <img src={enriched.posterUrl} alt={enriched.title} className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700 ease-out" />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
