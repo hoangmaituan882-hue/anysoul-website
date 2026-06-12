@@ -1265,7 +1265,7 @@ export function Screenings() {
                       ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
               
               {/* Back Face (Poster Wall) */}
               <motion.div
