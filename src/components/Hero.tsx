@@ -1,6 +1,7 @@
 import ArrowRight from "./icons/right-chevron";
 
-import { motion } from "motion/react";
+import { useState } from "react";
+import { motion, useScroll, useMotionValueEvent } from "motion/react";
 import { useThemeLanguage } from "../contexts/ThemeLanguageContext";
 import { useContent } from "../content/useContent";
 import type { HomeHeroContent } from "../content/types";
@@ -28,6 +29,15 @@ export function Hero() {
     activityItem1Desc: t("hero.activity.item1.desc")
   });
   
+  const [bgRevealed, setBgRevealed] = useState(false);
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    if (!bgRevealed && latest > 150) {
+      setBgRevealed(true);
+    }
+  });
+
   const draw = {
     hidden: (custom: { color: string }) => ({ pathLength: 0, opacity: 0, stroke: custom.color }),
     visible: (custom: { delay: number; dur?: number; color: string }) => ({
@@ -76,13 +86,16 @@ export function Hero() {
 
   return (
     <section className="relative min-h-[90vh] flex flex-col justify-center items-center w-full">
-      {/* Background Image */}
-      <div 
+      {/* Scroll-triggered Background Image */}
+      <motion.div 
         className="absolute inset-0 z-0 overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: bgRevealed ? 1 : 0 }}
+        transition={{ duration: 0.15 }}
       >
         <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center bg-fixed" />
         <div className="absolute inset-0 bg-background/60 dark:bg-background/80" />
-      </div>
+      </motion.div>
 
       <div className="relative z-10 flex flex-col items-center text-center w-full max-w-4xl mx-auto px-4 md:px-8 py-20 space-y-4 mt-8 mb-20">
         
