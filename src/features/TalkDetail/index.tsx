@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../../lib/utils";
-
+import { WaveScrollbar } from "./WaveScrollbar";
 import { FeedbackModal } from "./FeedbackModal";
 
 export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void, t: any }) {
@@ -25,7 +25,7 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
 
   const transcriptData = talk.transcript || [
     { time: "00:00", speaker: "主持人：", text: "大家晚上好，欢迎来到本周的杂谈回，今天我们也是请到了两边非常重量级的嘉宾..." },
-    { time: "05:30", speaker: "嘉宾1�?, text: "哈哈，其实也没有那么夸张啦，不过这季的新番确实有很多值得吐槽的地方�? }
+    { time: "05:30", speaker: "嘉宾1：", text: "哈哈，其实也没有那么夸张啦，不过这季的新番确实有很多值得吐槽的地方。" }
   ];
 
   const matchedIndices = transcriptData.map((d: any, i: number) => (searchQuery && d.text.toLowerCase().includes(searchQuery.toLowerCase())) ? i : -1).filter((i: number) => i !== -1);
@@ -162,24 +162,25 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                  {isEditMode ? (
                    <div className="flex items-center gap-1">
                      <input type="text" defaultValue={talk.animeMentions || '5'} className="w-16 text-2xl font-black text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
-                     <span className="text-sm font-bold text-muted-foreground">�?/span>
+                     <span className="text-sm font-bold text-muted-foreground">部</span>
                    </div>
                  ) : (
-                   <span className="text-2xl font-black">{talk.animeMentions || '5'} <span className="text-sm font-bold text-muted-foreground">�?/span></span>
+                   <span className="text-2xl font-black">{talk.animeMentions || '5'} <span className="text-sm font-bold text-muted-foreground">部</span></span>
                  )}
                  <span className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider">动画提及</span>
                </div>
              </div>
              <div className="flex items-center justify-end gap-1.5 mt-3 text-xs text-muted-foreground font-medium">
                <Info className="size-3.5" />
-               数据统计更新�?{talk.dataUpdated || '昨天 23:59'}
+               数据统计更新于 {talk.dataUpdated || '昨天 23:59'}
              </div>
            </div>
 
            <div className="mt-8 md:mt-12 space-y-8">
              <div className="prose prose-neutral dark:prose-invert max-w-none">
                <h3 className="text-xl font-bold flex items-center gap-2 text-foreground mb-4">
-                 <FileText className="size-5 text-primary" /> 本期简�?               </h3>
+                 <FileText className="size-5 text-primary" /> 本期简述
+               </h3>
                {isEditMode ? (
                  <textarea 
                    defaultValue={talk.desc} 
@@ -199,17 +200,17 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                  </h3>
                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-bold shrink-0">
                     <RefreshCw className="size-3" />
-                    总结更新�?{talk.summaryUpdated || '今天 10:30'}
+                    总结更新于 {talk.summaryUpdated || '今天 10:30'}
                  </div>
                </div>
                {isEditMode ? (
                  <textarea 
-                   defaultValue={talk.summaryText || "本次直播深入探讨了当季热门动画的表现，并结合弹幕互动分享了许多幕后趣闻和主观评测�?} 
+                   defaultValue={talk.summaryText || "本次直播深入探讨了当季热门动画的表现，并结合弹幕互动分享了许多幕后趣闻和主观评测。"} 
                    className="w-full text-indigo-900 dark:text-indigo-200 leading-relaxed p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/50 min-h-[100px] mb-6"
                  />
                ) : (
                  <p className="text-indigo-900/80 dark:text-indigo-200/80 leading-relaxed mb-6">
-                   {talk.summaryText || "本次直播深入探讨了当季热门动画的表现，并结合弹幕互动分享了许多幕后趣闻和主观评测�?}
+                   {talk.summaryText || "本次直播深入探讨了当季热门动画的表现，并结合弹幕互动分享了许多幕后趣闻和主观评测。"}
                  </p>
                )}
                {talk.summaryBullets && talk.summaryBullets.length > 0 && (
@@ -258,7 +259,7 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
 
         </div>
 
-        <div className="xl:w-[420px] 2xl:w-[480px] shrink-0 flex flex-col gap-6 md:gap-8 mt-12 xl:mt-0 xl:sticky xl:top-24 xl:h-[calc(100vh-6rem)]">
+        <div className="xl:w-[420px] 2xl:w-[480px] shrink-0 flex flex-col gap-6 md:gap-8 mt-12 xl:mt-0">
           
           {talk.imgs && talk.imgs.length > 0 && (
             <div className="bg-card border border-border/50 rounded-[2rem] p-6 shadow-sm">
@@ -273,7 +274,7 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                      </div>
                      <div>
                        <div className="font-bold text-sm">特邀嘉宾 {idx + 1}</div>
-                       <div className="text-xs text-muted-foreground">知名动漫UP�?/ 资深漫评�?/div>
+                       <div className="text-xs text-muted-foreground">知名动漫UP主 / 资深漫评人</div>
                      </div>
                    </div>
                  ))}
@@ -281,19 +282,21 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
             </div>
           )}
 
-          <div className="bg-card border border-border/50 rounded-[2rem] shadow-sm flex flex-col flex-1 min-h-[500px] overflow-hidden">
+          <div className="bg-card border border-border/50 rounded-[2rem] shadow-sm flex flex-col flex-1 min-h-[500px]">
              <div className="p-6 border-b border-border/50">
                <div className="flex items-center justify-between mb-4">
                  <h3 className="text-lg font-bold flex items-center gap-2">
-                   <List className="size-5 text-primary" /> 智能视频文字�?                 </h3>
+                   <List className="size-5 text-primary" /> 智能视频文字稿
+                 </h3>
                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground text-xs font-bold transition-all shadow-sm border border-border/50 group">
                    <UploadCloud className="size-3.5 group-hover:-translate-y-0.5 transition-transform" />
-                   上传文字�?                 </button>
+                   上传文字稿
+                 </button>
                </div>
                <div className="relative">
                  <input 
                    type="text" 
-                   placeholder="搜索逐字稿内�?.."
+                   placeholder="搜索逐字稿内容..."
                    value={searchQuery}
                    onChange={(e) => setSearchQuery(e.target.value)}
                    className="w-full pl-10 pr-4 py-3 bg-muted/50 border border-border/50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/60"
@@ -302,48 +305,40 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                </div>
              </div>
              
-             <div className="flex flex-1 overflow-hidden p-6">
+             <div className="flex flex-1 overflow-hidden p-6 gap-4">
                <div 
                  ref={transcriptRef} 
-                 className="flex-1 overflow-y-auto space-y-4 pr-4" 
+                 className="flex-1 overflow-y-auto space-y-4 pr-2" 
+                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                >
                   {transcriptData.map((item: any, idx: number) => {
                     const isMatch = matchedIndices.includes(idx);
-                    
-                    let displayTime = item.time;
-                    let displayText = item.text;
-                    const timeMatch = item.text.match(/^\[([\d:.-]+)\]\s*(.*)$/);
-                    if (timeMatch) {
-                       displayTime = timeMatch[1];
-                       displayText = timeMatch[2];
-                    }
-
                     return (
                       <div key={idx} className={cn(
                         "transcript-item p-4 rounded-2xl transition-colors", 
-                        isMatch ? "bg-orange-500/10 border border-orange-500/20" : "bg-muted/30 hover:bg-muted/50 border border-transparent"
+                        isMatch ? "bg-orange-500/10 border border-orange-500/20" : "hover:bg-muted/30 border border-transparent"
                       )}>
-                        <div className="flex gap-2 items-center mb-2">
-                          {(displayTime || timeMatch) && (
-                            <span className={cn("text-xs font-mono font-bold px-2 py-0.5 rounded-md", isMatch ? "bg-orange-500 text-white shadow-sm" : "bg-background border border-border/50 text-muted-foreground")}>
-                              {displayTime}
-                            </span>
-                          )}
-                          {item.speaker && <span className="text-sm font-bold text-foreground/80">{item.speaker}</span>}
+                        <div className="flex gap-2 items-center mb-1.5">
+                          <span className={cn("text-xs font-mono font-bold px-1.5 py-0.5 rounded", isMatch ? "bg-orange-500 text-white" : "bg-muted text-muted-foreground")}>
+                            {item.time}
+                          </span>
+                          <span className="text-sm font-bold">{item.speaker}</span>
                         </div>
-                        <p className={cn("text-sm leading-relaxed", isMatch ? "text-foreground font-medium" : "text-muted-foreground")}>
+                        <p className={cn("text-sm leading-relaxed", isMatch ? "text-foreground" : "text-muted-foreground")}>
                           {searchQuery && isMatch ? (
                             <span>
-                              {displayText.split(new RegExp(`(${searchQuery})`, 'gi')).map((part: string, i: number) => 
+                              {item.text.split(new RegExp(`(${searchQuery})`, 'gi')).map((part: string, i: number) => 
                                 part.toLowerCase() === searchQuery.toLowerCase() ? <mark key={i} className="bg-orange-500/30 text-foreground font-bold rounded-sm px-0.5">{part}</mark> : part
                               )}
                             </span>
-                          ) : displayText}
+                          ) : item.text}
                         </p>
                       </div>
                     );
                   })}
                </div>
+               
+               <WaveScrollbar scrollRef={transcriptRef} matchedIndices={matchedIndices} totalItems={transcriptData.length} />
              </div>
           </div>
 
@@ -365,7 +360,7 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
               setIsEditMode(true);
            }
         }}
-        title={isEditMode ? "上传补充内容" : "提供反馈或补�?}
+        title={isEditMode ? "上传补充内容" : "提供反馈或补充"}
       >
         {isEditMode ? (
           <>
@@ -375,7 +370,8 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
         ) : (
           <>
             <Edit3 className="size-4" />
-            反馈与补�?          </>
+            反馈与补充
+          </>
         )}
       </motion.button>
 

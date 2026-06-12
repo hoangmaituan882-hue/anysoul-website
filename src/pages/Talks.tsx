@@ -1026,23 +1026,33 @@ export function Talks() {
                    const description = "description" in item ? item.description : talk.cat;
                    const href = "href" in item ? item.href : undefined;
                    const card = (
-                   <div
-                     onClick={() => href ? undefined : setSelectedTalk(talk)}
-                     className="bg-[#f0ece5] dark:bg-[#282725] rounded-3xl overflow-hidden h-[180px] relative group cursor-pointer hover:shadow-md transition-all"
-                   >
-                      <TalkCover src={talk.cover} alt={title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10 group-hover:bg-black/40 transition-colors" />
-                      <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col justify-end z-10">
-                        <div className="flex items-center gap-1.5 mb-1.5 transform translate-y-1 group-hover:translate-y-0 transition-transform">
-                          <span className={cn("text-background text-[9px] font-bold px-1.5 py-0.5 rounded-sm", talk.color === 'pink' ? 'bg-pink-500' : talk.color === 'yellow' ? 'bg-yellow-500' : 'bg-blue-500')}>{description}</span>
-                          <span className="text-white/80 text-[10px] font-semibold flex items-center gap-0.5"><Eye className="size-3" /> {talk.viewers}</span>
+                     <div
+                       onClick={() => href ? undefined : setSelectedTalk(talk)}
+                       className="bg-card rounded-[2rem] overflow-hidden h-[200px] relative group cursor-pointer shadow-sm hover:shadow-[0_12px_40px_-10px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-10px_rgba(255,255,255,0.05)] border border-border/50 hover:border-primary/30 transition-all duration-500 transform hover:-translate-y-1"
+                     >
+                        <TalkCover src={talk.cover} alt={title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent group-hover:via-black/40 transition-colors duration-500" />
+                        
+                        {/* Glow effect on hover */}
+                        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay" />
+
+                        <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col justify-end z-10">
+                          <div className="flex items-center gap-2 mb-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                            <span className={cn("text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md border border-white/20 shadow-sm", talk.color === 'pink' ? 'bg-pink-500/80' : talk.color === 'yellow' ? 'bg-yellow-500/80' : 'bg-blue-500/80')}>
+                              {description}
+                            </span>
+                            <span className="text-white/90 text-[10px] font-bold flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10">
+                              <Eye className="size-3" /> {talk.viewers}
+                            </span>
+                          </div>
+                          <h4 className="text-white font-black leading-snug text-sm line-clamp-2 drop-shadow-md transform translate-y-1 group-hover:translate-y-0 transition-transform duration-500 delay-75">{title}</h4>
                         </div>
-                        <h4 className="text-white font-bold leading-tight text-[13px] line-clamp-2 shadow-sm">{title}</h4>
-                      </div>
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 shadow-xl">
-                         <Play className="size-4 ml-0.5 text-white" fill="currentColor" />
-                      </div>
-                   </div>);
+                        
+                        {/* Center Play Button */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-75 group-hover:scale-100 shadow-[0_0_20px_rgba(255,255,255,0.2)] border border-white/30">
+                           <Play className="size-5 ml-1 text-white drop-shadow-md" fill="currentColor" />
+                        </div>
+                     </div>);
                    return href ? <a key={item.id} href={href}>{card}</a> : <div key={item.id}>{card}</div>;
                  })}
               </div>
