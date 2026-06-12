@@ -515,15 +515,21 @@ export function Screenings() {
       .reduce((sum, item) => {
         const raw = (item.duration || "").trim();
         if (!raw) return sum;
-        const hourMatch = raw.match(/(\d+)\s*(?:小时|时|h|H)/);
-        const minMatch = raw.match(/(\d+)\s*(?:分钟|分|min|m|M)/);
-        const colonMatch = raw.match(/^(\d+):(\d{2})$/);
-        if (colonMatch) return sum + Number(colonMatch[1]) * 60 + Number(colonMatch[2]);
+
+        const hmsMatch = raw.match(/^(\d+):(\d{1,2}):(\d{2})$/);
+        if (hmsMatch) return sum + Number(hmsMatch[1]) * 60 + Number(hmsMatch[2]) + Math.round(Number(hmsMatch[3]) / 60);
+
+        const hmMatch = raw.match(/^(\d+):(\d{1,2})$/);
+        if (hmMatch) return sum + Number(hmMatch[1]) * 60 + Number(hmMatch[2]);
+
+        const hourMatch = raw.match(/(\d+)\s*(?:小时|时|h|H(?![a-z]))/);
+        const minMatch = raw.match(/(\d+)\s*(?:分钟|分|[Mm](?![a-z]))/);
         const hours = hourMatch ? Number(hourMatch[1]) : 0;
         const minutes = minMatch ? Number(minMatch[1]) : 0;
         if (hours > 0 || minutes > 0) return sum + hours * 60 + minutes;
-        const numeric = raw.match(/^\d+$/);
-        return numeric ? sum + Number(numeric[0]) : sum;
+
+        const numeric = raw.match(/^(\d+)$/);
+        return numeric ? sum + Number(numeric[1]) : sum;
       }, 0);
 
     return {
@@ -1160,8 +1166,10 @@ export function Screenings() {
               className="flex-1 flex flex-col relative"
             >
               {/* Front Face */}
-              <div
-                style={{ backfaceVisibility: "hidden" }}
+              <motion.div
+                animate={{ opacity: isSidebarFlipped ? 0 : 1, pointerEvents: isSidebarFlipped ? "none" : "auto" }}
+                transition={{ duration: 0.1, delay: isSidebarFlipped ? 0.3 : 0 }}
+                style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
                 className="bg-[#f8f5ee] dark:bg-[#1a1917] border border-[#e8dfce] dark:border-[#38332c] rounded-[2rem] p-6 lg:p-8 flex-1 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] relative overflow-hidden group/sidebar"
               >
                 {/* Ambient glow */}
@@ -1260,12 +1268,15 @@ export function Screenings() {
               </div>
               
               {/* Back Face (Poster Wall) */}
-              <div
-                style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isSidebarFlipped ? 1 : 0, pointerEvents: isSidebarFlipped ? "auto" : "none" }}
+                transition={{ duration: 0.1, delay: isSidebarFlipped ? 0 : 0.3 }}
+                style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
                 className="absolute inset-0 bg-[#f8f5ee] dark:bg-[#1a1917] border border-[#e8dfce] dark:border-[#38332c] rounded-[2rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
               >
                 <SidebarPosterWall posters={sidebarPosters} />
-              </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
