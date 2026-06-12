@@ -78,17 +78,17 @@ export function Hero() {
   const heart = { d: "M 780 150 C 780 110, 730 110, 730 150 C 730 210, 780 250, 780 250 C 780 250, 830 210, 830 150 C 830 110, 780 110, 780 150", delay: 1.7, dur: 0.5, color: "#f9a8d4" };
 
   return (
-    <section className="relative min-h-[90vh] flex flex-col justify-center items-center py-20 px-4 md:px-8 max-w-7xl mx-auto w-full">
+    <section className="relative min-h-[90vh] flex flex-col justify-center items-center w-full">
       {/* Scroll-triggered Background Image */}
       <motion.div 
-        className="absolute inset-0 z-0 overflow-hidden rounded-[2rem] md:rounded-[3rem]"
+        className="absolute inset-0 z-0 overflow-hidden"
         style={{ opacity: bgOpacity }}
       >
         <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center bg-fixed" />
         <div className="absolute inset-0 bg-background/60 dark:bg-background/80" />
       </motion.div>
 
-      <div className="relative z-10 flex flex-col items-center text-center w-full max-w-4xl mx-auto space-y-4 mt-8 mb-20">
+      <div className="relative z-10 flex flex-col items-center text-center w-full max-w-4xl mx-auto px-4 md:px-8 py-20 space-y-4 mt-8 mb-20">
         
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
