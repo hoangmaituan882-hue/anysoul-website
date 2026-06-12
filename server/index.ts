@@ -21,7 +21,7 @@ import { defaultSiteAnnouncements } from "../src/content/seeds/siteAnnouncements
 import { defaultFeedbackSubmissions } from "../src/content/seeds/feedback";
 import { defaultSiteAnalytics } from "../src/content/seeds/analytics";
 import { defaultScreeningLibrary } from "../src/content/seeds/screeningLibrary";
-import type { FeedbackSubmission, FeedbackSubmissionsContent, MediaAssetRecord, PlazaContent, PlazaSoulItem, PlazaVisibility, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalkTranscriptItem } from "../src/content/types";
+import type { FeedbackSubmission, FeedbackSubmissionsContent, MediaAssetRecord, PlazaContent, PlazaSoulItem, PlazaVisibility, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalksContent, TalkTranscriptItem } from "../src/content/types";
 import {
   defaultScreeningsAnime,
   defaultScreeningsClassics,
@@ -4790,12 +4790,12 @@ app.post("/api/public/feedback-submissions", publicWriteLimit, async (req, res) 
     ? req.body.submitterRole as NonNullable<FeedbackSubmission["submitterRole"]>
     : "visitor";
   const submitterRole: NonNullable<FeedbackSubmission["submitterRole"]> = auth?.user.role || requestedRole;
-  const source = (["about", "screening_nomination", "workspace", "plaza", "other"].includes(req.body?.source) ? req.body.source : "about") as NonNullable<FeedbackSubmission["source"]>;
+  const source = (["about", "screening_nomination", "workspace", "plaza", "talk-supplement", "other"].includes(req.body?.source) ? req.body.source : "about") as NonNullable<FeedbackSubmission["source"]>;
   const imageUrls = normalizeFeedbackImageUrls(req.body?.imageUrls);
   const metadata = normalizeFeedbackMetadata(req.body?.metadata);
   const bannedWord = findBannedFeedbackWord(title, content, req.body?.contact);
 
-  if (source === "plaza" && !auth) {
+  if ((source === "plaza" || source === "talk-supplement") && !auth) {
     res.status(401).json({ error: "登录后可以提交图库反馈" });
     return;
   }
@@ -4923,6 +4923,26 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
         items: content.items.map((item) => item.id === submissionId ? { ...item, status: decision, reviewedAt: decision === "pending" ? undefined : reviewedAt } : item)
       } satisfies FeedbackSubmissionsContent;
       entry.status = "draft";
+
+      if (decision === "approved" && existing.source === "talk-supplement" && existing.metadata?.edits) {
+        const talksEntry = store.entries["talks.main"];
+        if (talksEntry) {
+          const talksDraft = (talksEntry.draft || {}) as Partial<TalksContent>;
+          const talksPublished = (talksEntry.published || {}) as Partial<TalksContent>;
+          const edits = existing.metadata.edits as Record<string, { old: unknown; new: unknown }>;
+          const talkId = existing.metadata.talkId as string;
+
+          const updateTalk = (archive: unknown[]) =>
+            archive.map((item: any) => item.id === talkId ? { ...item, ...Object.fromEntries(Object.entries(edits).map(([k, v]) => [k, v.new])) } : item);
+
+          if (Array.isArray(talksDraft.archive)) talksEntry.draft = { ...talksDraft, archive: updateTalk(talksDraft.archive) };
+          if (Array.isArray(talksPublished.archive)) talksEntry.published = { ...talksPublished, archive: updateTalk(talksPublished.archive) };
+
+          talksEntry.status = "published";
+          talksEntry.version += 1;
+          talksEntry.updatedAt = reviewedAt;
+        }
+      }
     }
 
     store.siteVersion += kind === "source" ? 1 : 0;
@@ -4930,7 +4950,8 @@ app.patch("/api/admin/submissions/:kind/:id/review", async (req, res) => {
     entry.updatedAt = reviewedAt;
     if (kind === "source") entry.publishedAt = reviewedAt;
 
-    const eventKeys = kind === "source" && decision === "approved" ? [key, "screenings.library"] : [key];
+    const baseEventKeys = kind === "source" && decision === "approved" ? [key, "screenings.library"] : [key];
+    const eventKeys = decision === "approved" && existing?.source === "talk-supplement" ? [...baseEventKeys, "talks.main"] : baseEventKeys;
     const event = {
       id: `evt_${Date.now()}`,
       type: "submission.reviewed",

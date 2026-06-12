@@ -386,7 +386,7 @@ export function Workspace() {
       contact: feedback.contact,
       submitter: feedback.submitter,
       submitterRole: feedback.submitterRole || "visitor",
-      sourceLabel: feedback.source === "screening_nomination" ? "电影提名" : feedback.source === "workspace" ? "工作台意见" : feedback.source === "other" ? "其他入口" : "关于页意见通道",
+      sourceLabel: feedback.source === "screening_nomination" ? "电影提名" : feedback.source === "workspace" ? "工作台意见" : feedback.source === "other" ? "其他入口" : feedback.source === "talk-supplement" ? "杂谈补充" : "关于页意见通道",
       imageUrls: feedback.imageUrls || [],
       reviewNote: feedback.reviewNote,
       status: feedback.status,

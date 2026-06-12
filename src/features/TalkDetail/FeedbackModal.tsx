@@ -1,5 +1,7 @@
 import { UploadCloud, X, CheckCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { CONTENT_API_BASE } from "../../content/client";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function FeedbackModal({
   isOpen,
@@ -7,7 +9,8 @@ export function FeedbackModal({
   submitState,
   setSubmitState,
   onFinish,
-  talk
+  talk,
+  edits
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -15,7 +18,48 @@ export function FeedbackModal({
   setSubmitState: (state: 'diff' | 'loading' | 'success') => void;
   onFinish: () => void;
   talk: any;
+  edits: Record<string, { old: any; new: any }>;
 }) {
+  const { authFetch } = useAuth();
+
+  const handleSubmit = async () => {
+    setSubmitState('loading');
+    try {
+      const editFields = Object.keys(edits);
+      const content = editFields.map((f) => {
+        const diff = edits[f];
+        return `${f}: ${diff.old} → ${diff.new}`;
+      }).join("；");
+
+      await fetch(`${CONTENT_API_BASE}/api/public/feedback-submissions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `杂谈补充：${talk.title}`,
+          category: "杂谈补充",
+          content: content || "数据补充",
+          source: "talk-supplement",
+          imageUrls: [],
+          metadata: {
+            talkId: talk.id,
+            talkTitle: talk.title,
+            edits
+          }
+        })
+      });
+      setSubmitState('success');
+      setTimeout(() => onFinish(), 1500);
+    } catch {
+      setSubmitState('diff');
+    }
+  };
+
+  const editFields = Object.entries(edits);
+  const labels: Record<string, string> = {
+    viewers: "观看人数", danmaku: "互动弹幕", date: "直播日期",
+    animeMentions: "动画提及", desc: "本期简述", summaryText: "AI 智能总结", title: "标题"
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -54,26 +98,23 @@ export function FeedbackModal({
                       <X className="size-4" />
                     </button>
                   </div>
-                  <div className="p-6 space-y-6 max-h-[50vh] overflow-y-auto no-scrollbar">
-                    <div className="space-y-3">
-                      <div className="text-sm font-bold text-muted-foreground">观看人数 (原数据 → 补充数据)</div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 bg-red-500/10 text-red-700 dark:text-red-400 p-3 rounded-xl border border-red-500/20 line-through text-center font-bold text-lg">{talk.viewers?.toLocaleString() || '1,245'}</div>
-                        <div className="text-muted-foreground">→</div>
-                        <div className="flex-1 bg-green-500/10 text-green-700 dark:text-green-400 p-3 rounded-xl border border-green-500/20 text-center font-bold text-lg">1,890</div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="text-sm font-bold text-muted-foreground">本期简述 (原描述与补充内容)</div>
-                      <div className="flex flex-col gap-2">
-                        <div className="bg-red-500/10 text-red-700 dark:text-red-400 p-4 rounded-xl border border-red-500/20 line-through text-sm leading-relaxed">
-                          {talk.desc}
+                  <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto no-scrollbar">
+                    {editFields.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm">没有检测到数据变更。</div>
+                    ) : (
+                      editFields.map(([field, diff]) => (
+                        <div key={field} className="space-y-2">
+                          <div className="text-sm font-bold text-muted-foreground">
+                            {labels[field] || field} (原数据 → 补充数据)
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 bg-red-500/10 text-red-700 dark:text-red-400 p-3 rounded-xl border border-red-500/20 line-through text-sm">{String(diff.old ?? "-")}</div>
+                            <div className="text-muted-foreground shrink-0">→</div>
+                            <div className="flex-1 bg-green-500/10 text-green-700 dark:text-green-400 p-3 rounded-xl border border-green-500/20 text-sm font-bold">{String(diff.new)}</div>
+                          </div>
                         </div>
-                        <div className="bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl border border-green-500/20 text-sm font-medium leading-relaxed">
-                          {talk.desc} (特别提示：本期回放已包含后续增补的高光时刻与幕后访谈部分内容...)
-                        </div>
-                      </div>
-                    </div>
+                      ))
+                    )}
                   </div>
                   <div className="p-6 border-t border-border/50 bg-muted/20 flex justify-end gap-3">
                     <button 
@@ -83,18 +124,11 @@ export function FeedbackModal({
                       取消
                     </button>
                     <button 
-                      onClick={() => {
-                        setSubmitState('loading');
-                        setTimeout(() => {
-                          setSubmitState('success');
-                          setTimeout(() => {
-                              onFinish();
-                          }, 1500);
-                        }, 1500);
-                      }}
-                      className="px-6 py-2.5 rounded-xl font-bold bg-primary text-primary-foreground hover:shadow-lg transition-all hover:scale-105"
+                      onClick={handleSubmit}
+                      disabled={editFields.length === 0}
+                      className="px-6 py-2.5 rounded-xl font-bold bg-primary text-primary-foreground hover:shadow-lg transition-all hover:scale-105 disabled:opacity-50"
                     >
-                      通过并继续
+                      提交审核
                     </button>
                   </div>
                 </motion.div>
@@ -118,7 +152,7 @@ export function FeedbackModal({
                   </div>
                   <div className="flex flex-col items-center gap-2">
                      <div className="text-2xl font-bold text-foreground tracking-tight">正在提交补充内容...</div>
-                     <div className="text-sm font-medium text-muted-foreground">正在加密并同步至社区数据库</div>
+                     <div className="text-sm font-medium text-muted-foreground">已提交至后台审核队列</div>
                   </div>
                 </motion.div>
               )}
@@ -139,8 +173,8 @@ export function FeedbackModal({
                     <CheckCircle className="size-12" />
                   </motion.div>
                   <div className="flex flex-col items-center gap-2 text-center mt-2">
-                     <div className="text-3xl font-black text-foreground tracking-tight">成功投稿！</div>
-                     <div className="text-sm font-medium text-muted-foreground mt-2 max-w-[280px]">感谢您的反馈与补充，审核通过后将合并至该页面。</div>
+                     <div className="text-3xl font-black text-foreground tracking-tight">已提交审核</div>
+                     <div className="text-sm font-medium text-muted-foreground mt-2 max-w-[280px]">审核通过后数据将自动合并至该页面。</div>
                   </div>
                 </motion.div>
               )}

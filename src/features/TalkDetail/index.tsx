@@ -14,7 +14,15 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
   const [isEditMode, setIsEditMode] = useState(false);
   const [showDiffModal, setShowDiffModal] = useState(false);
   const [submitState, setSubmitState] = useState<'diff' | 'loading' | 'success'>('diff');
+  const [editsRecord, setEditsRecord] = useState<Record<string, { old: any; new: any }>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editViewers, setEditViewers] = useState("");
+  const [editDanmaku, setEditDanmaku] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editAnimeMentions, setEditAnimeMentions] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editSummaryText, setEditSummaryText] = useState("");
   const transcriptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,8 +106,9 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                   </div>
                   {isEditMode ? (
                     <input 
-                      type="text" 
-                      defaultValue={talk.title} 
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
                       className="text-3xl md:text-5xl font-black text-white leading-tight drop-shadow-md max-w-3xl bg-black/20 border border-white/30 rounded-xl px-4 py-2 outline-none focus:bg-black/40 transition-all w-full"
                     />
                   ) : (
@@ -126,8 +135,8 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                  <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3">
                    <Eye className="size-5" />
                  </div>
-                 {isEditMode ? (
-                   <input type="text" defaultValue={talk.viewers?.toLocaleString() || '1,245'} className="w-24 text-2xl font-black text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
+                  {isEditMode ? (
+                    <input type="text" value={editViewers} onChange={(e) => setEditViewers(e.target.value)} className="w-24 text-2xl font-black text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
                  ) : (
                    <span className="text-2xl font-black">{talk.viewers?.toLocaleString() || '1,245'}</span>
                  )}
@@ -137,8 +146,8 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                  <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mb-3">
                    <MessageCircle className="size-5" />
                  </div>
-                 {isEditMode ? (
-                   <input type="text" defaultValue={talk.danmaku?.toLocaleString() || '856'} className="w-24 text-2xl font-black text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
+                  {isEditMode ? (
+                    <input type="text" value={editDanmaku} onChange={(e) => setEditDanmaku(e.target.value)} className="w-24 text-2xl font-black text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
                  ) : (
                    <span className="text-2xl font-black">{talk.danmaku?.toLocaleString() || '856'}</span>
                  )}
@@ -148,8 +157,8 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                  <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center mb-3">
                    <Calendar className="size-5" />
                  </div>
-                 {isEditMode ? (
-                   <input type="text" defaultValue={talk.date} className="w-28 text-xl font-bold mt-1 text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
+                  {isEditMode ? (
+                    <input type="text" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-28 text-xl font-bold mt-1 text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
                  ) : (
                    <span className="text-xl font-bold mt-1">{talk.date}</span>
                  )}
@@ -159,9 +168,9 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                  <div className="w-10 h-10 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center mb-3">
                    <Tag className="size-5" />
                  </div>
-                 {isEditMode ? (
-                   <div className="flex items-center gap-1">
-                     <input type="text" defaultValue={talk.animeMentions || '5'} className="w-16 text-2xl font-black text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
+                  {isEditMode ? (
+                    <div className="flex items-center gap-1">
+                      <input type="text" value={editAnimeMentions} onChange={(e) => setEditAnimeMentions(e.target.value)} className="w-16 text-2xl font-black text-center bg-muted/50 border border-border/50 rounded outline-none focus:ring-2 focus:ring-primary/50" />
                      <span className="text-sm font-bold text-muted-foreground">部</span>
                    </div>
                  ) : (
@@ -181,9 +190,10 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                <h3 className="text-xl font-bold flex items-center gap-2 text-foreground mb-4">
                  <FileText className="size-5 text-primary" /> 本期简述
                </h3>
-               {isEditMode ? (
-                 <textarea 
-                   defaultValue={talk.desc} 
+                {isEditMode ? (
+                  <textarea
+                    value={editDesc}
+                    onChange={(e) => setEditDesc(e.target.value)}
                    className="w-full text-base text-foreground leading-relaxed p-4 bg-muted/50 border border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-primary/50 min-h-[120px]"
                  />
                ) : (
@@ -203,9 +213,10 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
                     总结更新于 {talk.summaryUpdated || '今天 10:30'}
                  </div>
                </div>
-               {isEditMode ? (
-                 <textarea 
-                   defaultValue={talk.summaryText || "本次直播深入探讨了当季热门动画的表现，并结合弹幕互动分享了许多幕后趣闻和主观评测。"} 
+                {isEditMode ? (
+                  <textarea
+                    value={editSummaryText}
+                    onChange={(e) => setEditSummaryText(e.target.value)}
                    className="w-full text-indigo-900 dark:text-indigo-200 leading-relaxed p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/50 min-h-[100px] mb-6"
                  />
                ) : (
@@ -354,9 +365,28 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
           isEditMode ? "bg-orange-600 text-white border-orange-500/20 hover:shadow-orange-500/20" : "bg-primary text-primary-foreground border-primary-foreground/20 hover:shadow-xl")}
         onClick={() => {
            if (isEditMode) {
+              const edits: Record<string, { old: any; new: any }> = {};
+              const viewersNum = Number(editViewers.replace(/,/g, ""));
+              if (!Number.isNaN(viewersNum) && viewersNum !== talk.viewers) edits.viewers = { old: talk.viewers, new: viewersNum };
+              const danmakuNum = Number(editDanmaku.replace(/,/g, ""));
+              if (!Number.isNaN(danmakuNum) && danmakuNum !== talk.danmaku) edits.danmaku = { old: talk.danmaku, new: danmakuNum };
+              if (editDate && editDate !== talk.date) edits.date = { old: talk.date, new: editDate };
+              const animeNum = Number(editAnimeMentions);
+              if (!Number.isNaN(animeNum) && animeNum !== talk.animeMentions) edits.animeMentions = { old: talk.animeMentions, new: animeNum };
+              if (editDesc !== talk.desc) edits.desc = { old: talk.desc, new: editDesc };
+              if (editSummaryText !== (talk.summaryText || "")) edits.summaryText = { old: talk.summaryText, new: editSummaryText };
+              if (editTitle !== talk.title) edits.title = { old: talk.title, new: editTitle };
+              setEditsRecord(edits);
               setSubmitState('diff');
               setShowDiffModal(true);
            } else {
+              setEditTitle(talk.title || "");
+              setEditViewers(String(talk.viewers || ""));
+              setEditDanmaku(String(talk.danmaku || ""));
+              setEditDate(talk.date || "");
+              setEditAnimeMentions(String(talk.animeMentions || ""));
+              setEditDesc(talk.desc || "");
+              setEditSummaryText(talk.summaryText || "");
               setIsEditMode(true);
            }
         }}
@@ -385,6 +415,7 @@ export function TalkDetail({ talk, onBack, t }: { talk: any, onBack: () => void,
           setIsEditMode(false);
         }}
         talk={talk}
+        edits={editsRecord}
       />
     </div>
   );
