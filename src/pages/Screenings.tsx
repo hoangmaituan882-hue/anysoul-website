@@ -452,14 +452,28 @@ export function Screenings() {
     const goodMovies = screeningRecords.filter(({ movie }) => movie.type === "good" || movie.type === "classic").length;
     const badMovies = screeningRecords.filter(({ movie }) => movie.type === "bad").length;
     const animeMovies = screeningRecords.filter(({ movie }) => movie.type === "anime").length;
-    const topBadMovie = [...screeningRecords]
-      .filter(({ movie }) => movie.type === "bad" && typeof movie.rating === "number")
-      .sort((a, b) => (a.movie.rating || 0) - (b.movie.rating || 0))[0];
     const totalViewers = archivedWeeks.reduce((sum, week) => sum + (week.viewerCount || 0), 0);
     const totalDiscussions = archivedWeeks.reduce((sum, week) => sum + (week.discussionCount || 0), 0);
     const recordUrlCount = archivedWeeks.filter((week) => week.recordUrl || week.movies.some((movie) => movie.sourceUrl)).length;
     const hasViewerRecords = totalViewers > 0;
     const lastHasViewerRecord = Boolean((lastScreening?.viewerCount || 0) > 0 || (lastScreening?.discussionCount || 0) > 0);
+
+    const thisYear = String(new Date().getFullYear());
+    const thisYearWatchMinutes = libraryContent.items
+      .filter((item) => item.status === "watched" && item.lastWatchedAt?.startsWith(thisYear))
+      .reduce((sum, item) => {
+        const raw = (item.duration || "").trim();
+        if (!raw) return sum;
+        const hourMatch = raw.match(/(\d+)\s*(?:小时|时|h|H)/);
+        const minMatch = raw.match(/(\d+)\s*(?:分钟|分|min|m|M)/);
+        const colonMatch = raw.match(/^(\d+):(\d{2})$/);
+        if (colonMatch) return sum + Number(colonMatch[1]) * 60 + Number(colonMatch[2]);
+        const hours = hourMatch ? Number(hourMatch[1]) : 0;
+        const minutes = minMatch ? Number(minMatch[1]) : 0;
+        if (hours > 0 || minutes > 0) return sum + hours * 60 + minutes;
+        const numeric = raw.match(/^\d+$/);
+        return numeric ? sum + Number(numeric[0]) : sum;
+      }, 0);
 
     return {
       nextCountdownLabel: formatCountdown(nextScreening.startsAt),
@@ -482,9 +496,9 @@ export function Screenings() {
       totalRecordLabel: hasViewerRecords
         ? `${totalViewers.toLocaleString()} 人观看记录 · ${totalDiscussions.toLocaleString()} 条讨论`
         : `${archivedWeeks.length.toLocaleString()} 场真实归档 · ${recordUrlCount.toLocaleString()} 场含录播`,
-      topBadMovie
+      thisYearWatchMinutes
     };
-  }, [archivedWeeks, lastScreening, nextScreening.movies, nextScreening.startsAt, screeningRecords]);
+  }, [archivedWeeks, lastScreening, nextScreening.movies, nextScreening.startsAt, screeningRecords, libraryContent.items]);
   const maxMonthlyActivity = Math.max(...monthlyActivity.map((item) => item.good + item.bad + item.anime + item.other), 1);
   const libraryStats = {
     total: libraryContent.items.length,
@@ -936,13 +950,13 @@ export function Screenings() {
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 opacity-0 group-hover/box:opacity-100 transition-opacity duration-500 pointer-events-none" />
                   <div className="flex items-center justify-between mb-4 relative z-10">
-                      <span className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400 group-hover/box:text-emerald-600 transition-colors"><Star className="w-4 h-4" /> 最低评分记录</span>
+                      <span className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400 group-hover/box:text-emerald-600 transition-colors"><Clock className="w-4 h-4" /> 今年播放时长</span>
                       <span className="text-[11px] bg-white/70 dark:bg-black/20 text-emerald-600 dark:text-emerald-400 font-medium px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm"><Star className="w-3 h-3 fill-current" /> 自动</span>
                   </div>
                   <div className="my-2 relative z-10">
-                    <h4 className="text-2xl font-bold text-foreground">{automatedStats.topBadMovie?.movie.title || "暂无反面案例"}</h4>
-                    <p className="text-sm font-medium text-foreground/70 mt-1.5 line-clamp-1">评分 {automatedStats.topBadMovie?.movie.rating ?? "-"} · {automatedStats.topBadMovie?.week?.title || "来自片源库"}</p>
-                    <p className="text-xs text-foreground/50 mt-1">{automatedStats.badMovies} 部反面案例已进入记录</p>
+                    <h4 className="text-2xl font-bold text-foreground">{automatedStats.thisYearWatchMinutes > 0 ? `${Math.floor(automatedStats.thisYearWatchMinutes / 60)} 小时 ${automatedStats.thisYearWatchMinutes % 60} 分钟` : "暂无记录"}</h4>
+                    <p className="text-sm font-medium text-foreground/70 mt-1.5 line-clamp-1">片源库今年已归档 {libraryStats.watched} 部影片</p>
+                    <p className="text-xs text-foreground/50 mt-1">累计观影时长自动统计</p>
                   </div>
                   <div className="mt-auto flex justify-end relative z-10">
                       <div className="flex -space-x-2">

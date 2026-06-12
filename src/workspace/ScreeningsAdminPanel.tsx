@@ -1102,18 +1102,20 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
     if (readOnly) return;
     const prevLibrary = library;
     const prevNext = next;
+    if (!window.confirm(`确定删除「${library.items[index]?.title || "该片源"}」吗？`)) return;
     const nextLibrary = normalizeLibraryForPublish({ ...library, items: library.items.filter((_, itemIndex) => itemIndex !== index) });
     const syncedNext = syncNextMoviesFromLibrary(next, nextLibrary);
     setLibrary(nextLibrary);
     setNext(syncedNext);
     setIsSaving(true);
     try {
-      await commitScreeningBatch([
+      await commitContentBatch(authFetch, [
         { key: SCREENINGS_LIBRARY_KEY, payload: nextLibrary, publish: true, message: "Delete screening source and publish" },
         { key: SCREENINGS_NEXT_KEY, payload: syncedNext, publish: true, message: "Sync next screening after source delete" }
       ], "Delete screening source and publish");
       setEditingLibraryId(null);
       setStatus("片源已删除");
+      await load();
     } catch (error) {
       setLibrary(prevLibrary);
       setNext(prevNext);
@@ -1584,6 +1586,15 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                     <span className={cn("absolute right-2 top-2 rounded-full px-2 py-1 text-[10px] font-black shadow-sm", isWatched ? "bg-emerald-500 text-white" : item.status === "planned" ? "bg-sky-500 text-white" : "bg-background/90 text-foreground")}>
                       {isWatched ? "已归档" : item.status === "planned" ? "已排期" : item.status === "hidden" ? "已隐藏" : item.status === "rejected" ? "已拒绝" : "可排播"}
                     </span>
+                    <button
+                      type="button"
+                      disabled={readOnly || isSaving}
+                      onClick={(e) => { e.stopPropagation(); void deleteLibraryItemAndPublish(index); }}
+                      className="absolute right-2 bottom-2 z-20 flex size-7 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
+                      title="删除片源"
+                    >
+                      <X className="size-3.5" />
+                    </button>
                   </div>
                   <div className="space-y-2 p-3">
                     <div className="line-clamp-2 text-sm font-black text-foreground">{item.title}</div>
