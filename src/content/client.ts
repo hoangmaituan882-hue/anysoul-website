@@ -52,6 +52,26 @@ export async function importTalksJson(
   return response.json() as Promise<{ imported: number; skipped: number; removed: number; total: number }>;
 }
 
+export async function importGamingRecordingsJson(
+  authFetch: (input: string, init?: RequestInit) => Promise<Response>,
+  file: File
+) {
+  const body = new FormData();
+  body.set("file", file);
+
+  const response = await authFetch(`${CONTENT_API_BASE}/api/admin/gaming/import-json`, {
+    method: "POST",
+    body
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(data.error || `Import failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<{ imported: number; skipped: number; gamesCreated: number; total: number }>;
+}
+
 export async function fetchBootstrap() {
   const response = await fetch(`${CONTENT_API_BASE}/api/public/bootstrap`, { cache: "no-store" });
 

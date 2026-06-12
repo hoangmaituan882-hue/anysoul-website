@@ -55,6 +55,11 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         console.warn("Failed to refresh talks after import.", error);
       });
     });
+    source.addEventListener("gaming.imported", (_event) => {
+      refreshContent(["gaming.main"]).catch((error) => {
+        console.warn("Failed to refresh gaming after import.", error);
+      });
+    });
     source.onerror = () => setIsConnected(false);
 
     return () => source.close();

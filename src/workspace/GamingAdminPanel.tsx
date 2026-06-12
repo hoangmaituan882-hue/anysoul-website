@@ -6,9 +6,9 @@ import Search from "../components/icons/magnifier-icon";
 import Trash2 from "../components/icons/trash-icon";
 import Upload from "../components/icons/upload-icon";
 import X from "../components/icons/x-icon";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CONTENT_API_BASE } from "../content/client";
+import { CONTENT_API_BASE, importGamingRecordingsJson } from "../content/client";
 import { useAuth } from "../contexts/AuthContext";
 import { defaultGamingMain } from "../content/defaults/gaming";
 import type { AdminContentEntry, GamingLibraryItem, GamingMainContent, GamingRecordingItem } from "../content/types";
@@ -518,6 +518,26 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
     }
   };
 
+  const gamingImportFileRef = useRef<HTMLInputElement | null>(null);
+  const [isGamingImporting, setIsGamingImporting] = useState(false);
+
+  const handleGamingFileImport = async (files?: FileList | null) => {
+    const file = files?.[0];
+    if (!file || readOnly) return;
+    setIsGamingImporting(true);
+    setStatus("正在导入游戏录像文件...");
+    try {
+      const result = await importGamingRecordingsJson(authFetch, file);
+      setStatus(`导入完成：${result.imported} 新增, ${result.skipped} 跳过, ${result.gamesCreated} 个游戏自动创建, 共 ${result.total} 条`);
+      await load();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "录像文件导入失败");
+    } finally {
+      setIsGamingImporting(false);
+      if (gamingImportFileRef.current) gamingImportFileRef.current.value = "";
+    }
+  };
+
   const chooseStreamGame = (id: string) => {
     const game = library.find((item) => item.id === id);
     if (!game) return;
@@ -773,8 +793,26 @@ export function GamingAdminPanel({ readOnly = false }: { readOnly?: boolean }) {
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-3">
-                <h4 className="flex items-center gap-2 text-sm font-black"><Upload className="size-4 text-primary" /> 批量导入 JSON</h4>
-                <p className="mt-1 text-xs font-bold leading-relaxed text-muted-foreground">支持粘贴数组，或直接粘贴多个对象片段。会导入到当前选择的游戏：{recordingGame?.title || "未选择"}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="flex items-center gap-2 text-sm font-black"><Upload className="size-4 text-primary" /> 批量导入 JSON</h4>
+                  <button
+                    type="button"
+                    disabled={readOnly || isGamingImporting}
+                    onClick={() => gamingImportFileRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-bold text-primary transition-colors hover:bg-muted disabled:opacity-50"
+                  >
+                    <Upload className="size-3.5" /> {isGamingImporting ? "导入中..." : "上传 JSON 文件"}
+                  </button>
+                  <input
+                    ref={gamingImportFileRef}
+                    type="file"
+                    accept=".json"
+                    disabled={readOnly || isGamingImporting}
+                    className="hidden"
+                    onChange={(event) => handleGamingFileImport(event.currentTarget.files)}
+                  />
+                </div>
+                <p className="mt-1 text-xs font-bold leading-relaxed text-muted-foreground">上传文件自动清洗标题并创建游戏库条目；或粘贴到下方文本框手动导入到当前游戏：{recordingGame?.title || "未选择"}</p>
                 <textarea
                   value={recordingImportJson}
                   onChange={(event) => setRecordingImportJson(event.target.value)}

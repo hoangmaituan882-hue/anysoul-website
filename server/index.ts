@@ -21,7 +21,7 @@ import { defaultSiteAnnouncements } from "../src/content/seeds/siteAnnouncements
 import { defaultFeedbackSubmissions } from "../src/content/seeds/feedback";
 import { defaultSiteAnalytics } from "../src/content/seeds/analytics";
 import { defaultScreeningLibrary } from "../src/content/seeds/screeningLibrary";
-import type { FeedbackSubmission, FeedbackSubmissionsContent, MediaAssetRecord, PlazaContent, PlazaSoulItem, PlazaVisibility, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalksContent, TalkTranscriptItem } from "../src/content/types";
+import type { FeedbackSubmission, FeedbackSubmissionsContent, GamingLibraryItem, GamingMainContent, GamingRecordingItem, MediaAssetRecord, PlazaContent, PlazaSoulItem, PlazaVisibility, PostCommentRecord, PostRecord, PostStatus, PostVisibility, ScreeningLibraryContent, ScreeningMovie, ScreeningScheduleContent, ScreeningSourceItem, ScreeningSourceSubmission, ScreeningSourceSubmissionsContent, ScreeningTodoContent, ServerAlert, ServerMetricSample, ServerMonitoringSummary, SiteAnalyticsContent, SiteAnalyticsTrendPoint, TalkHighlightItem, TalksContent, TalkTranscriptItem } from "../src/content/types";
 import {
   defaultScreeningsAnime,
   defaultScreeningsClassics,
@@ -5699,6 +5699,148 @@ app.post("/api/admin/talks/import-json", uploadJsonFile, async (req, res) => {
     res.status(404).json({ error: result.error });
     return;
   }
+
+  res.json(result.data);
+});
+
+app.post("/api/admin/gaming/import-json", uploadJsonFile, async (req, res) => {
+  const auth = await requireWorkspaceAdmin(req, res);
+  if (!auth) return;
+
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "请上传 .json 文件" });
+    return;
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(file.buffer.toString("utf8"));
+  } catch {
+    res.status(400).json({ error: "JSON 解析失败" });
+    return;
+  }
+
+  const items = Array.isArray(raw) ? raw : raw && typeof raw === "object" ? [raw] : [];
+  if (!items.length) {
+    res.status(400).json({ error: "JSON 中没有可导入的录像数据" });
+    return;
+  }
+
+  const result = await mutateStore((store) => {
+    const entry = store.entries["gaming.main"];
+    if (!entry) return { status: 404, error: "Gaming store is not configured" };
+
+    const draft = (entry.draft || defaultGamingMain) as GamingMainContent;
+    const published = (entry.published || defaultGamingMain) as GamingMainContent;
+    const library = Array.isArray(draft.library) ? [...draft.library] : [];
+    const recordings = Array.isArray(draft.recordings) ? [...draft.recordings] : [];
+    const existingUrls = new Set(recordings.map((r) => r.sourceUrl || r.videoUrl).filter(Boolean));
+    const existingBvids = new Set(recordings.map((r) => r.id?.match(/BV[a-zA-Z0-9]+/)?.[0]).filter(Boolean));
+
+    let imported = 0;
+    let skipped = 0;
+    let gamesCreated = 0;
+
+    for (const rawItem of items) {
+      const row = rawItem as Record<string, string>;
+      const title = (row["标题"] || row.title || row["名称"] || row["录像标题"] || "").trim();
+      if (!title) { skipped++; continue; }
+
+      const sourceUrl = (row["链接"] || row.url || row.sourceUrl || row["来源"] || "").trim();
+      const bvid = (row["BV号"] || row.bvid || row.BVID || (sourceUrl.match(/BV[a-zA-Z0-9]+/) || [])[0] || "").trim();
+
+      if (sourceUrl && existingUrls.has(sourceUrl)) { skipped++; continue; }
+      if (bvid && existingBvids.has(bvid)) { skipped++; continue; }
+
+      // Clean title
+      let cleanedTitle = title
+        .replace(/^【[^】]*】\s*/g, "")
+        .replace(/_哔哩哔哩_bilibili$/i, "")
+        .replace(/\s*-\s*哔哩哔哩$/i, "")
+        .replace(/\s*-\s*bilibili$/i, "")
+        .trim();
+
+      // Extract game name from title
+      let gameTitle = cleanedTitle;
+      const dashIdx = cleanedTitle.search(/[—\-/]/);
+      if (dashIdx > 2) gameTitle = cleanedTitle.slice(0, dashIdx).trim();
+      if (cleanedTitle.includes("录播")) gameTitle = gameTitle.replace(/录播/g, "").trim();
+
+      // Find or create game
+      let game = library.find((g) => g.title === gameTitle || g.title.toLowerCase() === gameTitle.toLowerCase());
+      if (!game) {
+        const gameId = `game-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        game = {
+          id: gameId,
+          title: gameTitle,
+          platform: "PC",
+          genre: "其他",
+          mode: "单人",
+          status: "playing",
+          tags: [],
+          coverUrl: "",
+          description: `自动从录像「${cleanedTitle}」创建。`,
+          playRecords: []
+        } as GamingLibraryItem;
+        library.push(game);
+        gamesCreated++;
+      }
+
+      const duration = row["时长"] || row.duration || row["时间长度"] || "";
+      const host = (row["UP主"] || row.host || row["作者"] || row.author || "").trim();
+      const viewers = parseInt(String(row["播放量"] || row.viewers || "0").replace(/[万,]/g, m => m === "万" ? "0000" : ""), 10) || 0;
+      const danmaku = parseInt(String(row["弹幕数"] || row.danmaku || "0").replace(/[万,]/g, m => m === "万" ? "0000" : ""), 10) || 0;
+      const date = (row["收藏时间"] || row.date || row["日期"] || new Date().toISOString().slice(0, 10)).trim();
+
+      const recordingId = `recording-${game.id}-${bvid || Date.now()}-${Math.random().toString(36).slice(2, 4)}`;
+      const recording: GamingRecordingItem = {
+        id: recordingId,
+        title: cleanedTitle,
+        gameId: game.id,
+        gameTitle: game.title,
+        date,
+        duration,
+        host: host || undefined,
+        sourceUrl: sourceUrl || undefined,
+        videoUrl: sourceUrl || undefined,
+        videoProvider: sourceUrl?.includes("bilibili") ? "bilibili" : undefined,
+        tags: [gameTitle, "自动导入"],
+        summary: "",
+        highlights: [],
+        chapters: [],
+        viewers,
+        danmaku
+      };
+
+      recordings.push(recording);
+      if (sourceUrl) existingUrls.add(sourceUrl);
+      if (bvid) existingBvids.add(bvid);
+      imported++;
+    }
+
+    const nextDraft = { ...draft, library, recordings } satisfies GamingMainContent;
+    const nextPublished = { ...published, library, recordings } satisfies GamingMainContent;
+    entry.draft = nextDraft;
+    entry.published = nextPublished;
+    entry.status = "published";
+    entry.version += 1;
+    entry.updatedAt = new Date().toISOString();
+    entry.publishedAt = new Date().toISOString();
+    store.siteVersion += 1;
+
+    return { status: 200, data: { imported, skipped, gamesCreated, total: recordings.length } };
+  });
+
+  if (result.status !== 200) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+
+  broadcast("content.published", {
+    keys: ["gaming.main"],
+    message: `导入游戏录像: ${result.data.imported} 新增, ${result.data.skipped} 跳过, ${result.data.gamesCreated} 个游戏自动创建`
+  });
 
   res.json(result.data);
 });
