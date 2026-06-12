@@ -26,8 +26,8 @@ import { DateTimePicker } from "../components/DateTimePicker";
 import { ImageUploadField } from "../components/ImageUploadField";
 
 type AdminContentResponse = { entries: AdminContentEntry[] };
-type MediaScrapeProvider = "tmdb" | "bilibili" | "bangumi" | "douban" | "jikan" | "wiki" | "local";
-type MediaProviderFilter = "all" | "tmdb" | "bangumi" | "douban";
+type MediaScrapeProvider = "tmdb" | "bilibili" | "bangumi" | "douban" | "jikan" | "wiki" | "local" | "posterdb";
+type MediaProviderFilter = "all" | "tmdb" | "bangumi" | "douban" | "posterdb";
 type MediaScrapeCandidate = ScreeningSourceItem & {
   provider: MediaScrapeProvider;
   confidence: number;
@@ -91,7 +91,8 @@ const providerFilters: Array<{ value: MediaProviderFilter; label: string; hint: 
   { value: "all", label: "全部", hint: "TMDB / Bangumi / 豆瓣聚合" },
   { value: "tmdb", label: "TMDB", hint: "电影 / 剧集主源" },
   { value: "bangumi", label: "Bangumi", hint: "动漫资料源" },
-  { value: "douban", label: "豆瓣", hint: "中文电影兜底" }
+  { value: "douban", label: "豆瓣", hint: "中文电影兜底" },
+  { value: "posterdb", label: "PosterDB", hint: "OpenPosterDB 评分海报" }
 ];
 
 function providersForFilter(filter: MediaProviderFilter): MediaScrapeProvider[] | undefined {
@@ -617,6 +618,23 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
       setStatus(error instanceof Error ? error.message : "发布失败，请检查内容服务");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const posterDbFetchLibraryItemPoster = (index: number) => {
+    const item = library.items[index];
+    const raw = item.sourceUrl || item.title || "";
+    const imdbMatch = raw.match(/tt\d{5,10}/i);
+    if (imdbMatch) {
+      updateLibraryItem(index, { posterUrl: `https://openposterdb.com/t0-free-rpdb/imdb/poster-default/${imdbMatch[0]}.jpg?imageSize=large&ratings_limit=3&badge_shape=r` });
+      setStatus("已从 PosterDB 获取海报");
+    } else {
+      const imdbId = prompt("未从来源链接中识别到 IMDB ID。请手动输入 IMDB ID（如 tt1375666）或 TMDB ID（如 movie-550）：");
+      if (imdbId) {
+        const idType = imdbId.startsWith("tt") ? "imdb" : "tmdb";
+        updateLibraryItem(index, { posterUrl: `https://openposterdb.com/t0-free-rpdb/${idType}/poster-default/${imdbId}.jpg?imageSize=large&ratings_limit=3&badge_shape=r` });
+        setStatus("已从 PosterDB 获取海报");
+      }
     }
   };
 
@@ -1862,6 +1880,14 @@ export function ScreeningsAdminPanel({ readOnly = false }: { readOnly?: boolean 
                   {editingLibraryItem.posterUrl ? <img src={editingLibraryItem.posterUrl} alt={editingLibraryItem.title} className="aspect-[2/3] w-full object-cover" /> : <div className="flex aspect-[2/3] items-center justify-center px-4 text-center text-sm font-black text-muted-foreground">暂无海报</div>}
                 </div>
                 <ImageUploadField label="海报" value={editingLibraryItem.posterUrl || ""} onChange={(value) => updateLibraryItem(editingLibraryIndex, { posterUrl: value })} admin readOnly={readOnly} scope="screening-poster" compact />
+                <button
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => posterDbFetchLibraryItemPoster(editingLibraryIndex)}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11px] font-bold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
+                >
+                  从 PosterDB 获取海报
+                </button>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-[12px] font-bold text-muted-foreground">补全来源</span>
                   <OptionCapsule

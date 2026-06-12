@@ -75,7 +75,7 @@ type MediaScraperSettings = {
   bangumiImageBase: string;
 };
 
-type MediaScrapeProvider = "tmdb" | "bilibili" | "bangumi" | "douban" | "jikan" | "wiki" | "local";
+type MediaScrapeProvider = "tmdb" | "bilibili" | "bangumi" | "douban" | "jikan" | "wiki" | "local" | "posterdb";
 
 type MediaScrapeCandidate = ScreeningSourceItem & {
   provider: MediaScrapeProvider;
@@ -752,6 +752,51 @@ function providerEnabled(request: MediaScrapeRequest, provider: MediaScrapeProvi
   return normalizeMediaProviders(request.providers).includes(provider);
 }
 
+const RPDB_BASE = "https://openposterdb.com/t0-free-rpdb";
+const RPDB_OPTIONS = "imageSize=large&ratings_limit=3&badge_shape=r";
+
+function extractImdbId(text: string): string | undefined {
+  const match = text.match(/\btt\d{5,10}\b/i);
+  return match ? match[0] : undefined;
+}
+
+function extractTmdbMovieId(text: string): string | undefined {
+  const match = text.match(/\bmovie-(\d+)\b/i) || text.match(/tmdb[=/](\d+)/i);
+  return match ? match[1] : undefined;
+}
+
+function buildPosterDbUrl(idType: "imdb" | "tmdb", idValue: string) {
+  return `${RPDB_BASE}/${idType}/poster-default/${idValue}.jpg?${RPDB_OPTIONS}`;
+}
+
+async function scrapePosterDbCandidates(request: MediaScrapeRequest): Promise<MediaScrapeCandidate[]> {
+  const local = buildLocalCandidate(request);
+  const raw = request.sourceUrl || request.query || "";
+
+  const imdbId = extractImdbId(raw);
+  if (imdbId) {
+    return [{
+      ...local,
+      provider: "posterdb",
+      confidence: 0.95,
+      posterUrl: buildPosterDbUrl("imdb", imdbId),
+      sourceUrl: `https://www.imdb.com/title/${imdbId}`
+    }];
+  }
+
+  const tmdbId = extractTmdbMovieId(raw);
+  if (tmdbId) {
+    return [{
+      ...local,
+      provider: "posterdb",
+      confidence: 0.95,
+      posterUrl: buildPosterDbUrl("tmdb", `movie-${tmdbId}`),
+    }];
+  }
+
+  return [];
+}
+
 async function fetchTmdbJson(pathname: string, settings: MediaScraperSettings, params: Record<string, string | undefined>) {
   const token = settings.tmdbApiKey || runtimeConfig.tmdbApiKey;
   if (!token) throw new TmdbRequestError("TMDB API Key 未配置");
@@ -1247,6 +1292,7 @@ async function scrapeMediaCandidatesDetailed(request: MediaScrapeRequest) {
   const providers = normalizeMediaProviders(request.providers);
   const warnings: string[] = [];
   const bilibili = providerEnabled(request, "bilibili") ? await scrapeBilibiliCandidate(request).catch(() => undefined) : undefined;
+  const posterdb = providerEnabled(request, "posterdb") ? (await scrapePosterDbCandidates(request)) : [];
   const tmdb = providerEnabled(request, "tmdb") ? await searchTmdbCandidatesEnhanced(request, settings).catch((error) => {
     warnings.push(error instanceof Error ? `TMDB 搜索失败：${error.message}` : "TMDB 搜索失败");
     return [];
@@ -1264,7 +1310,7 @@ async function scrapeMediaCandidatesDetailed(request: MediaScrapeRequest) {
   const byTitle = new Map<string, MediaScrapeCandidate>();
 
   const shouldAddLocal = providers.length === allMediaProviders.length || providers.includes("local");
-  for (const candidate of [...tmdb, ...bangumi, ...douban, ...jikan, ...wiki, ...(bilibili ? [bilibili] : []), ...(shouldAddLocal ? [local] : [])]) {
+  for (const candidate of [...posterdb, ...tmdb, ...bangumi, ...douban, ...jikan, ...wiki, ...(bilibili ? [bilibili] : []), ...(shouldAddLocal ? [local] : [])]) {
     const key = candidate.providerId || candidate.title.trim().toLowerCase();
     const existing = byTitle.get(key);
     if (!existing || candidate.confidence > existing.confidence || (!existing.posterUrl && candidate.posterUrl)) {
